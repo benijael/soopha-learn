@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J2 — Ingénierie Sociale & Phishing · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html, body { overflow: hidden; height: 100%; }
+body::before { height: 3px; }
+
+#topbar { position:fixed; top:3px; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,8,4,0.97); border-bottom:1px solid var(--border); backdrop-filter:blur(12px); font-size:.65rem; color:rgba(0,255,136,.4); }
+.tb-left { display:flex; gap:1.5rem; align-items:center; }
+.tb-right { display:flex; gap:1.2rem; align-items:center; }
+.tb-back { color:rgba(0,255,136,.5); text-decoration:none; font-size:.65rem; letter-spacing:.08em; transition:color .2s; }
+.tb-back:hover { color:var(--green); opacity:1; }
+.tb-dot { width:6px; height:6px; background:var(--green); border-radius:50%; display:inline-block; animation:blink 1.4s infinite; margin-right:.3rem; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.tb-user { font-family:var(--mono); font-size:.62rem; color:rgba(0,255,136,.4); }
+
+#progress-top { position:fixed; top:34px; left:0; right:0; z-index:200; height:2px; background:rgba(0,255,136,.06); }
+#progress-fill { height:100%; background:linear-gradient(90deg,#009e60,var(--green)); box-shadow:0 0 8px var(--green); transition:width .5s ease; }
+
+#scanlines { position:fixed; inset:0; z-index:1; pointer-events:none; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px); }
+#vignette  { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%); }
+canvas#matrix { position:fixed; inset:0; z-index:0; opacity:.05; pointer-events:none; }
+
+#slides { position:fixed; inset:0; z-index:10; padding-top:36px; padding-bottom:44px; overflow:hidden; }
+
+.slide { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:1.5rem 4rem; opacity:0; pointer-events:none; transition:opacity .4s ease,transform .4s ease; transform:translateX(40px); overflow-y:auto; }
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.exit   { opacity:0; transform:translateX(-40px); }
+
+/* SLIDE COMPONENTS */
+.gabon-bar { display:flex; height:3px; width:60px; border-radius:2px; overflow:hidden; margin:.6rem 0; }
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}
+.gabon-bar span:nth-child(2){flex:1;background:#fcd116}
+.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(0,255,136,.35); text-transform:uppercase; margin-bottom:.5rem; }
+.slide h1 { font-family:var(--display)!important; font-weight:900!important; font-size:clamp(1.8rem,3.5vw,2.8rem)!important; color:#fff!important; text-align:center; letter-spacing:.1em; line-height:1.15; margin-bottom:.4rem!important; }
+.slide h2 { font-family:var(--display)!important; font-weight:700!important; font-size:clamp(1.1rem,2vw,1.7rem)!important; color:var(--green)!important; letter-spacing:.08em; margin-bottom:1rem!important; }
+.slide h3 { font-family:var(--display)!important; font-weight:400!important; font-size:clamp(.8rem,1.2vw,1rem)!important; color:rgba(0,255,136,.55)!important; letter-spacing:.2em; text-transform:uppercase; margin-bottom:1.5rem!important; }
+.card { background:rgba(4,15,8,.88); border:1px solid var(--border); border-radius:2px; padding:1.4rem 1.8rem; position:relative; backdrop-filter:blur(10px); max-width:880px; width:100%; }
+.card::before { content:''; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:2px solid var(--green); border-left:2px solid var(--green); }
+.card::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:2px solid var(--green); border-right:2px solid var(--green); }
+.card.green { border-color:rgba(0,255,136,.25); background:rgba(0,255,136,.04); }
+.card.red   { border-color:rgba(255,68,102,.25); background:rgba(255,68,102,.04); }
+.bullets { list-style:none; display:flex; flex-direction:column; gap:.55rem; }
+.bullets li { display:flex; align-items:flex-start; gap:.7rem; font-family:var(--body); font-size:clamp(.8rem,1.3vw,.95rem); color:rgba(220,255,235,.85); line-height:1.5; animation:fadeIn .4s ease both; }
+.bullets li::before { content:'▶'; color:var(--green); font-size:.55rem; margin-top:.35rem; flex-shrink:0; }
+.bullets li strong { color:#fff; }
+.bullets li.warn::before   { content:'⚠'; color:#ffd700; font-size:.7rem; }
+.bullets li.danger::before { content:'🔴'; font-size:.7rem; }
+.bullets li.ok::before     { content:'✅'; font-size:.7rem; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; max-width:880px; width:100%; }
+.pill { display:inline-block; padding:.25rem .7rem; font-size:.65rem; letter-spacing:.06em; border-radius:2px; font-family:var(--mono); }
+.pill-green  { background:rgba(0,255,136,.1);  border:1px solid rgba(0,255,136,.3);  color:#00ff88; }
+.pill-red    { background:rgba(255,68,102,.1); border:1px solid rgba(255,68,102,.3); color:#ff4466; }
+.pill-yellow { background:rgba(255,215,0,.08); border:1px solid rgba(255,215,0,.3);  color:#ffd700; }
+.pill-blue   { background:rgba(0,170,255,.08); border:1px solid rgba(0,170,255,.3);  color:#00aaff; }
+.pill-orange { background:rgba(255,136,0,.1);  border:1px solid rgba(255,136,0,.3);  color:#ff8800; }
+.pill-purple { background:rgba(200,136,255,.1);border:1px solid rgba(200,136,255,.3);color:#cc88ff; }
+.quote { border-left:3px solid var(--green); padding:.7rem 1rem; background:rgba(0,255,136,.04); font-family:var(--body); font-style:italic; font-size:clamp(.9rem,1.5vw,1.15rem); color:#e0ffe8; line-height:1.6; }
+.terminal { background:rgba(0,0,0,.5); border:1px solid rgba(0,255,136,.15); border-left:3px solid var(--green); padding:.8rem 1.1rem; font-family:var(--mono); font-size:.78rem; color:rgba(0,255,136,.8); line-height:1.8; }
+.term-prompt { color:var(--green); }
+.term-comment { color:rgba(0,255,136,.45); font-style:italic; }
+.hdiv { display:flex; align-items:center; gap:1rem; color:rgba(0,255,136,.2); font-size:.62rem; letter-spacing:.2em; margin:.8rem 0; }
+.hdiv::before,.hdiv::after { content:''; flex:1; height:1px; background:rgba(0,255,136,.12); }
+@keyframes glitch {
+  0%,90%,100%{text-shadow:0 0 40px var(--green),0 0 80px rgba(0,255,136,.2)}
+  91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}
+  93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}
+  95%{text-shadow:0 0 40px var(--green);transform:translate(0)}
+}
+.glitch { animation:glitch 7s infinite; }
+/* J2 SPECIFIC */
+.attack-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;max-width:860px;width:100%}
+.attack-card{padding:1.2rem;border:1px solid;background:rgba(0,0,0,.3);position:relative}
+.attack-card.ph{border-color:rgba(255,68,102,.3);background:rgba(255,68,102,.04)}
+.attack-card.sm{border-color:rgba(255,136,0,.3);background:rgba(255,136,0,.04)}
+.attack-card.vi{border-color:rgba(255,215,0,.3);background:rgba(255,215,0,.04)}
+.attack-card.bec{border-color:rgba(200,136,255,.3);background:rgba(200,136,255,.04)}
+.attack-icon{font-size:1.8rem;margin-bottom:.4rem}
+.attack-name{font-family:var(--display);font-size:.85rem;font-weight:700;margin-bottom:.4rem}
+.attack-card.ph .attack-name{color:#ff4466}
+.attack-card.sm .attack-name{color:#ff8800}
+.attack-card.vi .attack-name{color:#ffd700}
+.attack-card.bec .attack-name{color:#cc88ff}
+.attack-desc{font-family:var(--body);font-size:.8rem;color:rgba(220,255,235,.65);line-height:1.5}
+.attack-badge{position:absolute;top:.6rem;right:.6rem;font-size:.55rem;padding:.15rem .4rem;border-radius:2px}
+.email-box{background:#0a0f0c;border:1px solid rgba(0,255,136,.15);border-radius:2px;max-width:760px;width:100%;overflow:hidden;box-shadow:0 0 40px rgba(255,68,102,.1)}
+.email-header{background:rgba(255,68,102,.08);border-bottom:1px solid rgba(255,68,102,.2);padding:.8rem 1.2rem}
+.email-field{display:flex;gap:.8rem;align-items:baseline;margin-bottom:.3rem;font-size:.78rem}
+.email-label{color:rgba(0,255,136,.4);width:50px;flex-shrink:0;font-size:.7rem}
+.email-value{color:rgba(220,255,235,.8);font-family:var(--body)}
+.email-value.suspicious{color:#ff4466;font-weight:600}
+.email-body{padding:1.2rem;font-family:var(--body);font-size:.82rem;color:rgba(220,255,235,.75);line-height:1.7}
+.steps{display:flex;flex-direction:column;gap:.6rem;max-width:820px;width:100%}
+.step{display:flex;align-items:flex-start;gap:1rem;padding:.9rem 1.2rem;border:1px solid var(--border);background:rgba(0,255,136,.03);position:relative}
+.step-num{font-family:var(--display);font-size:1.2rem;font-weight:900;color:var(--green);text-shadow:0 0 10px var(--green);min-width:28px}
+.step-content{font-family:var(--body);font-size:.88rem;color:rgba(220,255,235,.85);line-height:1.5}
+.quiz-card{max-width:820px;width:100%;background:rgba(4,15,8,.9);border:1px solid rgba(255,215,0,.2);border-radius:2px;padding:1.8rem 2.2rem;box-shadow:0 0 20px rgba(255,215,0,.06)}
+.quiz-msg{font-family:var(--body);font-size:.9rem;color:rgba(220,255,235,.8);margin-bottom:1rem;line-height:1.6;padding:1rem;border:1px solid rgba(255,215,0,.15);background:rgba(255,215,0,.03)}
+
+/* QCM OVERLAY */
+#qcm-overlay { position:fixed; inset:0; z-index:300; background:rgba(2,8,4,.97); display:none; flex-direction:column; align-items:center; justify-content:center; padding:2rem; }
+#qcm-overlay.show { display:flex; animation:fadeInOv .3s ease; }
+@keyframes fadeInOv { from{opacity:0} to{opacity:1} }
+.qcm-box { max-width:680px; width:100%; background:rgba(4,15,8,.97); border:1px solid rgba(0,255,136,.25); border-radius:2px; padding:2.5rem; position:relative; box-shadow:0 0 40px rgba(0,255,136,.1); }
+.qcm-box::before { content:''; position:absolute; top:-1px; left:-1px; width:18px; height:18px; border-top:2px solid var(--green); border-left:2px solid var(--green); }
+.qcm-box::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:18px; height:18px; border-bottom:2px solid var(--green); border-right:2px solid var(--green); }
+.qcm-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid var(--border); }
+.qcm-label { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(0,255,136,.4); text-transform:uppercase; }
+.qcm-prog  { font-family:var(--mono); font-size:.65rem; color:rgba(0,255,136,.35); }
+.qcm-saving { font-family:var(--mono); font-size:.62rem; color:rgba(0,255,136,.35); margin-bottom:.5rem; display:none; }
+.qcm-saving.show { display:block; }
+.qcm-question { font-family:var(--display); font-size:clamp(.9rem,1.8vw,1.1rem); font-weight:700; color:#fff; line-height:1.4; margin-bottom:1.8rem; letter-spacing:.03em; }
+.qcm-options { display:flex; flex-direction:column; gap:.65rem; margin-bottom:1.5rem; }
+.qcm-option { display:flex; align-items:flex-start; gap:.9rem; padding:.8rem 1.1rem; background:rgba(0,0,0,.3); border:1px solid rgba(0,255,136,.1); cursor:pointer; border-radius:2px; transition:all .15s; font-family:var(--body); font-size:.88rem; color:rgba(200,255,220,.75); line-height:1.4; }
+.qcm-option:hover:not(.disabled) { border-color:rgba(0,255,136,.35); background:rgba(0,255,136,.06); color:rgba(200,255,220,.95); }
+.qcm-option.correct  { border-color:var(--green)!important; background:rgba(0,255,136,.12)!important; color:var(--green)!important; }
+.qcm-option.wrong    { border-color:#ff4466!important; background:rgba(255,68,102,.08)!important; color:#ff4466!important; }
+.qcm-option.disabled { cursor:default; pointer-events:none; }
+.option-letter { font-family:var(--display); font-size:.68rem; font-weight:700; color:rgba(0,255,136,.4); min-width:18px; flex-shrink:0; margin-top:.1rem; }
+.qcm-option.correct .option-letter,.qcm-option.wrong .option-letter { color:inherit; }
+.qcm-feedback { padding:.8rem 1rem; border-radius:2px; font-family:var(--mono); font-size:.8rem; line-height:1.5; display:none; margin-bottom:1.2rem; }
+.qcm-feedback.correct { background:rgba(0,255,136,.07); border:1px solid rgba(0,255,136,.2); color:rgba(0,255,136,.9); }
+.qcm-feedback.wrong   { background:rgba(255,68,102,.06); border:1px solid rgba(255,68,102,.2); color:rgba(255,100,130,.9); }
+.qcm-btn { font-family:var(--display); font-size:.75rem; font-weight:700; letter-spacing:.12em; padding:.7rem 1.8rem; background:var(--green); color:var(--bg); border:none; cursor:pointer; clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition:all .2s; text-transform:uppercase; display:none; }
+.qcm-btn.show { display:inline-block; }
+.qcm-btn:hover { box-shadow:0 0 20px rgba(0,255,136,.4); }
+/* COMPLETION */
+#completion-modal { position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; padding:2rem; }
+#completion-modal.show { display:flex; animation:fadeInOv .3s ease; }
+.completion-box { max-width:500px; width:100%; background:rgba(4,15,8,.98); border:1px solid rgba(0,255,136,.3); border-radius:2px; padding:3rem 2.5rem; text-align:center; box-shadow:0 0 60px rgba(0,255,136,.15); position:relative; }
+.completion-box::before { content:''; position:absolute; top:-1px; left:-1px; width:20px; height:20px; border-top:2px solid var(--green); border-left:2px solid var(--green); }
+.completion-icon  { font-size:4rem; margin-bottom:1rem; }
+.completion-title { font-family:var(--display); font-size:1.5rem; font-weight:900; color:#fff; margin-bottom:.5rem; }
+.completion-score { font-family:var(--display); font-size:3.5rem; font-weight:900; color:var(--green); text-shadow:0 0 30px var(--green); margin:1rem 0; }
+.completion-sub   { font-family:var(--mono); font-size:.78rem; color:rgba(0,255,136,.5); margin-bottom:.5rem; line-height:1.6; }
+.completion-saved { font-family:var(--mono); font-size:.68rem; color:rgba(0,255,136,.35); margin-bottom:1.5rem; }
+.completion-btn { font-family:var(--display); font-size:.78rem; font-weight:700; letter-spacing:.12em; padding:.8rem 1.8rem; text-decoration:none; display:inline-block; clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); cursor:pointer; border:none; margin:.3rem; text-transform:uppercase; transition:all .2s; }
+.completion-btn-primary   { background:var(--green); color:var(--bg); }
+.completion-btn-primary:hover { box-shadow:0 0 20px rgba(0,255,136,.5); opacity:1; }
+.completion-btn-secondary { background:transparent; color:var(--green); border:1px solid rgba(0,255,136,.3)!important; clip-path:none; border-radius:2px; }
+/* BOTTOMBAR */
+#bottombar { position:fixed; bottom:0; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,8,4,.97); border-top:1px solid var(--border); backdrop-filter:blur(12px); }
+.nav-btn { background:transparent; border:1px solid rgba(0,255,136,.2); color:rgba(0,255,136,.55); padding:.32rem .9rem; font-family:var(--mono); font-size:.65rem; cursor:pointer; transition:all .2s; clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%); }
+.nav-btn:hover { border-color:var(--green); color:var(--green); background:rgba(0,255,136,.05); }
+.nav-btn:disabled { opacity:.2; cursor:not-allowed; }
+#slide-counter { font-family:var(--display); font-size:.72rem; color:var(--green); }
+.qcm-indicator { font-family:var(--mono); font-size:.62rem; color:rgba(255,215,0,.5); letter-spacing:.08em; }
+@media (max-width:768px) { .slide { padding:1rem 1.2rem; } .grid2 { grid-template-columns:1fr; } .attack-grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>J2 — Ingénierie Sociale & Phishing</span>
+  </div>
+  <div class="tb-right">
+    <span class="tb-user" id="tb-username"></span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+<div id="slides">
+<!-- ▓ SLIDE 1 — TITRE ▓ -->
+  <div class="slide active" data-index="0">
+    <div class="slide-tag">// Jour 2 — Session 01</div>
+    <h1 class="glitch" style="color:var(--red)!important;text-shadow:0 0 40px var(--red),0 0 80px rgba(255,68,102,.2)!important">L'ART DE LA<br>MANIPULATION</h1>
+    <div class="gabon-bar"><span></span><span></span><span></span></div>
+    <h3 style="color:rgba(255,68,102,.5)!important">Ingénierie Sociale & Phishing</h3>
+    <div style="display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center;margin-top:1rem">
+      <span class="pill pill-red">🎭 Social Engineering</span>
+      <span class="pill pill-orange">📧 Phishing</span>
+      <span class="pill pill-yellow">📱 Smishing & Vishing</span>
+      <span class="pill pill-purple">🧠 Psychologie de l'attaque</span>
+    </div>
+    <div style="margin-top:2rem" class="terminal" style="max-width:500px">
+      <span class="term-prompt">root@gaboctf:~$ </span>
+      <span class="term-comment">// L'humain est la faille la plus exploitable</span>
+    </div>
+    <div style="margin-top:1.5rem;font-size:.7rem;color:rgba(255,68,102,.3);letter-spacing:.15em">
+      ← → POUR NAVIGUER &nbsp;|&nbsp; ESPACE POUR AVANCER
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 2 — RECAP J1 + HOOK ▓ -->
+  <div class="slide" data-index="1">
+    <div class="slide-tag">// 01 · Warm-up</div>
+    <h2>Hier on a vu que...</h2>
+    <div class="grid2">
+      <div class="card green">
+        <div style="font-size:.7rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.8rem">✅ ACQUIS J1</div>
+        <ul class="bullets">
+          <li class="ok">CIA — les 3 piliers fondamentaux</li>
+          <li class="ok">Les types d'attaquants</li>
+          <li class="ok">Le contexte gabonais &amp; africain</li>
+          <li class="ok">Les métiers de la cybersécurité</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div style="font-size:.7rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.8rem">❓ QUESTION DU JOUR</div>
+        <div class="quote" style="font-size:.88rem;margin-bottom:1rem">
+          "Si je vous envoie un email de votre banque vous demandant de changer votre mot de passe... combien d'entre vous cliqueraient ?"
+        </div>
+        <div style="text-align:center;margin-top:.8rem">
+          <span class="pill pill-red">90% des cyberattaques commencent par un email</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 3 — C'EST QUOI L'INGÉNIERIE SOCIALE ▓ -->
+  <div class="slide" data-index="2" data-qcm="2">
+    <div class="slide-tag">// 02 · Définition</div>
+    <h2>L'Ingénierie Sociale</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;max-width:900px;width:100%">
+      <div class="card" style="padding:1.3rem 1.5rem">
+        <div class="quote" style="margin-bottom:1rem;font-size:.88rem">
+          "Manipuler <strong style="color:var(--red)">psychologiquement</strong> une personne pour qu'elle divulgue des informations ou effectue une action contre ses intérêts."
+        </div>
+        <ul class="bullets">
+          <li><strong>Cible l'humain</strong> — pas les machines. Un firewall ne protège pas contre la manipulation</li>
+          <li><strong>Aucun outil technique</strong> requis — juste de la psychologie, du culot et de la préparation</li>
+          <li><strong>92% des cyberattaques</strong> réussies commencent par de l'ingénierie sociale</li>
+          <li>Fonctionne sur <strong>tout le monde</strong> — y compris les experts, si le scénario est bien construit</li>
+        </ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.7rem">
+        <div style="font-size:.68rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.2rem">POURQUOI ÇA MARCHE — LES 5 LEVIERS</div>
+        <div style="padding:.7rem .9rem;border:1px solid rgba(255,68,102,.25);background:rgba(255,68,102,.05)">
+          <div style="font-family:var(--display);font-size:.72rem;color:var(--red);margin-bottom:.3rem">😰 PEUR</div>
+          <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,200,.7);line-height:1.4">"Votre compte sera supprimé dans 1h" → la peur désactive le raisonnement logique</div>
+        </div>
+        <div style="padding:.7rem .9rem;border:1px solid rgba(255,136,0,.25);background:rgba(255,136,0,.05)">
+          <div style="font-family:var(--display);font-size:.72rem;color:var(--orange);margin-bottom:.3rem">⚡ URGENCE</div>
+          <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,210,190,.7);line-height:1.4">"Agissez maintenant !" → pas le temps de vérifier, on agit avant de réfléchir</div>
+        </div>
+        <div style="padding:.7rem .9rem;border:1px solid rgba(255,215,0,.2);background:rgba(255,215,0,.04)">
+          <div style="font-family:var(--display);font-size:.72rem;color:var(--yellow);margin-bottom:.3rem">🤝 CONFIANCE</div>
+          <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,220,190,.7);line-height:1.4">"Je suis de votre banque" → on obéit à l'autorité sans questionner</div>
+        </div>
+        <div style="padding:.7rem .9rem;border:1px solid rgba(200,136,255,.2);background:rgba(200,136,255,.04)">
+          <div style="font-family:var(--display);font-size:.72rem;color:var(--purple);margin-bottom:.3rem">🎁 CURIOSITÉ / 💰 CUPIDITÉ</div>
+          <div style="font-family:var(--body);font-size:.75rem;color:rgba(210,200,220,.7);line-height:1.4">"Vous avez gagné un prix" → l'appât du gain fait baisser la vigilance instantanément</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 4 — LES 4 TYPES D'ATTAQUES ▓ -->
+  <div class="slide" data-index="3" data-qcm="3">
+    <div class="slide-tag">// 03 · Les Attaques</div>
+    <h2>Les 4 vecteurs principaux</h2>
+    <div class="attack-grid">
+      <div class="attack-card ph">
+        <span class="attack-badge pill-red">EMAIL</span>
+        <div class="attack-icon">📧</div>
+        <div class="attack-name">PHISHING</div>
+        <div class="attack-desc">Email frauduleux imitant une entité de confiance (banque, opérateur, admin IT). Vise à voler des identifiants ou installer un malware via une pièce jointe ou un lien piégé.</div>
+        <div style="margin-top:.6rem;padding:.4rem .6rem;background:rgba(255,68,102,.06);border-left:2px solid rgba(255,68,102,.3);font-family:var(--mono);font-size:.65rem;color:rgba(255,150,150,.6)">→ Exemple Gabon : faux email "Airtel Money — compte suspendu"</div>
+      </div>
+      <div class="attack-card sm">
+        <span class="attack-badge pill-orange">SMS</span>
+        <div class="attack-icon">📱</div>
+        <div class="attack-name">SMISHING</div>
+        <div class="attack-desc">Phishing par SMS. Très efficace en Afrique où le mobile est le premier outil de communication. L'attaquant usurpe un numéro court pour paraître légitime.</div>
+        <div style="margin-top:.6rem;padding:.4rem .6rem;background:rgba(255,136,0,.06);border-left:2px solid rgba(255,136,0,.3);font-family:var(--mono);font-size:.65rem;color:rgba(255,180,100,.6)">→ "BGFI : transaction suspecte. Cliquez : bit.ly/bgfi-secure"</div>
+      </div>
+      <div class="attack-card vi">
+        <span class="attack-badge pill-yellow">APPEL</span>
+        <div class="attack-icon">📞</div>
+        <div class="attack-name">VISHING</div>
+        <div class="attack-desc">Phishing par appel vocal. L'attaquant se fait passer pour votre banque, opérateur ou support IT. La voix humaine crée une pression immédiate difficile à ignorer.</div>
+        <div style="margin-top:.6rem;padding:.4rem .6rem;background:rgba(255,215,0,.05);border-left:2px solid rgba(255,215,0,.2);font-family:var(--mono);font-size:.65rem;color:rgba(255,230,150,.6)">→ "Airtel ici — confirmez votre code SIM pour la mise à jour"</div>
+      </div>
+      <div class="attack-card pt">
+        <span class="attack-badge pill-purple">CIBLÉ</span>
+        <div class="attack-icon">🎯</div>
+        <div class="attack-name">SPEAR PHISHING</div>
+        <div class="attack-desc">Version ultra-ciblée : l'attaquant connaît votre nom, poste, collègues, projets en cours. Il construit un message sur mesure. Taux de succès 3x plus élevé que le phishing classique.</div>
+        <div style="margin-top:.6rem;padding:.4rem .6rem;background:rgba(200,136,255,.05);border-left:2px solid rgba(200,136,255,.2);font-family:var(--mono);font-size:.65rem;color:rgba(200,170,255,.6)">→ "Bonjour [Prénom], suite à notre réunion de lundi…"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 5 — PRETEXTING ▓ -->
+  <div class="slide" data-index="4">
+    <div class="slide-tag">// 04 · Techniques avancées</div>
+    <h2>Le Pretexting &amp; la mise en scène</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;max-width:900px;width:100%">
+      <div class="card" style="padding:1.3rem 1.5rem">
+        <div style="font-size:.68rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.8rem">C'EST QUOI ?</div>
+        <div style="font-family:var(--body);font-size:.82rem;color:rgba(220,255,235,.8);line-height:1.6;margin-bottom:.8rem">
+          Le pretexting c'est <strong>inventer un scénario fictif mais crédible</strong> pour obtenir ce qu'on veut. L'attaquant joue un rôle — comme un acteur — et prépare son histoire à l'avance.
+        </div>
+        <ul class="bullets">
+          <li>Basé sur de l'<strong>OSINT</strong> — recherches préalables sur la cible (LinkedIn, site web, réseaux sociaux)</li>
+          <li>Plus le scénario est <strong>personnalisé et contextualisé</strong>, plus il est crédible</li>
+          <li>Cible souvent des personnes en <strong>position d'autorité ou de service</strong> — secrétaires, admins, help desk</li>
+          <li>Difficile à détecter car <strong>aucune technique informatique</strong> n'est impliquée</li>
+        </ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.6rem">
+        <div style="font-size:.68rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.2rem">SCÉNARIOS RÉELS — AU GABON ET AILLEURS</div>
+        <div style="padding:.7rem .9rem;border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.04)">
+          <div style="font-family:var(--mono);font-size:.7rem;color:var(--red);margin-bottom:.3rem">🎭 RÔLE : Support IT</div>
+          <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,200,.75);line-height:1.4">"Je suis du service informatique. Votre compte va être suspendu dans 2h si vous ne me donnez pas votre mot de passe pour la migration."</div>
+        </div>
+        <div style="padding:.7rem .9rem;border:1px solid rgba(255,136,0,.2);background:rgba(255,136,0,.04)">
+          <div style="font-family:var(--mono);font-size:.7rem;color:var(--orange);margin-bottom:.3rem">🎭 RÔLE : DRH</div>
+          <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,210,190,.75);line-height:1.4">"C'est la direction des ressources humaines. J'ai besoin de votre matricule et votre numéro de compte pour le virement de la prime."</div>
+        </div>
+        <div style="padding:.7rem .9rem;border:1px solid rgba(255,215,0,.15);background:rgba(255,215,0,.03)">
+          <div style="font-family:var(--mono);font-size:.7rem;color:var(--yellow);margin-bottom:.3rem">🎭 RÔLE : Opérateur Airtel</div>
+          <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,215,180,.75);line-height:1.4">"Airtel ici. Nous effectuons une mise à jour de sécurité de votre SIM. Confirmez le code reçu par SMS pour valider."</div>
+        </div>
+        <div style="padding:.7rem .9rem;border:1px solid rgba(200,136,255,.15);background:rgba(200,136,255,.03)">
+          <div style="font-family:var(--mono);font-size:.7rem;color:var(--purple);margin-bottom:.3rem">🎭 RÔLE : Auditeur externe</div>
+          <div style="font-family:var(--body);font-size:.75rem;color:rgba(210,200,220,.75);line-height:1.4">"Je suis mandaté par la direction pour un audit. Envoyez-moi la liste complète des employés avec leurs accès."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 6 — FAUX EMAIL ANATOMIE ▓ -->
+  <div class="slide" data-index="5" data-qcm="5">
+    <div class="slide-tag">// 05 · Démo — Anatomie d'un Phishing</div>
+    <h2>Disséquons un vrai email de phishing</h2>
+    <div class="email-box">
+      <div class="email-header">
+        <div class="email-field">
+          <span class="email-label">De :</span>
+          <span class="email-value suspicious"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b8cbcdc8c8d7caccf8d9d1caccdd8995dfd9dad7d696dbd7d5">[email&#160;protected]</a></span>
+        </div>
+        <div class="email-field">
+          <span class="email-label">À :</span>
+          <span class="email-value"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="1a6c756f695a7f777b737634797577">[email&#160;protected]</a></span>
+        </div>
+        <div class="email-field">
+          <span class="email-label">Objet :</span>
+          <span class="email-value" style="color:var(--yellow)">⚠️ URGENT — Votre compte Mobile Money va être suspendu</span>
+        </div>
+      </div>
+      <div class="email-body">
+        <p>Cher(e) client(e),</p>
+        <p style="margin-top:.5rem">Nous avons détecté une <strong style="color:var(--red)">activité suspecte</strong> sur votre compte Airtel Money. Pour éviter la suspension de votre compte dans les <strong style="color:var(--red)">24 heures</strong>, vous devez confirmer vos informations immédiatement.</p>
+        <p style="margin-top:.5rem">Cliquez ci-dessous pour sécuriser votre compte :</p>
+        <a class="cta fake" href="#">🔒 SÉCURISER MON COMPTE MAINTENANT</a>
+        <p style="margin-top:.8rem;font-size:.75rem;color:rgba(200,200,200,.5)">Si vous ne répondez pas, votre compte sera définitivement bloqué. — Service Sécurité Airtel Gabon</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 7 — RED FLAGS ▓ -->
+  <div class="slide" data-index="6" data-qcm="6">
+    <div class="slide-tag">// 06 · Démo — Les Red Flags</div>
+    <h2>Les 6 signaux d'alarme</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;max-width:900px;width:100%">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <strong>Adresse email suspecte</strong> — Ne regardez pas le nom affiché, regardez le vrai domaine.
+          <div style="margin-top:.3rem;font-family:var(--mono);font-size:.7rem;color:rgba(255,68,102,.6)">"support@airte<span style="color:var(--red);font-weight:700">1</span>-gabon.com" ≠ "airtel.com" → 1 lettre suffit</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <strong>Urgence artificielle</strong> — "24h", "immédiatement", "compte suspendu". L'urgence est conçue pour <strong>court-circuiter votre cerveau</strong> avant que vous réfléchissiez.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <strong>Lien qui ne correspond pas</strong> — Survolez le lien sans cliquer. L'URL réelle s'affiche en bas du navigateur. Si elle est différente du site annoncé → STOP.
+          <div style="margin-top:.3rem;font-family:var(--mono);font-size:.7rem;color:rgba(255,68,102,.6)">"Cliquez ici" → redirige vers bit.ly/xk8q2p</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <strong>Demande d'infos sensibles</strong> — Une vraie banque, un vrai opérateur ne vous demande <strong>JAMAIS</strong> votre mot de passe, code PIN ou code OTP par email ou SMS. Jamais.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-content">
+          <strong>Formule générique</strong> — "Cher client" au lieu de votre prénom = envoi en masse. L'attaquant ne vous connaît pas. <strong>Exception</strong> : le spear phishing utilise votre vrai prénom.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">06</div>
+        <div class="step-content">
+          <strong>Mise en page ou logos suspects</strong> — Logo flou, couleurs légèrement décalées, police différente. L'attaquant a copié le site mais pas parfaitement.
+          <div style="margin-top:.3rem;font-family:var(--body);font-size:.72rem;color:rgba(200,200,200,.5)">💡 Astuce : comparez avec le vrai site dans un autre onglet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 8 — SIM SWAPPING LOCAL ▓ -->
+  <div class="slide" data-index="7" data-qcm="7">
+    <div class="slide-tag">// 07 · Cas Réel Gabon</div>
+    <h2>Le SIM Swapping au Gabon</h2>
+    <div class="card" style="max-width:820px">
+      <div class="quote" style="margin-bottom:1.5rem">
+        "L'attaquant appelle votre opérateur en se faisant passer pour vous. Il transfère votre numéro sur sa SIM.
+        <strong style="color:var(--red)"> Vous perdez le réseau. Il reçoit tous vos SMS — y compris les codes OTP de votre Mobile Money.</strong>"
+      </div>
+      <div class="grid2" style="margin-top:1rem">
+        <div>
+          <div style="font-size:.7rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">🔴 COMMENT ÇA SE PASSE</div>
+          <ul class="bullets">
+            <li class="danger">L'attaquant collecte vos infos (nom, numéro, opérateur) via OSINT</li>
+            <li class="danger">Il appelle l'opérateur avec un prétexte ("téléphone perdu")</li>
+            <li class="danger">Il récupère votre numéro sur une nouvelle SIM</li>
+            <li class="danger">Il réinitialise vos comptes via SMS</li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-size:.7rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.6rem">✅ SE PROTÉGER</div>
+          <ul class="bullets">
+            <li class="ok">Activer un code PIN sur votre SIM</li>
+            <li class="ok">Ne pas lier tous vos comptes à votre numéro mobile</li>
+            <li class="ok">Utiliser une app d'authentification (pas SMS)</li>
+            <li class="ok">Alerter immédiatement si vous perdez le réseau</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 9 — COMMENT L'ATTAQUANT CONSTRUIT SON PHISHING ▓ -->
+  <div class="slide" data-index="8" data-qcm="8">
+    <div class="slide-tag">// 07b · Dans la tête de l'attaquant</div>
+    <h2>Comment un phishing est fabriqué</h2>
+    <div class="grid2">
+      <div class="card">
+        <div style="font-size:.7rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.8rem">🔴 LES ÉTAPES DE L'ATTAQUE</div>
+        <div style="display:flex;flex-direction:column;gap:.5rem">
+          <div class="step" style="padding:.6rem .8rem">
+            <div class="step-num" style="font-size:.9rem;min-width:22px">01</div>
+            <div class="step-content" style="font-size:.8rem"><strong>Reconnaissance</strong> — OSINT sur la cible. LinkedIn, site web, réseaux sociaux.</div>
+          </div>
+          <div class="step" style="padding:.6rem .8rem">
+            <div class="step-num" style="font-size:.9rem;min-width:22px">02</div>
+            <div class="step-content" style="font-size:.8rem"><strong>Enregistrement domaine</strong> — "airte1-gabon.com" pour 10€/an. En 5 minutes.</div>
+          </div>
+          <div class="step" style="padding:.6rem .8rem">
+            <div class="step-num" style="font-size:.9rem;min-width:22px">03</div>
+            <div class="step-content" style="font-size:.8rem"><strong>Clonage du site</strong> — copie exacte de la vraie page de login. Outil : HTTrack.</div>
+          </div>
+          <div class="step" style="padding:.6rem .8rem">
+            <div class="step-num" style="font-size:.9rem;min-width:22px">04</div>
+            <div class="step-content" style="font-size:.8rem"><strong>Envoi massif</strong> — via GoPhish ou outils SMTP. 10 000 emails en quelques minutes.</div>
+          </div>
+          <div class="step" style="padding:.6rem .8rem">
+            <div class="step-num" style="font-size:.9rem;min-width:22px">05</div>
+            <div class="step-content" style="font-size:.8rem"><strong>Collecte</strong> — les identifiants arrivent en temps réel dans un dashboard.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:.7rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.8rem">⚡ CE QUE ÇA COÛTE À L'ATTAQUANT</div>
+        <div style="display:flex;flex-direction:column;gap:.8rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.6rem;border:1px solid rgba(255,68,102,.15);background:rgba(255,68,102,.03)">
+            <span style="font-family:var(--body);font-size:.82rem">Nom de domaine</span>
+            <span class="pill pill-red" style="font-size:.65rem">~10€</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.6rem;border:1px solid rgba(255,68,102,.15);background:rgba(255,68,102,.03)">
+            <span style="font-family:var(--body);font-size:.82rem">Hébergement serveur</span>
+            <span class="pill pill-red" style="font-size:.65rem">~5€/mois</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.6rem;border:1px solid rgba(255,68,102,.15);background:rgba(255,68,102,.03)">
+            <span style="font-family:var(--body);font-size:.82rem">GoPhish (outil envoi)</span>
+            <span class="pill pill-green" style="font-size:.65rem">GRATUIT</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.6rem;border:1px solid rgba(255,68,102,.15);background:rgba(255,68,102,.03)">
+            <span style="font-family:var(--body);font-size:.82rem">Temps de préparation</span>
+            <span class="pill pill-orange" style="font-size:.65rem">~2 heures</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.6rem;border:1px solid var(--border);background:rgba(0,255,136,.04)">
+            <span style="font-family:var(--body);font-size:.82rem;color:#fff;font-weight:600">Gain potentiel</span>
+            <span class="pill pill-yellow" style="font-size:.65rem">ILLIMITÉ</span>
+          </div>
+        </div>
+        <div style="margin-top:.8rem;font-family:var(--body);font-size:.75rem;color:rgba(255,68,102,.6);line-height:1.5">
+          ⚠️ Ces techniques sont illégales. Cette slide existe pour vous apprendre à vous défendre.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 10 — DÉMO LIVE ▓ -->
+  <div class="slide" data-index="9">
+    <div class="slide-tag">// 07c · Démo Live</div>
+    <h2 style="color:var(--orange)!important;text-shadow:0 0 20px rgba(255,136,0,.4)!important">🔴 DÉMO LIVE — Construire un phishing</h2>
+    <div class="card" style="max-width:860px">
+      <div style="font-size:.7rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:1.2rem">CE QUE VOUS ALLEZ VOIR — EN TEMPS RÉEL — 20 MINUTES</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.2rem">
+        <div>
+          <div style="font-size:.68rem;letter-spacing:.15em;color:rgba(0,255,136,.4);margin-bottom:.6rem">// ÉTAPES DE LA DÉMO</div>
+          <ul class="bullets">
+            <li><strong>Étape 1</strong> — On choisit une cible fictive : "Airtel Gabon"</li>
+            <li><strong>Étape 2</strong> — On enregistre un faux domaine similaire</li>
+            <li><strong>Étape 3</strong> — On construit l'email frauduleux</li>
+            <li><strong>Étape 4</strong> — On envoie à une adresse de test</li>
+            <li><strong>Étape 5</strong> — On observe ce que reçoit l'attaquant</li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-size:.68rem;letter-spacing:.15em;color:rgba(255,68,102,.4);margin-bottom:.6rem">// CE QUE VOUS DEVEZ RETENIR</div>
+          <ul class="bullets">
+            <li class="danger">Un phishing convaincant se crée en <strong>moins de 2h</strong></li>
+            <li class="danger">Aucune compétence technique avancée requise</li>
+            <li class="danger">Les outils sont <strong>légaux et gratuits</strong> — c'est l'usage qui est criminel</li>
+            <li class="ok">La même connaissance sert à <strong>tester et défendre</strong> votre organisation</li>
+          </ul>
+        </div>
+      </div>
+      <div class="hdiv">NOTE ÉTHIQUE IMPORTANTE</div>
+      <div class="quote" style="border-color:var(--orange);background:rgba(255,136,0,.04);color:#ffe8cc">
+        "Tout ce que vous voyez ici s'effectue dans un <strong style="color:var(--orange)">cadre légal contrôlé</strong>.
+        Reproduire ces techniques sur des systèmes réels sans autorisation est un <strong style="color:var(--red)">crime punissable par la loi</strong>.
+        Le but : comprendre l'attaque pour mieux la contrer."
+      </div>
+    </div>
+    <div style="margin-top:1rem" class="terminal">
+      <span class="term-prompt">root@gaboctf:~$ </span>
+      <span class="term-comment">// Regardez. Posez des questions. Prenez des notes.</span>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 11 — ATELIER QUI EST LE PHISHING ▓ -->
+  <div class="slide" data-index="10">
+    <div class="slide-tag">// 08 · Atelier</div>
+    <h2 style="color:var(--yellow)!important;text-shadow:0 0 20px rgba(255,215,0,.4)!important">⚡ Atelier — Détecte le piège</h2>
+    <div class="quiz-card" style="position:relative">
+      <div style="font-size:.7rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:1rem">PAR BINÔMES — 15 MINUTES</div>
+      <div style="font-family:var(--body);font-size:.88rem;color:rgba(220,255,235,.8);margin-bottom:1.2rem">
+        Analysez ces 5 messages. Pour chacun, décidez : <strong>PHISHING ou LÉGITIME ?</strong> Justifiez votre réponse.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.6rem">
+        <div class="quiz-msg">📱 <strong>SMS :</strong> "BGFI Bank : Transaction de 250 000 FCFA détectée. Si ce n'est pas vous, cliquez : bit.ly/bgfi-secure"</div>
+        <div class="quiz-msg">📧 <strong>Email :</strong> "Bonjour Jean-Marc, suite à notre réunion de lundi, voici le document demandé en PJ."</div>
+        <div class="quiz-msg">📱 <strong>WhatsApp :</strong> "Félicitations ! Vous avez été sélectionné pour gagner un iPhone 15. Envoyez vos coordonnées au 077-XXX-XXX"</div>
+        <div class="quiz-msg">📧 <strong>Email de votre IT :</strong> "Mise à jour obligatoire de votre mot de passe avant vendredi. Lien : monentreprise-secure-login.net"</div>
+        <div class="quiz-msg">📱 <strong>SMS Airtel :</strong> "Votre facture de 5 500 FCFA est disponible sur MyAirtel. Connectez-vous sur myairtel.gabon.com"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 12 — CORRECTION ATELIER ▓ -->
+  <div class="slide" data-index="11">
+    <div class="slide-tag">// 08 · Correction</div>
+    <h2>Correction — Les réponses</h2>
+    <div class="card" style="max-width:820px">
+      <div style="display:flex;flex-direction:column;gap:.7rem">
+        <div style="display:flex;gap:.8rem;align-items:center;padding:.6rem .8rem;background:rgba(255,68,102,.06);border:1px solid rgba(255,68,102,.15);font-family:var(--body);font-size:.83rem">
+          <span class="pill pill-red" style="flex-shrink:0">🎣 PHISHING</span>
+          <span>SMS BGFI — <strong style="color:#fff">bit.ly masque l'URL réelle.</strong> Une banque ne raccourcit jamais ses liens.</span>
+        </div>
+        <div style="display:flex;gap:.8rem;align-items:center;padding:.6rem .8rem;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.15);font-family:var(--body);font-size:.83rem">
+          <span class="pill pill-green" style="flex-shrink:0">✅ LÉGITIME</span>
+          <span>Email Jean-Marc — <strong style="color:#fff">Personnalisé, contextualisé.</strong> Mais vérifiez quand même l'expéditeur et la PJ.</span>
+        </div>
+        <div style="display:flex;gap:.8rem;align-items:center;padding:.6rem .8rem;background:rgba(255,68,102,.06);border:1px solid rgba(255,68,102,.15);font-family:var(--body);font-size:.83rem">
+          <span class="pill pill-red" style="flex-shrink:0">🎣 PHISHING</span>
+          <span>WhatsApp iPhone — <strong style="color:#fff">Classique arnaque par cupidité.</strong> Aucune entreprise sérieuse n'offre des prix par WhatsApp.</span>
+        </div>
+        <div style="display:flex;gap:.8rem;align-items:center;padding:.6rem .8rem;background:rgba(255,68,102,.06);border:1px solid rgba(255,68,102,.15);font-family:var(--body);font-size:.83sym">
+          <span class="pill pill-red" style="flex-shrink:0">🎣 PHISHING</span>
+          <span>Email IT — <strong style="color:#fff">Domaine "monentreprise-secure-login.net" ≠ domaine officiel.</strong> Spear phishing.</span>
+        </div>
+        <div style="display:flex;gap:.8rem;align-items:center;padding:.6rem .8rem;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.15);font-family:var(--body);font-size:.83rem">
+          <span class="pill pill-green" style="flex-shrink:0">✅ LÉGITIME</span>
+          <span>SMS Airtel — <strong style="color:#fff">Domaine officiel "myairtel.gabon.com".</strong> Mais toujours taper l'URL manuellement.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 13 — LES BONS RÉFLEXES ▓ -->
+  <div class="slide" data-index="12" data-qcm="12">
+    <div class="slide-tag">// 09 · Défense</div>
+    <h2 style="color:var(--green)!important;text-shadow:0 0 20px rgba(0,255,136,.4)!important">Les réflexes qui sauvent</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;max-width:900px;width:100%">
+      <div class="step">
+        <div class="step-num" style="color:var(--green);text-shadow:0 0 10px var(--green)">🔍</div>
+        <div class="step-content">
+          <strong>Vérifiez le vrai expéditeur</strong> — Pas le nom affiché. Cliquez sur le nom pour voir l'adresse complète. Lisez le domaine lettre par lettre.
+          <div style="margin-top:.3rem;font-family:var(--mono);font-size:.68rem;color:rgba(0,255,136,.4)">"BGFI Bank" peut cacher bgfii-bank.net</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="color:var(--green);text-shadow:0 0 10px var(--green)">🖱️</div>
+        <div class="step-content">
+          <strong>Survolez avant de cliquer</strong> — L'URL réelle s'affiche en bas du navigateur ou en info-bulle. Si l'adresse est bizarre ou différente du site attendu, ne cliquez pas.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="color:var(--green);text-shadow:0 0 10px var(--green)">📞</div>
+        <div class="step-content">
+          <strong>Raccrochez et rappelez</strong> — Si quelqu'un vous appelle en demandant une action urgente, raccrochez. Appelez vous-même le numéro officiel de l'organisation. Ne rappelez pas le numéro entrant.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="color:var(--green);text-shadow:0 0 10px var(--green)">🔐</div>
+        <div class="step-content">
+          <strong>Activez le MFA partout</strong> — L'authentification à deux facteurs signifie que même si votre mot de passe est volé, l'attaquant ne peut pas se connecter sans le second code.
+          <div style="margin-top:.3rem;font-family:var(--body);font-size:.7rem;color:rgba(0,255,136,.4)">App recommandée : Google Authenticator ou Authy (pas SMS)</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="color:var(--green);text-shadow:0 0 10px var(--green)">⏸️</div>
+        <div class="step-content">
+          <strong>La règle des 3 secondes</strong> — Avant tout clic, toute réponse, tout téléchargement : <strong>pausez 3 secondes</strong>. Demandez-vous : est-ce que j'attendais ce message ? Qui me le demande vraiment ?
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="color:var(--green);text-shadow:0 0 10px var(--green)">🗣️</div>
+        <div class="step-content">
+          <strong>Signalez — ne gardez pas pour vous</strong> — Un message suspect que vous signalez peut protéger 50 autres personnes. En entreprise, un email de phishing non signalé peut compromettre tout le réseau.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 14 — MOT DE PASSE THÉORIE ▓ -->
+  <div class="slide" data-index="13" data-qcm="13">
+    <div class="slide-tag">// 09b · Hygiène numérique</div>
+    <h2 style="color:var(--yellow)!important;text-shadow:0 0 20px rgba(255,215,0,.4)!important">🔑 Le mot de passe — théorie</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:920px;width:100%">
+
+      <div style="display:flex;flex-direction:column;gap:.7rem">
+
+        <div style="padding:.9rem 1rem;border:1px solid rgba(0,255,136,.2);background:rgba(0,255,136,.04)">
+          <div style="font-family:var(--display);font-size:.7rem;color:var(--green);margin-bottom:.4rem">✅ UN BON MOT DE PASSE C'EST QUOI ?</div>
+          <ul class="bullets" style="gap:.4rem">
+            <li style="font-size:.78rem"><strong>Long</strong> — minimum <strong style="color:var(--green)">12 caractères</strong>, idéalement 16+</li>
+            <li style="font-size:.78rem"><strong>Complexe</strong> — majuscules + minuscules + chiffres + symboles</li>
+            <li style="font-size:.78rem"><strong>Unique</strong> — un mot de passe différent par compte</li>
+            <li style="font-size:.78rem"><strong>Imprévisible</strong> — aucun mot du dictionnaire, aucune info personnelle</li>
+            <li style="font-size:.78rem"><strong>Mémorable</strong> via une phrase : <span style="color:var(--green);font-family:var(--mono)">J'ai2chatsNoirs!</span></li>
+          </ul>
+        </div>
+
+        <div style="padding:.9rem 1rem;border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.04)">
+          <div style="font-family:var(--display);font-size:.7rem;color:var(--red);margin-bottom:.4rem">🔴 CE QU'IL NE FAUT JAMAIS FAIRE</div>
+          <ul class="bullets" style="gap:.35rem">
+            <li class="danger" style="font-size:.78rem">Utiliser son prénom, date de naissance, ville</li>
+            <li class="danger" style="font-size:.78rem">Réutiliser le même mot de passe partout</li>
+            <li class="danger" style="font-size:.78rem">Écrire son mot de passe sur un post-it</li>
+            <li class="danger" style="font-size:.78rem">Le partager, même avec un collègue de confiance</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:.7rem">
+
+        <div style="padding:.9rem 1rem;border:1px solid rgba(255,215,0,.2);background:rgba(255,215,0,.03)">
+          <div style="font-family:var(--display);font-size:.7rem;color:var(--yellow);margin-bottom:.5rem">⏱️ LONGÉVITÉ — QUAND LE CHANGER ?</div>
+          <div style="display:flex;flex-direction:column;gap:.4rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--body);font-size:.75rem;padding:.3rem .5rem;border:1px solid rgba(255,215,0,.1)">
+              <span>Compte bancaire / email</span>
+              <span class="pill pill-yellow" style="font-size:.6rem">Tous les 3 mois</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--body);font-size:.75rem;padding:.3rem .5rem;border:1px solid rgba(255,215,0,.1)">
+              <span>Réseaux sociaux</span>
+              <span class="pill pill-yellow" style="font-size:.6rem">Tous les 6 mois</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--body);font-size:.75rem;padding:.3rem .5rem;border:1px solid rgba(255,68,102,.15)">
+              <span style="color:var(--red)">Après une fuite de données</span>
+              <span class="pill pill-red" style="font-size:.6rem">Immédiatement</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--body);font-size:.75rem;padding:.3rem .5rem;border:1px solid rgba(255,68,102,.15)">
+              <span style="color:var(--red)">Si partagé avec quelqu'un</span>
+              <span class="pill pill-red" style="font-size:.6rem">Immédiatement</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:.9rem 1rem;border:1px solid rgba(0,170,255,.2);background:rgba(0,170,255,.03)">
+          <div style="font-family:var(--display);font-size:.7rem;color:var(--blue);margin-bottom:.4rem">💡 LA SOLUTION : GESTIONNAIRE DE MDP</div>
+          <div style="font-family:var(--body);font-size:.75rem;color:rgba(200,220,255,.75);line-height:1.5;margin-bottom:.4rem">
+            Un gestionnaire génère et retient des mots de passe complexes à ta place. Tu n'en retiens qu'un seul — le maître.
+          </div>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            <span class="pill pill-blue" style="font-size:.6rem">Bitwarden</span>
+            <span class="pill pill-blue" style="font-size:.6rem">1Password</span>
+            <span class="pill pill-blue" style="font-size:.6rem">KeePass</span>
+            <span class="pill pill-green" style="font-size:.6rem">✅ Gratuit & Open Source</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 15 — MOT DE PASSE PRATIQUE ▓ -->
+  <div class="slide" data-index="14">
+    <div class="slide-tag">// 09c · Atelier</div>
+    <h2 style="color:var(--yellow)!important;text-shadow:0 0 20px rgba(255,215,0,.4)!important">⚡ Atelier — Classement de mots de passe</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:920px;width:100%">
+
+      <!-- LISTE À CLASSER -->
+      <div>
+        <div style="font-size:.68rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.6rem">PAR ÉQUIPES — 10 MINUTES</div>
+        <div style="font-family:var(--body);font-size:.82rem;color:rgba(220,255,235,.8);margin-bottom:.8rem">
+          Classez ces mots de passe du <strong style="color:var(--red)">plus faible (1)</strong> au <strong style="color:var(--green)">plus robuste (8)</strong>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.45rem">
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.55rem .8rem;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)">
+            <span style="font-family:var(--display);font-size:.7rem;color:rgba(255,255,255,.2);min-width:20px">?</span>
+            <span style="font-family:var(--mono);font-size:.88rem;color:#fff">123456</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.55rem .8rem;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)">
+            <span style="font-family:var(--display);font-size:.7rem;color:rgba(255,255,255,.2);min-width:20px">?</span>
+            <span style="font-family:var(--mono);font-size:.88rem;color:#fff">password</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.55rem .8rem;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)">
+            <span style="font-family:var(--display);font-size:.7rem;color:rgba(255,255,255,.2);min-width:20px">?</span>
+            <span style="font-family:var(--mono);font-size:.88rem;color:#fff">Libreville2024</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.55rem .8rem;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)">
+            <span style="font-family:var(--display);font-size:.7rem;color:rgba(255,255,255,.2);min-width:20px">?</span>
+            <span style="font-family:var(--mono);font-size:.88rem;color:#fff">P@ssw0rd!</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.55rem .8rem;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)">
+            <span style="font-family:var(--display);font-size:.7rem;color:rgba(255,255,255,.2);min-width:20px">?</span>
+            <span style="font-family:var(--mono);font-size:.88rem;color:#fff">beni2003</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.55rem .8rem;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)">
+            <span style="font-family:var(--display);font-size:.7rem;color:rgba(255,255,255,.2);min-width:20px">?</span>
+            <span style="font-family:var(--mono);font-size:.88rem;color:#fff">Tr0pic@lF1sh!</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.55rem .8rem;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)">
+            <span style="font-family:var(--display);font-size:.7rem;color:rgba(255,255,255,.2);min-width:20px">?</span>
+            <span style="font-family:var(--mono);font-size:.88rem;color:#fff">j@imeLesM@ngues2024!</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.55rem .8rem;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)">
+            <span style="font-family:var(--display);font-size:.7rem;color:rgba(255,255,255,.2);min-width:20px">?</span>
+            <span style="font-family:var(--mono);font-size:.78rem;color:#fff">X#9kL$2mPq@7vNz!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CORRECTION -->
+      <div>
+        <div style="font-size:.68rem;letter-spacing:.2em;color:rgba(0,255,136,.35);margin-bottom:.6rem">CORRECTION — CLASSEMENT</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem">
+
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.5rem .8rem;border:1px solid rgba(255,68,102,.3);background:rgba(255,68,102,.06)">
+            <span style="font-family:var(--display);font-size:.85rem;font-weight:900;color:var(--red);min-width:20px">1</span>
+            <span style="font-family:var(--mono);font-size:.8rem;color:rgba(255,150,150,.9)">123456</span>
+            <span style="margin-left:auto;font-family:var(--body);font-size:.68rem;color:rgba(255,100,100,.6)">cracké en &lt;1 sec</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.5rem .8rem;border:1px solid rgba(255,68,102,.25);background:rgba(255,68,102,.05)">
+            <span style="font-family:var(--display);font-size:.85rem;font-weight:900;color:var(--red);min-width:20px">2</span>
+            <span style="font-family:var(--mono);font-size:.8rem;color:rgba(255,150,150,.9)">password</span>
+            <span style="margin-left:auto;font-family:var(--body);font-size:.68rem;color:rgba(255,100,100,.6)">top 10 mondial</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.5rem .8rem;border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.04)">
+            <span style="font-family:var(--display);font-size:.85rem;font-weight:900;color:var(--orange);min-width:20px">3</span>
+            <span style="font-family:var(--mono);font-size:.8rem;color:rgba(255,180,120,.9)">beni2003</span>
+            <span style="margin-left:auto;font-family:var(--body);font-size:.68rem;color:rgba(255,150,80,.6)">info personnelle</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.5rem .8rem;border:1px solid rgba(255,136,0,.2);background:rgba(255,136,0,.04)">
+            <span style="font-family:var(--display);font-size:.85rem;font-weight:900;color:var(--orange);min-width:20px">4</span>
+            <span style="font-family:var(--mono);font-size:.8rem;color:rgba(255,200,140,.9)">Libreville2024</span>
+            <span style="margin-left:auto;font-family:var(--body);font-size:.68rem;color:rgba(255,180,80,.6)">mot du dico + date</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.5rem .8rem;border:1px solid rgba(255,215,0,.2);background:rgba(255,215,0,.03)">
+            <span style="font-family:var(--display);font-size:.85rem;font-weight:900;color:var(--yellow);min-width:20px">5</span>
+            <span style="font-family:var(--mono);font-size:.8rem;color:rgba(255,235,150,.9)">P@ssw0rd!</span>
+            <span style="margin-left:auto;font-family:var(--body);font-size:.68rem;color:rgba(255,220,100,.6)">substitutions prévisibles</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.5rem .8rem;border:1px solid rgba(100,255,150,.2);background:rgba(100,255,150,.03)">
+            <span style="font-family:var(--display);font-size:.85rem;font-weight:900;color:#88ff99;min-width:20px">6</span>
+            <span style="font-family:var(--mono);font-size:.8rem;color:rgba(180,255,190,.9)">Tr0pic@lF1sh!</span>
+            <span style="margin-left:auto;font-family:var(--body);font-size:.68rem;color:rgba(150,255,160,.6)">12 chars, bon mix</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.5rem .8rem;border:1px solid rgba(0,255,136,.25);background:rgba(0,255,136,.05)">
+            <span style="font-family:var(--display);font-size:.85rem;font-weight:900;color:var(--green);min-width:20px">7</span>
+            <span style="font-family:var(--mono);font-size:.73rem;color:rgba(180,255,210,.9)">j@imeLesM@ngues2024!</span>
+            <span style="margin-left:auto;font-family:var(--body);font-size:.68rem;color:rgba(100,255,150,.6)">long + phrase</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:.8rem;padding:.5rem .8rem;border:1px solid rgba(0,255,136,.35);background:rgba(0,255,136,.08)">
+            <span style="font-family:var(--display);font-size:.85rem;font-weight:900;color:var(--green);text-shadow:0 0 8px var(--green);min-width:20px">8</span>
+            <span style="font-family:var(--mono);font-size:.78rem;color:var(--green)">X#9kL$2mPq@7vNz!</span>
+            <span style="margin-left:auto;font-family:var(--body);font-size:.68rem;color:rgba(0,255,136,.6)">aléatoire 16 chars ✅</span>
+          </div>
+
+        </div>
+        <div style="margin-top:.6rem;padding:.5rem .8rem;background:rgba(0,255,136,.03);border-left:2px solid var(--green);font-family:var(--body);font-size:.72rem;color:rgba(200,255,220,.6)">
+          💡 Le <strong style="color:#fff">n°7</strong> est presque aussi fort que le n°8 et beaucoup plus mémorable → <strong style="color:var(--green)">la phrase de passe est la meilleure approche humaine</strong>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 16 — CHIFFRES CLÉS ▓ -->
+  <div class="slide" data-index="15" data-qcm="15">
+    <div class="slide-tag">// 10 · Impact</div>
+    <h2>L'impact en chiffres</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;max-width:900px;width:100%;margin-bottom:1rem">
+      <div style="border:1px solid rgba(255,68,102,.3);background:rgba(255,68,102,.05);padding:1rem;text-align:center">
+        <div class="big-stat">92%</div>
+        <div class="big-stat-label">des attaques réussies<br>via ingénierie sociale</div>
+        <div style="margin-top:.6rem;font-family:var(--body);font-size:.72rem;color:rgba(220,180,180,.65);line-height:1.4;border-top:1px solid rgba(255,68,102,.1);padding-top:.5rem">
+          Cela signifie que les antivirus et firewalls ne suffisent pas. <strong style="color:#fff">L'humain reste la première porte d'entrée.</strong>
+        </div>
+      </div>
+      <div style="border:1px solid rgba(255,136,0,.3);background:rgba(255,136,0,.05);padding:1rem;text-align:center">
+        <div class="big-stat" style="color:var(--orange);text-shadow:0 0 20px var(--orange)">3.4B</div>
+        <div class="big-stat-label">emails de phishing<br>par jour dans le monde</div>
+        <div style="margin-top:.6rem;font-family:var(--body);font-size:.72rem;color:rgba(220,200,170,.65);line-height:1.4;border-top:1px solid rgba(255,136,0,.1);padding-top:.5rem">
+          Soit <strong style="color:#fff">39 000 par seconde</strong>. Même si 99% sont bloqués, des millions passent les filtres chaque jour.
+        </div>
+      </div>
+      <div style="border:1px solid rgba(255,215,0,.25);background:rgba(255,215,0,.04);padding:1rem;text-align:center">
+        <div class="big-stat" style="color:var(--yellow);text-shadow:0 0 20px var(--yellow)">97%</div>
+        <div class="big-stat-label">des utilisateurs ne savent pas<br>reconnaître un phishing sophistiqué</div>
+        <div style="margin-top:.6rem;font-family:var(--body);font-size:.72rem;color:rgba(220,215,170,.65);line-height:1.4;border-top:1px solid rgba(255,215,0,.1);padding-top:.5rem">
+          Vous êtes dans les <strong style="color:#fff">3% qui savent</strong> — après cette formation. C'est votre avantage.
+        </div>
+      </div>
+    </div>
+    <div class="card" style="max-width:900px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+        <div>
+          <div style="font-size:.65rem;color:rgba(255,68,102,.5);letter-spacing:.1em;margin-bottom:.4rem">COÛT ENTREPRISE</div>
+          <div style="font-family:var(--body);font-size:.8rem;color:rgba(220,200,200,.75);line-height:1.5">Un seul incident de phishing coûte en moyenne <strong style="color:#fff">$4.9 millions</strong> à une entreprise — incluant la réponse, les pertes et la réputation.</div>
+        </div>
+        <div>
+          <div style="font-size:.65rem;color:rgba(255,136,0,.5);letter-spacing:.1em;margin-bottom:.4rem">AFRIQUE / GABON</div>
+          <div style="font-family:var(--body);font-size:.8rem;color:rgba(220,210,190,.75);line-height:1.5">Fraudes Mobile Money par ingénierie sociale : <strong style="color:#fff">+200% depuis 2020</strong>. Des familles perdent leur épargne en quelques minutes.</div>
+        </div>
+        <div>
+          <div style="font-size:.65rem;color:rgba(0,255,136,.4);letter-spacing:.1em;margin-bottom:.4rem">BONNE NOUVELLE</div>
+          <div style="font-family:var(--body);font-size:.8rem;color:rgba(200,220,200,.75);line-height:1.5">La formation réduit le risque de clic sur un phishing de <strong style="color:#fff">70%</strong>. Ce que vous apprenez aujourd'hui a un impact direct et mesurable.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 17 — DISCUSSION ▓ -->
+  <div class="slide" data-index="16">
+    <div class="slide-tag">// 11 · Discussion</div>
+    <h2>Retour d'expérience 🎤</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;max-width:900px;width:100%">
+      <div class="card" style="padding:1.3rem 1.5rem">
+        <div style="font-size:.68rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.8rem">QUESTIONS OUVERTES — 10 MINUTES</div>
+        <ul class="bullets">
+          <li>Avez-vous reçu un SMS ou WhatsApp frauduleux ? Comment l'avez-vous <strong>identifié</strong> — ou pas ?</li>
+          <li>Connaissez-vous quelqu'un victime d'une arnaque Mobile Money ? Qu'est-ce qui s'est passé exactement ?</li>
+          <li>Si vous deviez <strong>attaquer</strong> votre propre entourage par ingénierie sociale — quelle émotion utiliseriez-vous et pourquoi ?</li>
+          <li>Est-ce qu'une <strong>bonne orthographe</strong> garantit qu'un email est légitime ? Pourquoi pas ?</li>
+          <li>Pourquoi selon vous <strong>les experts en cybersécurité</strong> eux-mêmes peuvent-ils être victimes ?</li>
+        </ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.7rem">
+        <div style="font-size:.68rem;letter-spacing:.2em;color:rgba(0,255,136,.35);margin-bottom:.2rem">CE QUE CES QUESTIONS RÉVÈLENT</div>
+        <div style="padding:.8rem 1rem;border:1px solid rgba(255,215,0,.15);background:rgba(255,215,0,.03)">
+          <div style="font-family:var(--display);font-size:.68rem;color:var(--yellow);margin-bottom:.3rem">LA VRAIE LEÇON</div>
+          <div style="font-family:var(--body);font-size:.78rem;color:rgba(220,215,180,.75);line-height:1.5">L'ingénierie sociale fonctionne parce que nous sommes <strong style="color:#fff">humains</strong>. La peur, l'urgence et la confiance ne sont pas des faiblesses — ce sont des qualités détournées.</div>
+        </div>
+        <div style="padding:.8rem 1rem;border:1px solid rgba(0,255,136,.15);background:rgba(0,255,136,.03)">
+          <div style="font-family:var(--display);font-size:.68rem;color:var(--green);margin-bottom:.3rem">CE QUI CHANGE APRÈS CETTE SESSION</div>
+          <div style="font-family:var(--body);font-size:.78rem;color:rgba(200,220,200,.75);line-height:1.5">Vous avez maintenant un <strong style="color:#fff">cadre de réflexion</strong>. Avant de cliquer, vous allez vous poser des questions. Ce réflexe seul peut vous sauver.</div>
+        </div>
+        <div class="terminal" style="font-size:.74rem">
+          <span class="term-prompt">root@gaboctf:~$ </span>
+          <span class="term-comment">// Savoir comment fonctionne une attaque</span><br>
+          <span class="term-prompt">root@gaboctf:~$ </span>
+          <span class="term-comment">// c'est la meilleure défense qui existe</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▓ SLIDE 18 — RÉCAP + PREVIEW J3 ▓ -->
+  <div class="slide" data-index="17">
+    <div class="slide-tag">// Récap J2 · Preview J3</div>
+    <h2>J2 — Ce qu'on a vu</h2>
+    <div class="grid2" style="max-width:860px">
+      <div class="card green">
+        <div style="font-size:.7rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.8rem">✅ ACQUIS AUJOURD'HUI</div>
+        <ul class="bullets">
+          <li class="ok">Phishing, Smishing, Vishing, Spear Phishing</li>
+          <li class="ok">Pretexting et mise en scène de l'attaque</li>
+          <li class="ok">Anatomie d'un email de phishing</li>
+          <li class="ok">Les 6 red flags à repérer</li>
+          <li class="ok">Les réflexes de défense</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div style="font-size:.7rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.8rem">⚡ DEMAIN — J3</div>
+        <ul class="bullets">
+          <li><strong>Les fondations techniques</strong></li>
+          <li>Modèle OSI, ports, protocoles</li>
+          <li>Wireshark — capturer et lire du trafic réseau</li>
+          <li>Nmap — scanner ce qui est exposé</li>
+          <li>Labo : vous mettez les mains dans le réseau</li>
+        </ul>
+        <div style="margin-top:.8rem">
+          <span class="pill pill-green">🔧 Hands-on technique</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:1.5rem;text-align:center">
+      <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+      <div style="font-size:.7rem;color:rgba(0,255,136,.3);margin-top:.8rem;letter-spacing:.1em">
+        SooPHA Masterclass × Cybersécurité — Gabon 2026
+      </div>
+    </div>
+  </div>
+
+</div><!-- /slides -->
+
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div id="slide-counter">01 / 18</div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+var cur=document.getElementById('cursor'),dot=document.getElementById('cursor-dot');
+document.addEventListener('mousemove',function(e){
+  cur.style.left=(e.clientX-10)+'px';cur.style.top=(e.clientY-10)+'px';
+  dot.style.left=e.clientX+'px';dot.style.top=e.clientY+'px';
+});
+
+var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+resize();window.addEventListener('resize',resize);
+var chars='アイウエオ01PHISH{}FLAG10HACK';
+var fs=13,drops;
+function init(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+init();window.addEventListener('resize',init);
+setInterval(function(){
+  ctx.fillStyle='rgba(2,12,6,0.05)';ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle='rgba(255,68,102,0.7)';ctx.font=fs+'px monospace';
+  drops.forEach(function(y,i){
+    ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+    if(y*fs>c.height&&Math.random()>.975)drops[i]=0;
+    drops[i]++;
+  });
+},55);
+
+var current=1,total=18;
+function navigate(dir){
+  var next=current+dir;
+  if(next<1||next>total)return;
+  var cs=document.getElementById('slide-'+current);
+  var ns=document.getElementById('slide-'+next);
+  cs.classList.remove('active');cs.classList.add('exit');
+  setTimeout(function(){cs.classList.remove('exit');},450);
+  ns.classList.add('active');
+  current=next;updateUI();
+}
+function updateUI(){
+  document.getElementById('slide-counter').textContent=String(current).padStart(2,'0')+' / '+String(total).padStart(2,'0');
+  document.getElementById('prev-btn').disabled=current===1;
+  document.getElementById('next-btn').disabled=current===total;
+  document.getElementById('progress-fill').style.width=((current/total)*100)+'%';
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight'||e.key===' ')navigate(1);
+  if(e.key==='ArrowLeft')navigate(-1);
+});
+var tx=0;
+document.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)navigate(dx<0?1:-1);});
+updateUI();
+</script>
+</body>
+</html</div><!-- /slides -->
+
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Formation terminée !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 18</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+var QCM = {
+  2: { question:"L'ingénierie sociale exploite principalement quelle faille ?", options:["Les failles logicielles des systèmes","La psychologie humaine et la manipulation","Les erreurs de configuration réseau","Les mots de passe faibles"], correct:1, explanation:"L'ingénierie sociale cible les humains, pas les machines. 90% des cyberattaques commencent par de la manipulation humaine." },
+  3: { question:"Qu'est-ce que le 'Smishing' ?", options:["Un phishing par email","Un phishing par SMS","Un phishing par téléphone","Un phishing par réseaux sociaux"], correct:1, explanation:"Smishing = SMS + Phishing. Les attaquants envoient des SMS frauduleux se faisant passer pour votre banque, opérateur ou service de livraison." },
+  5: { question:"Dans un email de phishing, quel est le RED FLAG le plus immédiat à vérifier ?", options:["Le contenu du message","L'adresse email de l'expéditeur","La date d'envoi","Le nombre de destinataires"], correct:1, explanation:"L'adresse email de l'expéditeur est le premier indicateur. Les attaquants utilisent des domaines similaires mais pas identiques (ex: support@orange-gabon.ml au lieu de @orange.ga)." },
+  6: { question:"Parmi ces éléments, lequel est un signal d'alarme (red flag) d'un phishing ?", options:["L'email contient votre prénom","L'email crée une urgence ('Votre compte sera fermé dans 24h')","L'email vient d'une adresse connue","L'email contient le logo officiel de l'entreprise"], correct:1, explanation:"La création d'urgence artificielle est une technique classique d'ingénierie sociale. Elle pousse à agir sans réfléchir." },
+  7: { question:"Dans le SIM Swapping, que fait concrètement l'attaquant ?", options:["Il pirate votre téléphone à distance","Il convainc votre opérateur de transférer votre numéro sur sa carte SIM","Il clône votre carte SIM physiquement","Il intercepte vos SMS via le réseau"], correct:1, explanation:"Le SIM Swapping consiste à appeler l'opérateur en se faisant passer pour la victime et demander le transfert du numéro. L'attaquant reçoit ensuite tous vos codes de double authentification." },
+  8: { question:"Qu'est-ce que le 'pretexting' dans une attaque d'ingénierie sociale ?", options:["Envoyer un email frauduleux","Créer un scénario crédible (fausse identité, faux contexte) pour manipuler la victime","Intercepter des communications","Deviner un mot de passe"], correct:1, explanation:"Le pretexting consiste à créer un prétexte convaincant : se faire passer pour un technicien, un collègue, un agent de banque pour obtenir des informations ou un accès." },
+  12: { question:"Quelle est la meilleure défense contre le phishing ?", options:["Un antivirus à jour","La vérification systématique de l'expéditeur et ne jamais cliquer sur les liens suspects","Un pare-feu puissant","Changer son mot de passe régulièrement"], correct:1, explanation:"La vigilance humaine reste la meilleure défense. Vérifier l'expéditeur, ne pas cliquer sur les liens (aller directement sur le site), et appeler pour confirmer en cas de doute." },
+  13: { question:"Qu'est-ce qu'un mot de passe 'fort' ?", options:["Un mot du dictionnaire avec une majuscule","Une suite de chiffres mémorable comme '12345678'","Une combinaison longue de lettres, chiffres et symboles sans logique prévisible","Le nom de votre animal de compagnie avec votre date de naissance"], correct:2, explanation:"Un mot de passe fort est long (12+ caractères), mélange majuscules, minuscules, chiffres et symboles, et ne contient aucune information personnelle prévisible." },
+  15: { question:"Combien de temps faut-il à un ordinateur pour craquer un mot de passe de 8 caractères uniquement en chiffres ?", options:["Plusieurs années","Plusieurs mois","Quelques jours","Moins d'une seconde"], correct:3, explanation:"Un mot de passe de 8 chiffres (100 millions de combinaisons) est craqué en moins d'une seconde avec un ordinateur moderne. La longueur ET la complexité sont essentielles." }
+};
+
+var COURSE_ID = 'j2';
+var TOTAL = 18;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  var username = (profile && profile.username) || 'user';
+  document.getElementById('tb-username').textContent = '@' + username;
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  var answered = Object.keys(qcmAnswered).length;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(answered+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide];
+  var correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var total=Object.keys(QCM).length, correctCount=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+      var pct=(correctCount/total)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200);
+      return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu correctement. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+
+function showCompletion(pct) {
+  var total=Object.keys(QCM).length, correct=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=70){ document.getElementById('comp-icon').textContent='🏆'; document.getElementById('comp-title').textContent='Excellent !'; document.getElementById('comp-sub').textContent=correct+' / '+total+' bonnes réponses. Tu maîtrises l'ingénierie sociale !'; }
+  else { document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='Formation terminée'; document.getElementById('comp-sub').textContent=correct+' / '+total+' bonnes réponses. Révise les slides pour progresser.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='アイウエオ01ABCDEF{}CTFFlag',fs=13,drops;
+  function init(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  init(); window.addEventListener('resize',init);
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,12,6,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#00ff88';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+
+init();
+</script>
+</body>
+</html>
