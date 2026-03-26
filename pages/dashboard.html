@@ -261,18 +261,56 @@
         </a>
 
         <!-- COMING SOON -->
-        <div class="course-card-soon">
-          <div class="course-card-soon-icon">🌐</div>
-          <div class="course-card-soon-title">Web Hacking<br><span style="font-size:0.6rem;opacity:0.5">Bientôt</span></div>
-        </div>
-        <div class="course-card-soon">
-          <div class="course-card-soon-icon">🔐</div>
-          <div class="course-card-soon-title">Cryptographie<br><span style="font-size:0.6rem;opacity:0.5">Bientôt</span></div>
-        </div>
-        <div class="course-card-soon">
-          <div class="course-card-soon-icon">🕵️</div>
-          <div class="course-card-soon-title">OSINT<br><span style="font-size:0.6rem;opacity:0.5">Bientôt</span></div>
-        </div>
+        <a href="web.html" class="card course-card" id="course-web">
+          <div class="course-number">04</div>
+          <div class="course-day">// Web Hacking</div>
+          <div class="course-title">Web Hacking</div>
+          <div class="course-desc">SQLi, XSS, OWASP Top 10, Burp Suite. Les vulnérabilités web les plus critiques.</div>
+          <div class="course-tags">
+            <span class="badge badge-red">🌐 Web</span>
+            <span class="badge badge-blue">11 slides</span>
+            <span class="badge badge-yellow">7 QCM</span>
+          </div>
+          <div class="course-progress" id="prog-web" style="display:none">
+            <div class="course-progress-label"><span id="prog-web-label">En cours</span><span id="prog-web-score"></span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-web-fill" style="width:0%"></div></div>
+          </div>
+          <div id="cta-web" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+        </a>
+
+        <a href="crypto.html" class="card course-card" id="course-crypto">
+          <div class="course-number">05</div>
+          <div class="course-day">// Cryptographie</div>
+          <div class="course-title">Cryptographie Appliquée</div>
+          <div class="course-desc">AES, RSA, hachage, PKI, TLS. La science qui protège toutes vos données.</div>
+          <div class="course-tags">
+            <span class="badge badge-yellow">🔐 Crypto</span>
+            <span class="badge badge-blue">10 slides</span>
+            <span class="badge badge-yellow">8 QCM</span>
+          </div>
+          <div class="course-progress" id="prog-crypto" style="display:none">
+            <div class="course-progress-label"><span id="prog-crypto-label">En cours</span><span id="prog-crypto-score"></span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-crypto-fill" style="width:0%"></div></div>
+          </div>
+          <div id="cta-crypto" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+        </a>
+
+        <a href="osint.html" class="card course-card" id="course-osint">
+          <div class="course-number">06</div>
+          <div class="course-day">// OSINT</div>
+          <div class="course-title">OSINT & Reconnaissance</div>
+          <div class="course-desc">Google Dorks, WHOIS, Shodan, réseaux sociaux. Collecter les infos publiques comme un pro.</div>
+          <div class="course-tags">
+            <span class="badge badge-green">🕵️ OSINT</span>
+            <span class="badge badge-blue">10 slides</span>
+            <span class="badge badge-yellow">8 QCM</span>
+          </div>
+          <div class="course-progress" id="prog-osint" style="display:none">
+            <div class="course-progress-label"><span id="prog-osint-label">En cours</span><span id="prog-osint-score"></span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-osint-fill" style="width:0%"></div></div>
+          </div>
+          <div id="cta-osint" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+        </a>
 
       </div>
     </div>
@@ -367,7 +405,7 @@ async function init() {
 
   // Course progress
   var completions = await getCompletedCourses(currentUser.id);
-  var courses = ['j1','j2','j3'];
+  var courses = ['j1','j2','j3','web','crypto','osint'];
   courses.forEach(function(id) {
     var comp = completions.find(function(c){ return c.course_id === id; });
     if (comp) {

@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cryptographie Appliquée · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html, body { overflow: hidden; height: 100%; }
+body::before { height: 3px; }
+#topbar { position:fixed; top:3px; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,4,10,0.97); border-bottom:1px solid rgba(255,215,0,.18); backdrop-filter:blur(12px); font-size:.65rem; color:rgba(255,215,0,.4); }
+.tb-left { display:flex; gap:1.5rem; align-items:center; }
+.tb-right { display:flex; gap:1.2rem; align-items:center; }
+.tb-back { color:rgba(255,215,0,.5); text-decoration:none; font-size:.65rem; letter-spacing:.08em; transition:color .2s; }
+.tb-back:hover { color:#ffd700; opacity:1; }
+.tb-dot { width:6px; height:6px; background:#ffd700; border-radius:50%; display:inline-block; animation:blink 1.4s infinite; margin-right:.3rem; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.tb-user { font-family:var(--mono); font-size:.62rem; color:rgba(255,215,0,.4); }
+#progress-top { position:fixed; top:34px; left:0; right:0; z-index:200; height:2px; background:rgba(255,215,0,.06); }
+#progress-fill { height:100%; background:#ffd700; box-shadow:0 0 8px #ffd700; transition:width .5s ease; }
+#scanlines { position:fixed; inset:0; z-index:1; pointer-events:none; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px); }
+#vignette  { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%); }
+canvas#matrix { position:fixed; inset:0; z-index:0; opacity:.04; pointer-events:none; }
+#slides { position:fixed; inset:0; z-index:10; padding-top:36px; padding-bottom:44px; overflow:hidden; }
+.slide { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:1.5rem 4rem; opacity:0; pointer-events:none; transition:opacity .4s ease,transform .4s ease; transform:translateX(40px); overflow-y:auto; }
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.exit   { opacity:0; transform:translateX(-40px); }
+.gabon-bar { display:flex; height:3px; width:60px; border-radius:2px; overflow:hidden; margin:.6rem 0; }
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(255,215,0,.35); text-transform:uppercase; margin-bottom:.5rem; }
+.slide h1 { font-family:var(--display)!important; font-weight:900!important; font-size:clamp(1.8rem,3.5vw,2.8rem)!important; color:#fff!important; text-align:center; letter-spacing:.1em; line-height:1.15; margin-bottom:.4rem!important; text-shadow:0 0 40px #ffd700,0 0 80px rgba(255,215,0,.2); }
+.slide h2 { font-family:var(--display)!important; font-weight:700!important; font-size:clamp(1.1rem,2vw,1.7rem)!important; color:#ffd700!important; letter-spacing:.08em; margin-bottom:1rem!important; }
+.slide h3 { font-family:var(--display)!important; font-weight:400!important; font-size:clamp(.8rem,1.2vw,1rem)!important; color:rgba(255,215,0,.55)!important; letter-spacing:.2em; text-transform:uppercase; margin-bottom:1.5rem!important; }
+.card { background:rgba(2,8,18,.88); border:1px solid rgba(255,215,0,.18); border-radius:2px; padding:1.4rem 1.8rem; position:relative; backdrop-filter:blur(10px); max-width:880px; width:100%; }
+.card::before { content:''; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:2px solid #ffd700; border-left:2px solid #ffd700; }
+.card::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:2px solid #ffd700; border-right:2px solid #ffd700; }
+.bullets { list-style:none; display:flex; flex-direction:column; gap:.55rem; }
+.bullets li { display:flex; align-items:flex-start; gap:.7rem; font-family:var(--body); font-size:clamp(.8rem,1.3vw,.95rem); color:rgba(220,230,255,.85); line-height:1.5; animation:fadeIn .4s ease both; }
+.bullets li::before { content:'▶'; color:#ffd700; font-size:.55rem; margin-top:.35rem; flex-shrink:0; }
+.bullets li strong { color:#fff; }
+.bullets li.ok::before { content:'✅'; font-size:.7rem; }
+.bullets li.warn::before { content:'⚠'; color:#ffd700; font-size:.7rem; }
+.bullets li.danger::before { content:'🔴'; font-size:.7rem; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; max-width:880px; width:100%; }
+.pill { display:inline-block; padding:.25rem .7rem; font-size:.65rem; letter-spacing:.06em; border-radius:2px; font-family:var(--mono); }
+.pill-green  { background:rgba(0,255,136,.1);  border:1px solid rgba(0,255,136,.3);  color:#00ff88; }
+.pill-red    { background:rgba(255,68,102,.1); border:1px solid rgba(255,68,102,.3); color:#ff4466; }
+.pill-yellow { background:rgba(255,215,0,.08); border:1px solid rgba(255,215,0,.3);  color:#ffd700; }
+.pill-blue   { background:rgba(0,170,255,.08); border:1px solid rgba(0,170,255,.3);  color:#00aaff; }
+.pill-orange { background:rgba(255,136,0,.1);  border:1px solid rgba(255,136,0,.3);  color:#ff8800; }
+.pill-purple { background:rgba(200,136,255,.1);border:1px solid rgba(200,136,255,.3);color:#cc88ff; }
+.quote { border-left:3px solid #ffd700; padding:.7rem 1rem; background:rgba(255,215,0,.04); font-family:var(--body); font-style:italic; font-size:clamp(.9rem,1.5vw,1.15rem); color:#e0e8ff; line-height:1.6; }
+.terminal { background:rgba(0,0,4,.7); border:1px solid rgba(255,215,0,.15); border-left:3px solid #ffd700; padding:.8rem 1.1rem; font-family:var(--mono); font-size:.78rem; color:rgba(255,215,0,.8); line-height:1.8; }
+.term-prompt { color:#ffd700; }
+.term-out    { color:rgba(255,255,255,.5); }
+.hdiv { display:flex; align-items:center; gap:1rem; color:rgba(255,215,0,.2); font-size:.62rem; letter-spacing:.2em; margin:.8rem 0; }
+.hdiv::before,.hdiv::after { content:''; flex:1; height:1px; background:rgba(255,215,0,.12); }
+@keyframes glitch {
+  0%,90%,100%{text-shadow:0 0 40px #ffd700,0 0 80px rgba(255,215,0,.2)}
+  91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}
+  93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}
+  95%{text-shadow:0 0 40px #ffd700;transform:translate(0)}
+}
+.glitch { animation:glitch 7s infinite; }
+#qcm-overlay { position:fixed; inset:0; z-index:300; background:rgba(2,4,12,.97); display:none; flex-direction:column; align-items:center; justify-content:center; padding:2rem; }
+#qcm-overlay.show { display:flex; animation:fadeInOv .3s ease; }
+@keyframes fadeInOv { from{opacity:0} to{opacity:1} }
+.qcm-box { max-width:680px; width:100%; background:rgba(2,8,18,.97); border:1px solid rgba(255,215,0,.25); border-radius:2px; padding:2.5rem; position:relative; box-shadow:0 0 40px rgba(255,215,0,.1); }
+.qcm-box::before { content:''; position:absolute; top:-1px; left:-1px; width:18px; height:18px; border-top:2px solid #ffd700; border-left:2px solid #ffd700; }
+.qcm-box::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:18px; height:18px; border-bottom:2px solid #ffd700; border-right:2px solid #ffd700; }
+.qcm-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid rgba(255,215,0,.15); }
+.qcm-label { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(255,215,0,.4); text-transform:uppercase; }
+.qcm-prog  { font-family:var(--mono); font-size:.65rem; color:rgba(255,215,0,.35); }
+.qcm-saving { font-family:var(--mono); font-size:.62rem; color:rgba(255,215,0,.35); margin-bottom:.5rem; display:none; }
+.qcm-saving.show { display:block; }
+.qcm-question { font-family:var(--display); font-size:clamp(.9rem,1.8vw,1.1rem); font-weight:700; color:#fff; line-height:1.4; margin-bottom:1.8rem; }
+.qcm-options { display:flex; flex-direction:column; gap:.65rem; margin-bottom:1.5rem; }
+.qcm-option { display:flex; align-items:flex-start; gap:.9rem; padding:.8rem 1.1rem; background:rgba(0,0,8,.3); border:1px solid rgba(255,215,0,.1); cursor:pointer; border-radius:2px; transition:all .15s; font-family:var(--body); font-size:.88rem; color:rgba(200,210,255,.75); line-height:1.4; }
+.qcm-option:hover:not(.disabled) { border-color:rgba(255,215,0,.35); background:rgba(255,215,0,.06); color:rgba(220,230,255,.95); }
+.qcm-option.correct  { border-color:#ffd700!important; background:rgba(255,215,0,.12)!important; color:#ffd700!important; }
+.qcm-option.wrong    { border-color:#ff4466!important; background:rgba(255,68,102,.08)!important; color:#ff4466!important; }
+.qcm-option.disabled { cursor:default; pointer-events:none; }
+.option-letter { font-family:var(--display); font-size:.68rem; font-weight:700; color:rgba(255,215,0,.4); min-width:18px; flex-shrink:0; margin-top:.1rem; }
+.qcm-option.correct .option-letter,.qcm-option.wrong .option-letter { color:inherit; }
+.qcm-feedback { padding:.8rem 1rem; border-radius:2px; font-family:var(--mono); font-size:.8rem; line-height:1.5; display:none; margin-bottom:1.2rem; }
+.qcm-feedback.correct { background:rgba(255,215,0,.07); border:1px solid rgba(255,215,0,.2); color:rgba(255,215,0,.9); }
+.qcm-feedback.wrong   { background:rgba(255,68,102,.06); border:1px solid rgba(255,68,102,.2); color:rgba(255,100,130,.9); }
+.qcm-btn { font-family:var(--display); font-size:.75rem; font-weight:700; letter-spacing:.12em; padding:.7rem 1.8rem; background:#ffd700; color:var(--bg); border:none; cursor:pointer; clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition:all .2s; text-transform:uppercase; display:none; }
+.qcm-btn.show { display:inline-block; }
+#completion-modal { position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; padding:2rem; }
+#completion-modal.show { display:flex; animation:fadeInOv .3s ease; }
+.completion-box { max-width:500px; width:100%; background:rgba(2,8,18,.98); border:1px solid rgba(255,215,0,.3); border-radius:2px; padding:3rem 2.5rem; text-align:center; box-shadow:0 0 60px rgba(255,215,0,.15); position:relative; }
+.completion-box::before { content:''; position:absolute; top:-1px; left:-1px; width:20px; height:20px; border-top:2px solid #ffd700; border-left:2px solid #ffd700; }
+.completion-icon  { font-size:4rem; margin-bottom:1rem; }
+.completion-title { font-family:var(--display); font-size:1.5rem; font-weight:900; color:#fff; margin-bottom:.5rem; }
+.completion-score { font-family:var(--display); font-size:3.5rem; font-weight:900; color:#ffd700; text-shadow:0 0 30px #ffd700; margin:1rem 0; }
+.completion-sub   { font-family:var(--mono); font-size:.78rem; color:rgba(255,215,0,.5); margin-bottom:.5rem; line-height:1.6; }
+.completion-saved { font-family:var(--mono); font-size:.68rem; color:rgba(255,215,0,.35); margin-bottom:1.5rem; }
+.completion-btn { font-family:var(--display); font-size:.78rem; font-weight:700; letter-spacing:.12em; padding:.8rem 1.8rem; text-decoration:none; display:inline-block; clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); cursor:pointer; border:none; margin:.3rem; text-transform:uppercase; transition:all .2s; }
+.completion-btn-primary   { background:#ffd700; color:var(--bg); }
+.completion-btn-primary:hover { box-shadow:0 0 20px rgba(255,215,0,.5); opacity:1; }
+.completion-btn-secondary { background:transparent; color:#ffd700; border:1px solid rgba(255,215,0,.3)!important; clip-path:none; border-radius:2px; }
+#bottombar { position:fixed; bottom:0; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,4,12,.97); border-top:1px solid rgba(255,215,0,.15); backdrop-filter:blur(12px); }
+.nav-btn { background:transparent; border:1px solid rgba(255,215,0,.2); color:rgba(255,215,0,.55); padding:.32rem .9rem; font-family:var(--mono); font-size:.65rem; cursor:pointer; transition:all .2s; clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%); }
+.nav-btn:hover { border-color:#ffd700; color:#ffd700; background:rgba(255,215,0,.05); }
+.nav-btn:disabled { opacity:.2; cursor:not-allowed; }
+#slide-counter { font-family:var(--display); font-size:.72rem; color:#ffd700; }
+.qcm-indicator { font-family:var(--mono); font-size:.62rem; color:rgba(255,215,0,.5); letter-spacing:.08em; }
+@media (max-width:768px) { .slide { padding:1rem 1.2rem; } .grid2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>Cryptographie Appliquée</span>
+  </div>
+  <div class="tb-right">
+    <span class="tb-user" id="tb-username"></span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+<div id="slides">
+
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// Cryptographie Appliquée</div>
+  <h1 class="glitch">CRYPTOGRAPHIE</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>La science du secret</h3>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin-top:.8rem">
+    <span class="pill pill-yellow">🔐 Chiffrement</span>
+    <span class="pill pill-blue">🔑 RSA / AES</span>
+    <span class="pill pill-green">🧮 Hachage</span>
+    <span class="pill pill-purple">📜 PKI & SSL/TLS</span>
+  </div>
+  <div style="margin-top:1.5rem" class="terminal"><span class="term-prompt">crypto@learn:~$ </span><span class="term-out">// "Deux types d'entreprises : celles qui ont été hackées, et celles qui ne le savent pas encore."</span></div>
+  <div style="margin-top:1.5rem;font-size:.68rem;color:rgba(255,215,0,.25);letter-spacing:.15em">← → POUR NAVIGUER</div>
+</div>
+
+<div class="slide" data-index="1">
+  <div class="slide-tag">// 01 · Pourquoi chiffrer</div>
+  <h2>Pourquoi la cryptographie est partout ?</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.6rem">🎯 USAGES DU QUOTIDIEN</div>
+      <ul class="bullets">
+        <li>Ton <strong>HTTPS</strong> (le cadenas du navigateur)</li>
+        <li>Tes <strong>messages WhatsApp</strong> (chiffrement de bout en bout)</li>
+        <li>Ton <strong>paiement Mobile Money</strong> (AES, TLS)</li>
+        <li>Tes <strong>mots de passe en base de données</strong> (hachage)</li>
+        <li>La <strong>signature électronique</strong> des documents</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">❌ SANS CRYPTOGRAPHIE</div>
+      <ul class="bullets">
+        <li class="danger">Tes mots de passe lisibles par n'importe qui sur le réseau</li>
+        <li class="danger">Tes transactions bancaires interceptables</li>
+        <li class="danger">N'importe qui peut modifier tes messages en transit</li>
+        <li class="danger">Impossible de vérifier l'identité d'un serveur</li>
+      </ul>
+      <div class="quote" style="margin-top:.8rem;font-size:.82rem">La cryptographie est le <strong style="color:#ffd700">fondement de la confiance numérique</strong>.</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="2" data-qcm="2">
+  <div class="slide-tag">// 02 · Chiffrement Symétrique</div>
+  <h2 style="color:#ffd700!important">Chiffrement Symétrique</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.6rem">🔑 PRINCIPE</div>
+      <div style="font-family:var(--body);font-size:.82rem;color:rgba(230,220,180,.8);line-height:1.5;margin-bottom:.8rem"><strong>Une seule clé</strong> pour chiffrer ET déchiffrer. Comme un coffre-fort avec une seule clé.</div>
+      <div class="terminal" style="font-size:.72rem">
+        <span class="term-prompt">Texte clair :</span> <span class="term-out">Bonjour</span><br>
+        <span class="term-prompt">+ Clé AES  :</span> <span style="color:#ffd700">X7k9Pm2Q</span><br>
+        <span class="term-prompt">= Chiffré  :</span> <span style="color:#ffd700">a3F8#Lp!qR</span><br>
+        <span class="term-prompt">Déchiffre  :</span> <span style="color:#ffd700">même clé → Bonjour</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.6rem">📊 AES — LE STANDARD</div>
+      <ul class="bullets">
+        <li><strong>AES-128, AES-192, AES-256</strong> — taille de la clé en bits</li>
+        <li>AES-256 = <strong>impossible à craquer</strong> par force brute actuellement</li>
+        <li>Utilisé dans : <strong>WiFi (WPA2), TLS, chiffrement de disques</strong></li>
+        <li>Très <strong>rapide</strong> — idéal pour chiffrer de grands volumes</li>
+      </ul>
+      <div style="margin-top:.8rem;font-family:var(--body);font-size:.78rem;color:rgba(255,200,100,.6)">⚠️ Problème : comment partager la clé de façon sécurisée ?</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="3" data-qcm="3">
+  <div class="slide-tag">// 03 · Chiffrement Asymétrique</div>
+  <h2 style="color:#00aaff!important">Chiffrement Asymétrique</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,170,255,.4);margin-bottom:.6rem">🗝️ PAIRE DE CLÉS</div>
+      <div style="font-family:var(--body);font-size:.82rem;color:rgba(200,220,255,.8);line-height:1.5;margin-bottom:.8rem"><strong>Deux clés</strong> mathématiquement liées : une <strong style="color:#fff">publique</strong> (partageable) et une <strong style="color:#fff">privée</strong> (secrète).</div>
+      <div class="terminal" style="font-size:.72rem">
+        <span class="term-prompt">Alice publie :</span> <span style="color:#00aaff">clé publique 🔓</span><br>
+        <span class="term-prompt">Bob chiffre  :</span> <span class="term-out">Message + clé publique Alice → Chiffré</span><br>
+        <span class="term-prompt">Alice déchif.:</span> <span style="color:#00aaff">Chiffré + clé privée Alice → Message</span><br>
+        <span style="color:#00aaff">Seule Alice peut lire — même Bob ne peut pas !</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,170,255,.4);margin-bottom:.6rem">⚡ RSA & USAGES</div>
+      <ul class="bullets">
+        <li><strong>RSA-2048 / RSA-4096</strong> — standard actuel</li>
+        <li>Utilisé pour <strong>l'échange de clés TLS</strong> (HTTPS)</li>
+        <li><strong>Signatures numériques</strong> — prouver l'identité</li>
+        <li>Plus <strong>lent</strong> que le symétrique → hybride en pratique</li>
+      </ul>
+      <div class="hdiv">EN PRATIQUE — TLS</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(200,220,255,.6)">RSA échange une clé AES → AES chiffre les données. Le meilleur des deux mondes.</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="4" data-qcm="4">
+  <div class="slide-tag">// 04 · Hachage</div>
+  <h2>Fonctions de hachage — L'empreinte digitale</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.6rem">🧮 DÉFINITION</div>
+      <div style="font-family:var(--body);font-size:.82rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.8rem">Une fonction de hachage transforme n'importe quelle donnée en une <strong>empreinte de taille fixe</strong>, non réversible.</div>
+      <div class="terminal" style="font-size:.72rem">
+        <span class="term-prompt">SHA-256("Bonjour") = </span><br>
+        <span style="color:#00ff88">8b41fc2e1f2e50d2...</span><br><br>
+        <span class="term-prompt">SHA-256("bonjour") = </span><br>
+        <span style="color:#00ff88">44f8b9c3d2a1e7f6...</span><br>
+        <span class="term-out">← 1 lettre différente = hash totalement différent</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.6rem">📊 USAGES & ALGOS</div>
+      <ul class="bullets">
+        <li><strong>Mots de passe</strong> — stockés hashés, jamais en clair (bcrypt, Argon2)</li>
+        <li><strong>Intégrité des fichiers</strong> — vérifier qu'un fichier n'a pas été modifié</li>
+        <li><strong>Signatures numériques</strong> — signer le hash, pas le fichier entier</li>
+      </ul>
+      <div style="margin-top:.8rem;display:flex;gap:.4rem;flex-wrap:wrap">
+        <span class="pill pill-red" style="font-size:.6rem">❌ MD5 — cassé</span>
+        <span class="pill pill-yellow" style="font-size:.6rem">⚠️ SHA-1 — déprécié</span>
+        <span class="pill pill-green" style="font-size:.6rem">✅ SHA-256 — sûr</span>
+        <span class="pill pill-green" style="font-size:.6rem">✅ bcrypt — mots de passe</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="5" data-qcm="5">
+  <div class="slide-tag">// 05 · PKI & Certificats SSL/TLS</div>
+  <h2>PKI — Infrastructure à Clés Publiques</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">🏛️ C'EST QUOI LA PKI</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(220,200,255,.8);line-height:1.5;margin-bottom:.8rem">Un système qui <strong>authentifie l'identité des entités numériques</strong> grâce à des certificats signés par des autorités de confiance (CA).</div>
+      <ul class="bullets">
+        <li><strong>CA (Certificate Authority)</strong> — DigiCert, Let's Encrypt, etc.</li>
+        <li><strong>Certificat</strong> — contient la clé publique + identité vérifiée</li>
+        <li><strong>Chaîne de confiance</strong> — Root CA → Intermediate CA → Site</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">🔒 TLS EN PRATIQUE (HTTPS)</div>
+      <div style="font-family:var(--body);font-size:.78rem;color:rgba(220,200,255,.8);line-height:1.5;margin-bottom:.7rem">Quand tu vas sur https://soopha-learn.com :</div>
+      <div class="terminal" style="font-size:.7rem">
+        <span class="term-prompt">1. </span><span class="term-out">Serveur envoie son certificat</span><br>
+        <span class="term-prompt">2. </span><span class="term-out">Browser vérifie la signature du CA</span><br>
+        <span class="term-prompt">3. </span><span class="term-out">Échange de clé AES via RSA</span><br>
+        <span class="term-prompt">4. </span><span style="color:#cc88ff">Communication chiffrée AES ✅</span>
+      </div>
+      <div style="margin-top:.8rem;font-family:var(--body);font-size:.75rem;color:rgba(220,200,255,.6)">Let's Encrypt = CA gratuit utilisé par 300M+ de sites dont soopha-learn.com</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="6" data-qcm="6">
+  <div class="slide-tag">// 06 · Attaques Cryptographiques</div>
+  <h2>Comment casser la cryptographie ?</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;max-width:900px;width:100%">
+    <div class="card" style="padding:.9rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#ff4466;margin-bottom:.4rem">💪 BRUTE FORCE</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,200,.7);line-height:1.4;margin-bottom:.4rem">Tester toutes les combinaisons possibles. Efficace sur les mots de passe courts.</div>
+      <div style="font-size:.6rem;color:rgba(255,68,102,.4)">8 chiffres = &lt;1 seconde. 12 chars mixtes = des siècles.</div>
+    </div>
+    <div class="card" style="padding:.9rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#ff8800;margin-bottom:.4rem">📚 DICTIONNAIRE</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,180,.7);line-height:1.4;margin-bottom:.4rem">Tester des listes de mots de passe courants. "password123", "azerty", prénoms...</div>
+      <div style="font-size:.6rem;color:rgba(255,136,0,.4)">RockYou.txt = 14M de mots de passe réels leakés</div>
+    </div>
+    <div class="card" style="padding:.9rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#ffd700;margin-bottom:.4rem">🌈 RAINBOW TABLE</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(230,220,180,.7);line-height:1.4;margin-bottom:.4rem">Table pré-calculée hash → mot de passe. Neutralisée par le <strong style="color:#fff">salage</strong>.</div>
+      <div style="font-size:.6rem;color:rgba(255,215,0,.4)">Sel = valeur aléatoire ajoutée avant hachage</div>
+    </div>
+    <div class="card" style="padding:.9rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#00aaff;margin-bottom:.4rem">👥 MAN IN THE MIDDLE</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(200,220,255,.7);line-height:1.4;margin-bottom:.4rem">Interception des communications entre deux parties. Bloqué par une PKI correcte.</div>
+      <div style="font-size:.6rem;color:rgba(0,170,255,.4)">HSTS + certificate pinning = protection</div>
+    </div>
+    <div class="card" style="padding:.9rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#cc88ff;margin-bottom:.4rem">💥 COLLISION</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,255,.7);line-height:1.4;margin-bottom:.4rem">Deux données différentes produisant le même hash. MD5 et SHA-1 sont vulnérables.</div>
+      <div style="font-size:.6rem;color:rgba(200,136,255,.4)">SHA-256 et SHA-3 résistent aux collisions connues</div>
+    </div>
+    <div class="card" style="padding:.9rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#00ff88;margin-bottom:.4rem">🔑 MAUVAISE IMPLÉMENTATION</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(200,255,220,.7);line-height:1.4;margin-bottom:.4rem">Utiliser un bon algo mais mal l'implémenter. Clé codée en dur, IV réutilisé...</div>
+      <div style="font-size:.6rem;color:rgba(0,255,136,.4)">La vraie faille = le développeur, pas l'algo</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="7" data-qcm="7">
+  <div class="slide-tag">// 07 · Cryptographie en Afrique</div>
+  <h2>Applications concrètes — Contexte africain</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.6rem">📱 MOBILE MONEY & CRYPTO</div>
+      <ul class="bullets">
+        <li>Transactions Airtel Money / Orange Money chiffrées en <strong>TLS 1.3</strong></li>
+        <li>PINs stockés avec <strong>hachage bcrypt</strong> côté serveur</li>
+        <li>Tokens de session signés avec <strong>JWT + RSA</strong></li>
+        <li>Un TLS mal configuré = interception possible sur réseau 3G</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.6rem">🏛️ ENJEUX CONTINENTAUX</div>
+      <ul class="bullets">
+        <li><strong>Administrations publiques</strong> — peu de PKI déployées en Afrique francophone</li>
+        <li><strong>E-gouvernement</strong> — signature électronique des actes officiels</li>
+        <li><strong>Banques locales</strong> — conformité PCI-DSS impose le chiffrement</li>
+        <li><strong>Souveraineté numérique</strong> — qui contrôle les CA racines ?</li>
+      </ul>
+      <div class="quote" style="margin-top:.8rem;font-size:.8rem">"La cryptographie n'est pas optionnelle. C'est la <strong style="color:#ffd700">fondation de la confiance numérique africaine</strong>."</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="8" data-qcm="8">
+  <div class="slide-tag">// 08 · Cryptographie Quantique</div>
+  <h2>La menace quantique — Le futur de la crypto</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">⚠️ LE PROBLÈME</div>
+      <ul class="bullets">
+        <li class="danger">Un <strong>ordinateur quantique</strong> sufisamment puissant pourrait casser RSA et ECC en quelques heures</li>
+        <li class="danger">L'algorithme de <strong>Shor</strong> résout la factorisation en temps polynomial</li>
+        <li class="danger">Attaque "<strong>Harvest now, decrypt later</strong>" — capturer maintenant, déchiffrer plus tard</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.6rem">✅ POST-QUANTUM CRYPTOGRAPHY</div>
+      <ul class="bullets">
+        <li class="ok">NIST a standardisé les premiers algo <strong>post-quantiques</strong> en 2024 : CRYSTALS-Kyber, CRYSTALS-Dilithium</li>
+        <li class="ok"><strong>AES-256</strong> reste sécurisé même contre les ordinateurs quantiques</li>
+        <li class="ok">Migration progressive en cours dans les systèmes critiques</li>
+      </ul>
+      <div style="margin-top:.8rem;font-family:var(--body);font-size:.75rem;color:rgba(200,255,220,.6)">💡 Les ordinateurs quantiques cryptographiquement dangereux n'existent pas encore — mais la préparation est en cours.</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="9">
+  <div class="slide-tag">// Récap · Cryptographie</div>
+  <h2>Ce qu'on a vu</h2>
+  <div class="grid2" style="max-width:820px">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.7rem">✅ ACQUIS</div>
+      <ul class="bullets">
+        <li class="ok">Chiffrement symétrique (AES) — une clé, très rapide</li>
+        <li class="ok">Chiffrement asymétrique (RSA) — paire de clés, échange sécurisé</li>
+        <li class="ok">Hachage (SHA-256, bcrypt) — empreinte irréversible</li>
+        <li class="ok">PKI et certificats SSL/TLS — chaîne de confiance</li>
+        <li class="ok">Attaques cryptographiques principales</li>
+        <li class="ok">Menace quantique et post-quantum crypto</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">🚀 POUR ALLER PLUS LOIN</div>
+      <ul class="bullets">
+        <li><strong>CryptoHack</strong> — challenges de crypto interactifs (cryptohack.org)</li>
+        <li><strong>Crypto101</strong> — livre gratuit sur la cryptographie pratique</li>
+        <li><strong>Khan Academy</strong> — module cryptographie</li>
+        <li>Tester avec <strong>OpenSSL</strong> en ligne de commande</li>
+      </ul>
+      <div style="margin-top:.8rem"><span class="pill pill-yellow">🔐 La crypto protège tout ce qu'on fait en ligne</span></div>
+    </div>
+  </div>
+  <div style="margin-top:1.5rem;text-align:center">
+    <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+    <div style="font-size:.65rem;color:rgba(255,215,0,.25);margin-top:.7rem;letter-spacing:.1em">SooPHA Learn × Cryptographie × Afrique Francophone</div>
+  </div>
+</div>
+
+</div>
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Formation terminée !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 10</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+<script>
+var QCM = {
+  2: { question:"Quelle est la principale différence entre chiffrement symétrique et asymétrique ?", options:["Le symétrique est plus sécurisé", "Le symétrique utilise une seule clé, l'asymétrique utilise une paire de clés", "L'asymétrique chiffre plus vite", "Le symétrique nécessite Internet"], correct:1, explanation:"Le chiffrement symétrique (AES) utilise la même clé pour chiffrer et déchiffrer. L'asymétrique (RSA) utilise une clé publique pour chiffrer et une clé privée pour déchiffrer." },
+  3: { question:"Lors d'une connexion HTTPS, quel est le rôle du chiffrement asymétrique RSA ?", options:["Chiffrer toutes les données de la session", "Authentifier le serveur et échanger une clé AES de façon sécurisée", "Vérifier le mot de passe de l'utilisateur", "Remplacer le protocole HTTP"], correct:1, explanation:"RSA sert à établir la confiance (certificat) et à échanger en sécurité une clé AES. Ensuite, AES chiffre toutes les données car il est beaucoup plus rapide que RSA." },
+  4: { question:"Pourquoi MD5 ne doit plus être utilisé pour les mots de passe ?", options:["Il est trop lent", "Il a été cassé — des collisions et des rainbow tables existent", "Il produit des hash trop longs", "Il est propriétaire et payant"], correct:1, explanation:"MD5 est vulnérable aux attaques par collision et des rainbow tables existent. Pour les mots de passe, utiliser bcrypt, Argon2 ou PBKDF2 qui sont conçus pour être lents et résistants aux attaques." },
+  5: { question:"Quel est le rôle d'une CA (Certificate Authority) dans la PKI ?", options:["Chiffrer les communications HTTPS", "Signer et valider les certificats numériques pour établir la confiance", "Stocker les mots de passe des utilisateurs", "Générer les clés privées des serveurs"], correct:1, explanation:"La CA est le tiers de confiance qui signe les certificats. Elle vérifie l'identité du demandeur et appose sa signature. Les navigateurs font confiance aux CA racines pour valider toute la chaîne." },
+  6: { question:"Comment le 'salage' (salt) protège les mots de passe contre les rainbow tables ?", options:["Il chiffre le mot de passe avant le hachage", "Il ajoute une valeur aléatoire unique à chaque mot de passe avant hachage, rendant les tables pré-calculées inutiles", "Il augmente la longueur minimale du mot de passe", "Il chiffre la base de données"], correct:1, explanation:"Un sel est une valeur aléatoire unique ajoutée à chaque mot de passe avant hachage. Hash('password123' + 'x9K2p') est différent pour chaque utilisateur, donc une rainbow table ne sert à rien." },
+  7: { question:"Quel algorithme de hachage est recommandé pour stocker des mots de passe en 2026 ?", options:["MD5", "SHA-1", "bcrypt ou Argon2", "SHA-256 simple"], correct:2, explanation:"bcrypt et Argon2 sont conçus spécifiquement pour les mots de passe. Ils sont intentionnellement lents et résistants aux attaques GPU. SHA-256 seul est trop rapide pour les mots de passe." },
+  8: { question:"Pourquoi la cryptographie post-quantique devient-elle urgente ?", options:["Les ordinateurs quantiques sont déjà disponibles pour le grand public", "Des adversaires collectent des données chiffrées maintenant pour les déchiffrer quand les ordinateurs quantiques seront disponibles", "AES est vulnérable aux ordinateurs classiques", "Les certificats SSL expirent trop vite"], correct:1, explanation:"L'attaque 'Harvest now, decrypt later' consiste à capturer maintenant les communications chiffrées avec RSA et les stocker pour les déchiffrer une fois que les ordinateurs quantiques seront assez puissants." },
+};
+var COURSE_ID="crypto",TOTAL=10,current=0,currentUser=null,qcmAnswered={},qcmScores={},currentQcmSlide=null;
+async function init(){
+  currentUser=await requireAuth();if(!currentUser)return;
+  var p=await getProfile(currentUser.id);
+  document.getElementById("tb-username").textContent="@"+((p&&p.username)||"user");
+  var saved=await getCourseProgress(currentUser.id,COURSE_ID);
+  saved.forEach(function(r){qcmAnswered[r.slide_index]=true;qcmScores[r.slide_index]=r.is_correct?1:0;});
+  updateUI();
+}
+function navigate(dir){
+  var next=current+dir;if(next<0||next>=TOTAL)return;
+  if(dir>0&&QCM[current]&&!qcmAnswered[current]){showQcm(current);return;}
+  var curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index=\""+next+"\"]");
+  curEl.classList.remove("active");curEl.classList.add("exit");
+  setTimeout(function(){curEl.classList.remove("exit");},400);
+  nextEl.classList.add("active");current=next;updateUI();
+}
+function updateUI(){
+  document.getElementById("slide-counter").textContent=String(current+1).padStart(2,"0")+" / "+String(TOTAL).padStart(2,"0");
+  document.getElementById("prev-btn").disabled=current===0;
+  document.getElementById("next-btn").disabled=current===TOTAL-1;
+  document.getElementById("progress-fill").style.width=((current+1)/TOTAL*100)+"%";
+  var ind=document.getElementById("qcm-ind");
+  if(QCM[current])ind.textContent=qcmAnswered[current]?(qcmScores[current]===1?"✅ QCM répondu":"❌ QCM répondu"):"⚡ QCM requis";
+  else ind.textContent="";
+}
+function showQcm(idx){
+  var qcm=QCM[idx];if(!qcm)return;
+  currentQcmSlide=idx;
+  document.getElementById("qcm-prog").textContent="QCM "+(Object.keys(qcmAnswered).length+1)+" / "+Object.keys(QCM).length;
+  document.getElementById("qcm-question").textContent=qcm.question;
+  document.getElementById("qcm-feedback").style.display="none";
+  document.getElementById("qcm-feedback").className="qcm-feedback";
+  document.getElementById("qcm-next-btn").classList.remove("show");
+  document.getElementById("qcm-saving").classList.remove("show");
+  var letters=["A","B","C","D"],html="";
+  qcm.options.forEach(function(opt,i){html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+"</span>"+opt+"</div>";});
+  document.getElementById("qcm-options").innerHTML=html;
+  if(qcmAnswered[idx]){restoreQcmState(idx);document.getElementById("qcm-next-btn").classList.add("show");}
+  document.getElementById("qcm-overlay").classList.add("show");
+}
+async function selectOption(el,optIdx){
+  if(qcmAnswered[currentQcmSlide])return;
+  var qcm=QCM[currentQcmSlide],correct=optIdx===qcm.correct;
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  if(!correct)el.classList.add("wrong");
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(correct?"correct":"wrong");
+  fb.textContent=(correct?"✅ Correct ! ":"❌ Incorrect. ")+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true;qcmScores[currentQcmSlide]=correct?1:0;updateUI();
+  if(currentUser){
+    document.getElementById("qcm-saving").classList.add("show");
+    await saveQcmProgress(currentUser.id,COURSE_ID,currentQcmSlide,correct);
+    document.getElementById("qcm-saving").classList.remove("show");
+    if(Object.keys(qcmAnswered).length===Object.keys(QCM).length){
+      var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+      var pct=(c/tot)*100;
+      await completeCourse(currentUser.id,COURSE_ID,pct);
+      setTimeout(function(){closeQcmAndAdvance();showCompletion(pct);},1200);
+      return;
+    }
+  }
+  document.getElementById("qcm-next-btn").classList.add("show");
+}
+function restoreQcmState(idx){
+  var qcm=QCM[idx],score=qcmScores[idx];
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(score===1?"correct":"wrong");
+  fb.textContent=(score===1?"✅ Déjà répondu. ":"❌ Réponse incorrecte. ")+qcm.explanation;
+}
+function closeQcmAndAdvance(){
+  document.getElementById("qcm-overlay").classList.remove("show");
+  if(currentQcmSlide===current&&current<TOTAL-1){
+    var next=current+1,curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index=\""+next+"\"]");
+    curEl.classList.remove("active");curEl.classList.add("exit");
+    setTimeout(function(){curEl.classList.remove("exit");},400);
+    nextEl.classList.add("active");current=next;updateUI();
+  }
+}
+function showCompletion(pct){
+  var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById("comp-score").textContent=Math.round(pct)+"%";
+  if(pct>=70){document.getElementById("comp-icon").textContent="🏆";document.getElementById("comp-title").textContent="Excellent !";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Cours maîtrisé !";}
+  else{document.getElementById("comp-icon").textContent="📚";document.getElementById("comp-title").textContent="Formation terminée";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Révise pour améliorer ton score.";}
+  document.getElementById("completion-modal").classList.add("show");
+}
+document.addEventListener("keydown",function(e){
+  if(document.getElementById("qcm-overlay").classList.contains("show"))return;
+  if(e.key==="ArrowRight"||e.key===" "){e.preventDefault();navigate(1);}
+  if(e.key==="ArrowLeft")navigate(-1);
+});
+var touchX=0;
+document.addEventListener("touchstart",function(e){touchX=e.touches[0].clientX;});
+document.addEventListener("touchend",function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById("qcm-overlay").classList.contains("show"))navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById("matrix"),ctx=c.getContext("2d");
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener("resize",resize);
+  var chars="01ABCDEF{}CTFFlag",fs=13,drops;
+  function init(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  init();window.addEventListener("resize",init);
+  setInterval(function(){
+    ctx.fillStyle="rgba(2,4,12,0.05)";ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle="#ffd700";ctx.font=fs+"px monospace";
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

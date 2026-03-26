@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSINT & Reconnaissance · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html, body { overflow: hidden; height: 100%; }
+body::before { height: 3px; }
+#topbar { position:fixed; top:3px; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,4,10,0.97); border-bottom:1px solid rgba(200,136,255,.18); backdrop-filter:blur(12px); font-size:.65rem; color:rgba(200,136,255,.4); }
+.tb-left { display:flex; gap:1.5rem; align-items:center; }
+.tb-right { display:flex; gap:1.2rem; align-items:center; }
+.tb-back { color:rgba(200,136,255,.5); text-decoration:none; font-size:.65rem; letter-spacing:.08em; transition:color .2s; }
+.tb-back:hover { color:#cc88ff; opacity:1; }
+.tb-dot { width:6px; height:6px; background:#cc88ff; border-radius:50%; display:inline-block; animation:blink 1.4s infinite; margin-right:.3rem; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.tb-user { font-family:var(--mono); font-size:.62rem; color:rgba(200,136,255,.4); }
+#progress-top { position:fixed; top:34px; left:0; right:0; z-index:200; height:2px; background:rgba(200,136,255,.06); }
+#progress-fill { height:100%; background:#cc88ff; box-shadow:0 0 8px #cc88ff; transition:width .5s ease; }
+#scanlines { position:fixed; inset:0; z-index:1; pointer-events:none; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px); }
+#vignette  { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%); }
+canvas#matrix { position:fixed; inset:0; z-index:0; opacity:.04; pointer-events:none; }
+#slides { position:fixed; inset:0; z-index:10; padding-top:36px; padding-bottom:44px; overflow:hidden; }
+.slide { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:1.5rem 4rem; opacity:0; pointer-events:none; transition:opacity .4s ease,transform .4s ease; transform:translateX(40px); overflow-y:auto; }
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.exit   { opacity:0; transform:translateX(-40px); }
+.gabon-bar { display:flex; height:3px; width:60px; border-radius:2px; overflow:hidden; margin:.6rem 0; }
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(200,136,255,.35); text-transform:uppercase; margin-bottom:.5rem; }
+.slide h1 { font-family:var(--display)!important; font-weight:900!important; font-size:clamp(1.8rem,3.5vw,2.8rem)!important; color:#fff!important; text-align:center; letter-spacing:.1em; line-height:1.15; margin-bottom:.4rem!important; text-shadow:0 0 40px #cc88ff,0 0 80px rgba(200,136,255,.2); }
+.slide h2 { font-family:var(--display)!important; font-weight:700!important; font-size:clamp(1.1rem,2vw,1.7rem)!important; color:#cc88ff!important; letter-spacing:.08em; margin-bottom:1rem!important; }
+.slide h3 { font-family:var(--display)!important; font-weight:400!important; font-size:clamp(.8rem,1.2vw,1rem)!important; color:rgba(200,136,255,.55)!important; letter-spacing:.2em; text-transform:uppercase; margin-bottom:1.5rem!important; }
+.card { background:rgba(2,8,18,.88); border:1px solid rgba(200,136,255,.18); border-radius:2px; padding:1.4rem 1.8rem; position:relative; backdrop-filter:blur(10px); max-width:880px; width:100%; }
+.card::before { content:''; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:2px solid #cc88ff; border-left:2px solid #cc88ff; }
+.card::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:2px solid #cc88ff; border-right:2px solid #cc88ff; }
+.bullets { list-style:none; display:flex; flex-direction:column; gap:.55rem; }
+.bullets li { display:flex; align-items:flex-start; gap:.7rem; font-family:var(--body); font-size:clamp(.8rem,1.3vw,.95rem); color:rgba(220,230,255,.85); line-height:1.5; animation:fadeIn .4s ease both; }
+.bullets li::before { content:'▶'; color:#cc88ff; font-size:.55rem; margin-top:.35rem; flex-shrink:0; }
+.bullets li strong { color:#fff; }
+.bullets li.ok::before { content:'✅'; font-size:.7rem; }
+.bullets li.warn::before { content:'⚠'; color:#ffd700; font-size:.7rem; }
+.bullets li.danger::before { content:'🔴'; font-size:.7rem; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; max-width:880px; width:100%; }
+.pill { display:inline-block; padding:.25rem .7rem; font-size:.65rem; letter-spacing:.06em; border-radius:2px; font-family:var(--mono); }
+.pill-green  { background:rgba(0,255,136,.1);  border:1px solid rgba(0,255,136,.3);  color:#00ff88; }
+.pill-red    { background:rgba(255,68,102,.1); border:1px solid rgba(255,68,102,.3); color:#ff4466; }
+.pill-yellow { background:rgba(255,215,0,.08); border:1px solid rgba(255,215,0,.3);  color:#ffd700; }
+.pill-blue   { background:rgba(0,170,255,.08); border:1px solid rgba(0,170,255,.3);  color:#00aaff; }
+.pill-orange { background:rgba(255,136,0,.1);  border:1px solid rgba(255,136,0,.3);  color:#ff8800; }
+.pill-purple { background:rgba(200,136,255,.1);border:1px solid rgba(200,136,255,.3);color:#cc88ff; }
+.quote { border-left:3px solid #cc88ff; padding:.7rem 1rem; background:rgba(200,136,255,.04); font-family:var(--body); font-style:italic; font-size:clamp(.9rem,1.5vw,1.15rem); color:#e0e8ff; line-height:1.6; }
+.terminal { background:rgba(0,0,4,.7); border:1px solid rgba(200,136,255,.15); border-left:3px solid #cc88ff; padding:.8rem 1.1rem; font-family:var(--mono); font-size:.78rem; color:rgba(200,136,255,.8); line-height:1.8; }
+.term-prompt { color:#cc88ff; }
+.term-out    { color:rgba(255,255,255,.5); }
+.hdiv { display:flex; align-items:center; gap:1rem; color:rgba(200,136,255,.2); font-size:.62rem; letter-spacing:.2em; margin:.8rem 0; }
+.hdiv::before,.hdiv::after { content:''; flex:1; height:1px; background:rgba(200,136,255,.12); }
+@keyframes glitch {
+  0%,90%,100%{text-shadow:0 0 40px #cc88ff,0 0 80px rgba(200,136,255,.2)}
+  91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}
+  93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}
+  95%{text-shadow:0 0 40px #cc88ff;transform:translate(0)}
+}
+.glitch { animation:glitch 7s infinite; }
+#qcm-overlay { position:fixed; inset:0; z-index:300; background:rgba(2,4,12,.97); display:none; flex-direction:column; align-items:center; justify-content:center; padding:2rem; }
+#qcm-overlay.show { display:flex; animation:fadeInOv .3s ease; }
+@keyframes fadeInOv { from{opacity:0} to{opacity:1} }
+.qcm-box { max-width:680px; width:100%; background:rgba(2,8,18,.97); border:1px solid rgba(200,136,255,.25); border-radius:2px; padding:2.5rem; position:relative; box-shadow:0 0 40px rgba(200,136,255,.1); }
+.qcm-box::before { content:''; position:absolute; top:-1px; left:-1px; width:18px; height:18px; border-top:2px solid #cc88ff; border-left:2px solid #cc88ff; }
+.qcm-box::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:18px; height:18px; border-bottom:2px solid #cc88ff; border-right:2px solid #cc88ff; }
+.qcm-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid rgba(200,136,255,.15); }
+.qcm-label { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(200,136,255,.4); text-transform:uppercase; }
+.qcm-prog  { font-family:var(--mono); font-size:.65rem; color:rgba(200,136,255,.35); }
+.qcm-saving { font-family:var(--mono); font-size:.62rem; color:rgba(200,136,255,.35); margin-bottom:.5rem; display:none; }
+.qcm-saving.show { display:block; }
+.qcm-question { font-family:var(--display); font-size:clamp(.9rem,1.8vw,1.1rem); font-weight:700; color:#fff; line-height:1.4; margin-bottom:1.8rem; }
+.qcm-options { display:flex; flex-direction:column; gap:.65rem; margin-bottom:1.5rem; }
+.qcm-option { display:flex; align-items:flex-start; gap:.9rem; padding:.8rem 1.1rem; background:rgba(0,0,8,.3); border:1px solid rgba(200,136,255,.1); cursor:pointer; border-radius:2px; transition:all .15s; font-family:var(--body); font-size:.88rem; color:rgba(200,210,255,.75); line-height:1.4; }
+.qcm-option:hover:not(.disabled) { border-color:rgba(200,136,255,.35); background:rgba(200,136,255,.06); color:rgba(220,230,255,.95); }
+.qcm-option.correct  { border-color:#cc88ff!important; background:rgba(200,136,255,.12)!important; color:#cc88ff!important; }
+.qcm-option.wrong    { border-color:#ff4466!important; background:rgba(255,68,102,.08)!important; color:#ff4466!important; }
+.qcm-option.disabled { cursor:default; pointer-events:none; }
+.option-letter { font-family:var(--display); font-size:.68rem; font-weight:700; color:rgba(200,136,255,.4); min-width:18px; flex-shrink:0; margin-top:.1rem; }
+.qcm-option.correct .option-letter,.qcm-option.wrong .option-letter { color:inherit; }
+.qcm-feedback { padding:.8rem 1rem; border-radius:2px; font-family:var(--mono); font-size:.8rem; line-height:1.5; display:none; margin-bottom:1.2rem; }
+.qcm-feedback.correct { background:rgba(200,136,255,.07); border:1px solid rgba(200,136,255,.2); color:rgba(200,136,255,.9); }
+.qcm-feedback.wrong   { background:rgba(255,68,102,.06); border:1px solid rgba(255,68,102,.2); color:rgba(255,100,130,.9); }
+.qcm-btn { font-family:var(--display); font-size:.75rem; font-weight:700; letter-spacing:.12em; padding:.7rem 1.8rem; background:#cc88ff; color:var(--bg); border:none; cursor:pointer; clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition:all .2s; text-transform:uppercase; display:none; }
+.qcm-btn.show { display:inline-block; }
+#completion-modal { position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; padding:2rem; }
+#completion-modal.show { display:flex; animation:fadeInOv .3s ease; }
+.completion-box { max-width:500px; width:100%; background:rgba(2,8,18,.98); border:1px solid rgba(200,136,255,.3); border-radius:2px; padding:3rem 2.5rem; text-align:center; box-shadow:0 0 60px rgba(200,136,255,.15); position:relative; }
+.completion-box::before { content:''; position:absolute; top:-1px; left:-1px; width:20px; height:20px; border-top:2px solid #cc88ff; border-left:2px solid #cc88ff; }
+.completion-icon  { font-size:4rem; margin-bottom:1rem; }
+.completion-title { font-family:var(--display); font-size:1.5rem; font-weight:900; color:#fff; margin-bottom:.5rem; }
+.completion-score { font-family:var(--display); font-size:3.5rem; font-weight:900; color:#cc88ff; text-shadow:0 0 30px #cc88ff; margin:1rem 0; }
+.completion-sub   { font-family:var(--mono); font-size:.78rem; color:rgba(200,136,255,.5); margin-bottom:.5rem; line-height:1.6; }
+.completion-saved { font-family:var(--mono); font-size:.68rem; color:rgba(200,136,255,.35); margin-bottom:1.5rem; }
+.completion-btn { font-family:var(--display); font-size:.78rem; font-weight:700; letter-spacing:.12em; padding:.8rem 1.8rem; text-decoration:none; display:inline-block; clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); cursor:pointer; border:none; margin:.3rem; text-transform:uppercase; transition:all .2s; }
+.completion-btn-primary   { background:#cc88ff; color:var(--bg); }
+.completion-btn-primary:hover { box-shadow:0 0 20px rgba(200,136,255,.5); opacity:1; }
+.completion-btn-secondary { background:transparent; color:#cc88ff; border:1px solid rgba(200,136,255,.3)!important; clip-path:none; border-radius:2px; }
+#bottombar { position:fixed; bottom:0; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,4,12,.97); border-top:1px solid rgba(200,136,255,.15); backdrop-filter:blur(12px); }
+.nav-btn { background:transparent; border:1px solid rgba(200,136,255,.2); color:rgba(200,136,255,.55); padding:.32rem .9rem; font-family:var(--mono); font-size:.65rem; cursor:pointer; transition:all .2s; clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%); }
+.nav-btn:hover { border-color:#cc88ff; color:#cc88ff; background:rgba(200,136,255,.05); }
+.nav-btn:disabled { opacity:.2; cursor:not-allowed; }
+#slide-counter { font-family:var(--display); font-size:.72rem; color:#cc88ff; }
+.qcm-indicator { font-family:var(--mono); font-size:.62rem; color:rgba(255,215,0,.5); letter-spacing:.08em; }
+@media (max-width:768px) { .slide { padding:1rem 1.2rem; } .grid2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>OSINT & Reconnaissance</span>
+  </div>
+  <div class="tb-right">
+    <span class="tb-user" id="tb-username"></span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+<div id="slides">
+
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// OSINT & Reconnaissance</div>
+  <h1 class="glitch">OSINT</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Open Source Intelligence</h3>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin-top:.8rem">
+    <span class="pill pill-purple">🔍 Google Dorks</span>
+    <span class="pill pill-blue">🌐 WHOIS & DNS</span>
+    <span class="pill pill-red">📡 Shodan</span>
+    <span class="pill pill-green">👤 Réseaux sociaux</span>
+  </div>
+  <div style="margin-top:1.5rem" class="terminal"><span class="term-prompt">osint@recon:~$ </span><span class="term-out">// "Les informations les plus précieuses sont souvent publiques — il faut juste savoir chercher."</span></div>
+  <div style="margin-top:1.5rem;font-size:.68rem;color:rgba(200,136,255,.25);letter-spacing:.15em">← → POUR NAVIGUER</div>
+</div>
+
+<div class="slide" data-index="1">
+  <div class="slide-tag">// 01 · C'est quoi l'OSINT</div>
+  <h2>Open Source Intelligence</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">🎯 DÉFINITION</div>
+      <div class="quote" style="margin-bottom:.8rem;font-size:.85rem">Collecte et analyse d'informations provenant de <strong style="color:#cc88ff">sources publiques et accessibles librement</strong>.</div>
+      <ul class="bullets">
+        <li>Sites web, réseaux sociaux, forums</li>
+        <li>Bases de données publiques (WHOIS, registres)</li>
+        <li>Documents officiels, photos, vidéos</li>
+        <li>Métadonnées de fichiers</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">🛡️ QUI UTILISE L'OSINT</div>
+      <ul class="bullets">
+        <li><strong>Pentesters</strong> — phase de reconnaissance avant une attaque</li>
+        <li><strong>Journalistes d'investigation</strong> — Bellingcat, enquêtes</li>
+        <li><strong>Services de renseignement</strong> — veille stratégique</li>
+        <li><strong>RH & recruteurs</strong> — vérification de candidats</li>
+        <li><strong>Attaquants</strong> — collecter des infos sur une cible</li>
+      </ul>
+      <div style="margin-top:.8rem;font-family:var(--body);font-size:.78rem;color:rgba(220,200,255,.6)">⚖️ Légal si on utilise des sources publiques et à des fins éthiques.</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="2" data-qcm="2">
+  <div class="slide-tag">// 02 · Google Dorks</div>
+  <h2>Google Dorks — L'art de chercher</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">🔍 OPÉRATEURS CLÉS</div>
+      <div class="terminal" style="font-size:.72rem">
+        <span class="term-prompt">site:</span><span class="term-out">site:gabon.gov.ga — pages d'un domaine</span><br>
+        <span class="term-prompt">filetype:</span><span class="term-out">filetype:pdf rapport confidentiel</span><br>
+        <span class="term-prompt">intitle:</span><span class="term-out">intitle:"index of" /passwords</span><br>
+        <span class="term-prompt">inurl:</span><span class="term-out">inurl:admin login</span><br>
+        <span class="term-prompt">cache:</span><span class="term-out">cache:site.com — version archivée</span><br>
+        <span class="term-prompt">"...":</span><span class="term-out">"mot de passe" site:.ga — phrase exacte</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">⚡ DORKS DANGEREUX</div>
+      <div class="terminal" style="font-size:.7rem">
+        <span style="color:#ff4466">intitle:"index of" /backup</span><br>
+        <span class="term-out">→ Répertoires de backup exposés</span><br><br>
+        <span style="color:#ff4466">filetype:sql "password" site:.ga</span><br>
+        <span class="term-out">→ Dumps SQL avec mots de passe</span><br><br>
+        <span style="color:#ff4466">inurl:"/wp-content/uploads/" filetype:pdf</span><br>
+        <span class="term-out">→ Docs confidentiels sur WordPress</span><br><br>
+        <span style="color:#ff4466">"DB_PASSWORD" filetype:env</span><br>
+        <span class="term-out">→ Fichiers .env avec credentials</span>
+      </div>
+      <div style="margin-top:.8rem;font-family:var(--body);font-size:.75rem;color:rgba(255,200,200,.6)">⚠️ Ces infos sont publiques — mais les exploiter sans autorisation = illégal</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="3" data-qcm="3">
+  <div class="slide-tag">// 03 · WHOIS & DNS</div>
+  <h2>WHOIS & DNS — La carte d'identité des domaines</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">🌐 WHOIS</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(220,200,255,.8);line-height:1.5;margin-bottom:.7rem">Base de données publique qui révèle qui possède un nom de domaine.</div>
+      <div class="terminal" style="font-size:.7rem">
+        <span class="term-prompt">$ whois soopha-network.com</span><br>
+        <span class="term-out">Registrant: SooPHA Group</span><br>
+        <span class="term-out">Email: contact@soopha.com</span><br>
+        <span class="term-out">Created: 2023-01-15</span><br>
+        <span class="term-out">Registrar: IONOS SE</span>
+      </div>
+      <div style="margin-top:.6rem;font-family:var(--body);font-size:.75rem;color:rgba(200,180,255,.6)">💡 Révèle propriétaire, email, hébergeur, dates</div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">📡 DNS RECON</div>
+      <div class="terminal" style="font-size:.7rem">
+        <span class="term-prompt">$ nslookup soopha-learn.com</span><br>
+        <span class="term-out">A: 76.76.21.21 (Vercel)</span><br><br>
+        <span class="term-prompt">$ dig soopha-learn.com MX</span><br>
+        <span class="term-out">MX: mail.ionos.com (hébergeur email)</span><br><br>
+        <span class="term-prompt">$ subfinder -d soopha-learn.com</span><br>
+        <span class="term-out">api.soopha-learn.com</span><br>
+        <span class="term-out">admin.soopha-learn.com ← intéressant !</span>
+      </div>
+      <div style="margin-top:.6rem;font-family:var(--body);font-size:.75rem;color:rgba(200,180,255,.6)">💡 Révèle infrastructure, sous-domaines, emails</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="4" data-qcm="4">
+  <div class="slide-tag">// 04 · Shodan</div>
+  <h2 style="color:#ff4466!important">Shodan — Le moteur de recherche des hackers</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">🔴 C'EST QUOI SHODAN</div>
+      <div style="font-family:var(--body);font-size:.82rem;color:rgba(220,200,200,.8);line-height:1.5;margin-bottom:.8rem">Shodan indexe <strong>tout ce qui est connecté à Internet</strong> : serveurs, caméras, routeurs, IoT, systèmes industriels — avec leurs ports et services ouverts.</div>
+      <div class="terminal" style="font-size:.7rem">
+        <span class="term-prompt">Shodan query :</span> <span style="color:#ff4466">country:GA port:22</span><br>
+        <span class="term-out">→ Serveurs SSH au Gabon</span><br><br>
+        <span class="term-prompt">Shodan query :</span> <span style="color:#ff4466">webcam city:"Libreville"</span><br>
+        <span class="term-out">→ Caméras non sécurisées à Libreville</span><br><br>
+        <span class="term-prompt">Shodan query :</span> <span style="color:#ff4466">org:"SEEG" port:80</span><br>
+        <span class="term-out">→ Serveurs web exposés d'un OIV !</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">📊 CE QUE SHODAN RÉVÈLE</div>
+      <ul class="bullets">
+        <li class="danger"><strong>Versions logicielles</strong> — identifier les systèmes non patchés</li>
+        <li class="danger"><strong>Services exposés</strong> — FTP anonyme, Telnet, bases de données sans auth</li>
+        <li class="danger"><strong>Certificats SSL</strong> — expirés ou auto-signés</li>
+        <li class="danger"><strong>Systèmes SCADA</strong> — infrastructures industrielles accessibles</li>
+      </ul>
+      <div class="hdiv">UTILISATION ÉTHIQUE</div>
+      <ul class="bullets">
+        <li class="ok">Vérifier l'exposition de <strong>sa propre organisation</strong></li>
+        <li class="ok">Recherche en cybersécurité et <strong>cartographie des menaces</strong></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="5" data-qcm="5">
+  <div class="slide-tag">// 05 · Réseaux Sociaux OSINT</div>
+  <h2>Social Media Intelligence (SOCMINT)</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">👤 CE QU'ON PEUT TROUVER</div>
+      <ul class="bullets">
+        <li><strong>LinkedIn</strong> — poste, entreprise, collègues, technologies utilisées</li>
+        <li><strong>Facebook / Instagram</strong> — localisation, cercle social, routine</li>
+        <li><strong>Twitter / X</strong> — opinions, affiliations, horaires d'activité</li>
+        <li><strong>GitHub</strong> — code source, credentials dans les commits !</li>
+      </ul>
+      <div class="terminal" style="font-size:.7rem;margin-top:.8rem">
+        <span class="term-prompt">GitHub dork :</span><br>
+        <span style="color:#ff4466">filename:.env "DB_PASSWORD"</span><br>
+        <span class="term-out">→ Credentials exposés dans des repos publics</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">🛠️ OUTILS SOCMINT</div>
+      <ul class="bullets">
+        <li><strong>Sherlock</strong> — trouve un pseudo sur 300+ plateformes</li>
+        <li><strong>Maltego</strong> — cartographie les relations entre entités</li>
+        <li><strong>SpiderFoot</strong> — OSINT automatisé multi-sources</li>
+        <li><strong>theHarvester</strong> — emails, sous-domaines, IPs</li>
+      </ul>
+      <div class="terminal" style="font-size:.7rem;margin-top:.8rem">
+        <span class="term-prompt">$ sherlock benijael_mbata</span><br>
+        <span class="term-out">Twitter: found</span><br>
+        <span class="term-out">LinkedIn: found</span><br>
+        <span class="term-out">GitHub: found</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="6" data-qcm="6">
+  <div class="slide-tag">// 06 · Métadonnées</div>
+  <h2>Métadonnées — Les données cachées dans vos fichiers</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">📁 C'EST QUOI</div>
+      <div style="font-family:var(--body);font-size:.82rem;color:rgba(220,200,255,.8);line-height:1.5;margin-bottom:.8rem">Des informations <strong>invisibles à l'œil nu</strong> stockées dans les fichiers : photos, documents, vidéos.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+        <div style="border:1px solid rgba(200,136,255,.2);padding:.6rem;background:rgba(200,136,255,.04)">
+          <div style="font-size:.62rem;color:#cc88ff;margin-bottom:.3rem">📸 PHOTO</div>
+          <div style="font-size:.7rem;color:rgba(220,200,255,.7)">GPS (lat/long), date, appareil, modèle, logiciel</div>
+        </div>
+        <div style="border:1px solid rgba(200,136,255,.2);padding:.6rem;background:rgba(200,136,255,.04)">
+          <div style="font-size:.62rem;color:#cc88ff;margin-bottom:.3rem">📄 DOCUMENT</div>
+          <div style="font-size:.7rem;color:rgba(220,200,255,.7)">Auteur, entreprise, dates, révisions, nom PC</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">⚠️ EXEMPLES RÉELS</div>
+      <ul class="bullets">
+        <li class="danger">John McAfee localisé par une photo Instagram (GPS dans les EXIF)</li>
+        <li class="danger">Journaliste anonyme démasqué par les métadonnées Word</li>
+        <li class="danger">Localisation d'une base militaire via photos de soldats</li>
+      </ul>
+      <div class="hdiv">PROTECTION</div>
+      <div class="terminal" style="font-size:.7rem">
+        <span class="term-prompt">$ exiftool -all= photo.jpg</span><br>
+        <span class="term-out">→ Supprime toutes les métadonnées</span>
+      </div>
+      <div style="margin-top:.5rem;font-family:var(--body);font-size:.75rem;color:rgba(200,180,255,.6)">Signal supprime automatiquement les EXIF des photos envoyées.</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="7" data-qcm="7">
+  <div class="slide-tag">// 07 · Wayback Machine & Archives</div>
+  <h2>L'internet n'oublie jamais</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">🕰️ WAYBACK MACHINE</div>
+      <div style="font-family:var(--body);font-size:.82rem;color:rgba(220,200,255,.8);line-height:1.5;margin-bottom:.8rem">archive.org conserve des snapshots de milliards de pages web depuis les années 90. <strong>Même les pages supprimées restent accessibles.</strong></div>
+      <ul class="bullets">
+        <li>Retrouver d'anciens <strong>contenus supprimés</strong></li>
+        <li>Voir les <strong>anciennes versions</strong> d'un site</li>
+        <li>Trouver des <strong>emails et identifiants</strong> exposés par le passé</li>
+        <li>Analyser l'<strong>évolution d'une organisation</strong></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">🗄️ AUTRES SOURCES D'ARCHIVES</div>
+      <ul class="bullets">
+        <li><strong>Pastebin / GitHub</strong> — credentials leakés par erreur</li>
+        <li><strong>HaveIBeenPwned</strong> — vérifier si un email est dans un leak</li>
+        <li><strong>LinkedIn Sales Navigator</strong> — historique des postes</li>
+        <li><strong>Google Cache</strong> — version cachée récente d'une page</li>
+        <li><strong>Certificats SSL (crt.sh)</strong> — tous les sous-domaines émis</li>
+      </ul>
+      <div class="terminal" style="font-size:.7rem;margin-top:.8rem">
+        <span class="term-prompt">$ curl crt.sh/?q=%.soopha-learn.com</span><br>
+        <span class="term-out">→ Tous les sous-domaines avec certificat</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="8" data-qcm="8">
+  <div class="slide-tag">// 08 · OSINT Gabon & Afrique</div>
+  <h2>OSINT — Contexte africain et gabonais</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.6rem">🇬🇦 SURFACE D'ATTAQUE AU GABON</div>
+      <ul class="bullets">
+        <li><strong>Expositions fréquentes</strong> — portails admin accessibles publiquement</li>
+        <li>Beaucoup de <strong>sites .ga avec des configurations par défaut</strong></li>
+        <li>Fichiers de sauvegarde (.sql, .bak) <strong>indexés par Google</strong></li>
+        <li>Emails d'agents publics <strong>facilement trouvables</strong> — spear phishing facile</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.6rem">✅ COMMENT SE PROTÉGER</div>
+      <ul class="bullets">
+        <li class="ok">Faire un <strong>audit OSINT de sa propre organisation</strong> régulièrement</li>
+        <li class="ok">Configurer <strong>Google Alerts</strong> sur le nom de son entreprise</li>
+        <li class="ok">Vérifier ses données sur <strong>HaveIBeenPwned</strong></li>
+        <li class="ok">Désactiver l'<strong>indexation des répertoires</strong> sur les serveurs web</li>
+        <li class="ok">Activer la <strong>protection WHOIS</strong> (privacy protection)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="9">
+  <div class="slide-tag">// Récap · OSINT</div>
+  <h2>Ce qu'on a vu</h2>
+  <div class="grid2" style="max-width:820px">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.7rem">✅ ACQUIS</div>
+      <ul class="bullets">
+        <li class="ok">Définition et usages légaux de l'OSINT</li>
+        <li class="ok">Google Dorks — recherche avancée</li>
+        <li class="ok">WHOIS & DNS — cartographie des domaines</li>
+        <li class="ok">Shodan — appareils exposés sur Internet</li>
+        <li class="ok">SOCMINT — réseaux sociaux et outils</li>
+        <li class="ok">Métadonnées — dangers cachés dans les fichiers</li>
+        <li class="ok">Wayback Machine et archives</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">🚀 POUR ALLER PLUS LOIN</div>
+      <ul class="bullets">
+        <li><strong>OSINT Framework</strong> — osintframework.com (carte des outils)</li>
+        <li><strong>Bellingcat</strong> — investigations OSINT réelles</li>
+        <li><strong>TryHackMe</strong> — room "OSINT" pour pratiquer</li>
+        <li><strong>TraceLabs</strong> — CTF OSINT pour retrouver des personnes disparues</li>
+      </ul>
+      <div style="margin-top:.8rem"><span class="pill pill-purple">🕵️ Les meilleures infos sont souvent publiques</span></div>
+    </div>
+  </div>
+  <div style="margin-top:1.5rem;text-align:center">
+    <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+    <div style="font-size:.65rem;color:rgba(200,136,255,.25);margin-top:.7rem;letter-spacing:.1em">SooPHA Learn × OSINT × Afrique Francophone</div>
+  </div>
+</div>
+
+</div>
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Formation terminée !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 10</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+<script>
+var QCM = {
+  2: { question:"Quel Google Dork permet de chercher uniquement sur un domaine spécifique ?", options:["domain:", "site:", "url:", "host:"], correct:1, explanation:"L'opérateur site: de Google limite la recherche à un domaine spécifique. Ex: site:gabon.gov.ga permet de chercher toutes les pages indexées du domaine gouvernemental gabonais." },
+  3: { question:"WHOIS permet principalement de trouver :", options:["Les mots de passe d'un site", "Le propriétaire d'un nom de domaine, ses coordonnées et son hébergeur", "Les vulnérabilités d'un serveur", "Les utilisateurs d'une plateforme"], correct:1, explanation:"WHOIS est une base de données publique qui contient les informations d'enregistrement d'un nom de domaine : propriétaire, email, hébergeur, dates de création et expiration." },
+  4: { question:"Shodan est un moteur de recherche qui indexe :", options:["Les pages web classiques", "Les appareils connectés à Internet et leurs services ouverts", "Les profils des réseaux sociaux", "Les bases de données de mots de passe"], correct:1, explanation:"Shodan scanne en permanence Internet et indexe tout ce qui est connecté : serveurs, caméras IP, routeurs, systèmes industriels, avec leurs ports ouverts et versions de logiciels." },
+  5: { question:"Un développeur pousse par erreur son fichier .env sur GitHub public. Que risque-t-il ?", options:["Rien, GitHub est chiffré", "Exposition de ses clés API, mots de passe de base de données et autres credentials", "Seulement un avertissement de GitHub", "La perte de son compte GitHub"], correct:1, explanation:"Les fichiers .env contiennent les variables d'environnement sensibles (API keys, DB passwords, secrets). Une fois sur GitHub public, des outils comme GitLeaks ou des dorks GitHub les trouvent en quelques minutes." },
+  6: { question:"Qu'est-ce que les métadonnées EXIF d'une photo peuvent révéler ?", options:["Le contenu textuel de la photo", "Les coordonnées GPS, la date, le modèle d'appareil et plus", "Le nom du photographe sur ses comptes sociaux", "La résolution d'impression uniquement"], correct:1, explanation:"Les métadonnées EXIF d'une photo peuvent contenir les coordonnées GPS exactes, la date/heure, le modèle d'appareil, l'objectif utilisé et même le logiciel de retouche. Cela peut révéler la localisation précise du photographe." },
+  7: { question:"La Wayback Machine (archive.org) est utile pour :", options:["Télécharger des logiciels gratuitement", "Accéder aux anciennes versions de sites web et au contenu supprimé", "Analyser les vulnérabilités d'un site", "Trouver les emails d'une entreprise"], correct:1, explanation:"La Wayback Machine conserve des snapshots de milliards de pages web. Elle permet de voir d'anciennes versions de sites, retrouver du contenu supprimé et analyser l'historique d'une organisation." },
+  8: { question:"Quelle est la meilleure pratique pour protéger les informations WHOIS d'un domaine ?", options:["Utiliser un nom de domaine .com plutôt que .ga", "Activer la protection WHOIS (privacy protection) auprès du registrar", "Changer de registrar tous les ans", "Utiliser un hébergeur africain"], correct:1, explanation:"La protection WHOIS (aussi appelée privacy protection ou WHOIS privacy) masque les informations personnelles du propriétaire dans la base WHOIS publique, empêchant leur collecte par des attaquants ou spammers." },
+};
+var COURSE_ID="osint",TOTAL=10,current=0,currentUser=null,qcmAnswered={},qcmScores={},currentQcmSlide=null;
+async function init(){
+  currentUser=await requireAuth();if(!currentUser)return;
+  var p=await getProfile(currentUser.id);
+  document.getElementById("tb-username").textContent="@"+((p&&p.username)||"user");
+  var saved=await getCourseProgress(currentUser.id,COURSE_ID);
+  saved.forEach(function(r){qcmAnswered[r.slide_index]=true;qcmScores[r.slide_index]=r.is_correct?1:0;});
+  updateUI();
+}
+function navigate(dir){
+  var next=current+dir;if(next<0||next>=TOTAL)return;
+  if(dir>0&&QCM[current]&&!qcmAnswered[current]){showQcm(current);return;}
+  var curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index=\""+next+"\"]");
+  curEl.classList.remove("active");curEl.classList.add("exit");
+  setTimeout(function(){curEl.classList.remove("exit");},400);
+  nextEl.classList.add("active");current=next;updateUI();
+}
+function updateUI(){
+  document.getElementById("slide-counter").textContent=String(current+1).padStart(2,"0")+" / "+String(TOTAL).padStart(2,"0");
+  document.getElementById("prev-btn").disabled=current===0;
+  document.getElementById("next-btn").disabled=current===TOTAL-1;
+  document.getElementById("progress-fill").style.width=((current+1)/TOTAL*100)+"%";
+  var ind=document.getElementById("qcm-ind");
+  if(QCM[current])ind.textContent=qcmAnswered[current]?(qcmScores[current]===1?"✅ QCM répondu":"❌ QCM répondu"):"⚡ QCM requis";
+  else ind.textContent="";
+}
+function showQcm(idx){
+  var qcm=QCM[idx];if(!qcm)return;
+  currentQcmSlide=idx;
+  document.getElementById("qcm-prog").textContent="QCM "+(Object.keys(qcmAnswered).length+1)+" / "+Object.keys(QCM).length;
+  document.getElementById("qcm-question").textContent=qcm.question;
+  document.getElementById("qcm-feedback").style.display="none";
+  document.getElementById("qcm-feedback").className="qcm-feedback";
+  document.getElementById("qcm-next-btn").classList.remove("show");
+  document.getElementById("qcm-saving").classList.remove("show");
+  var letters=["A","B","C","D"],html="";
+  qcm.options.forEach(function(opt,i){html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+"</span>"+opt+"</div>";});
+  document.getElementById("qcm-options").innerHTML=html;
+  if(qcmAnswered[idx]){restoreQcmState(idx);document.getElementById("qcm-next-btn").classList.add("show");}
+  document.getElementById("qcm-overlay").classList.add("show");
+}
+async function selectOption(el,optIdx){
+  if(qcmAnswered[currentQcmSlide])return;
+  var qcm=QCM[currentQcmSlide],correct=optIdx===qcm.correct;
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  if(!correct)el.classList.add("wrong");
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(correct?"correct":"wrong");
+  fb.textContent=(correct?"✅ Correct ! ":"❌ Incorrect. ")+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true;qcmScores[currentQcmSlide]=correct?1:0;updateUI();
+  if(currentUser){
+    document.getElementById("qcm-saving").classList.add("show");
+    await saveQcmProgress(currentUser.id,COURSE_ID,currentQcmSlide,correct);
+    document.getElementById("qcm-saving").classList.remove("show");
+    if(Object.keys(qcmAnswered).length===Object.keys(QCM).length){
+      var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+      var pct=(c/tot)*100;
+      await completeCourse(currentUser.id,COURSE_ID,pct);
+      setTimeout(function(){closeQcmAndAdvance();showCompletion(pct);},1200);
+      return;
+    }
+  }
+  document.getElementById("qcm-next-btn").classList.add("show");
+}
+function restoreQcmState(idx){
+  var qcm=QCM[idx],score=qcmScores[idx];
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(score===1?"correct":"wrong");
+  fb.textContent=(score===1?"✅ Déjà répondu. ":"❌ Réponse incorrecte. ")+qcm.explanation;
+}
+function closeQcmAndAdvance(){
+  document.getElementById("qcm-overlay").classList.remove("show");
+  if(currentQcmSlide===current&&current<TOTAL-1){
+    var next=current+1,curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index=\""+next+"\"]");
+    curEl.classList.remove("active");curEl.classList.add("exit");
+    setTimeout(function(){curEl.classList.remove("exit");},400);
+    nextEl.classList.add("active");current=next;updateUI();
+  }
+}
+function showCompletion(pct){
+  var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById("comp-score").textContent=Math.round(pct)+"%";
+  if(pct>=70){document.getElementById("comp-icon").textContent="🏆";document.getElementById("comp-title").textContent="Excellent !";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Cours maîtrisé !";}
+  else{document.getElementById("comp-icon").textContent="📚";document.getElementById("comp-title").textContent="Formation terminée";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Révise pour améliorer ton score.";}
+  document.getElementById("completion-modal").classList.add("show");
+}
+document.addEventListener("keydown",function(e){
+  if(document.getElementById("qcm-overlay").classList.contains("show"))return;
+  if(e.key==="ArrowRight"||e.key===" "){e.preventDefault();navigate(1);}
+  if(e.key==="ArrowLeft")navigate(-1);
+});
+var touchX=0;
+document.addEventListener("touchstart",function(e){touchX=e.touches[0].clientX;});
+document.addEventListener("touchend",function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById("qcm-overlay").classList.contains("show"))navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById("matrix"),ctx=c.getContext("2d");
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener("resize",resize);
+  var chars="01ABCDEF{}CTFFlag",fs=13,drops;
+  function init(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  init();window.addEventListener("resize",init);
+  setInterval(function(){
+    ctx.fillStyle="rgba(2,4,12,0.05)";ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle="#cc88ff";ctx.font=fs+"px monospace";
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

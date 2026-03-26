@@ -147,7 +147,7 @@
       <!-- STATS -->
       <div class="stats-bar">
         <div class="stats-bar-item">
-          <div class="stat-val" id="stat-total">3</div>
+          <div class="stat-val" id="stat-total">6</div>
           <div class="stat-label">Cours disponibles</div>
         </div>
         <div class="stats-bar-item">
@@ -251,39 +251,62 @@
           <span class="course-cta" id="cta-j3">Commencer →</span>
         </a>
 
-        <!-- COMING SOON -->
-        <div class="course-card coming-soon" data-status="bientot">
+        <!-- WEB HACKING -->
+        <a href="web.html" class="course-card" data-status="disponible" id="card-web">
           <div class="course-number">04</div>
-          <div class="course-day"><span>// Web Hacking</span><span class="coming-tag">BIENTÔT</span></div>
-          <div class="course-title">Web Hacking — Les bases</div>
-          <div class="course-desc">HTTP, injections SQL, XSS, Burp Suite. Les vulnérabilités web les plus courantes et comment les exploiter.</div>
+          <div class="course-day"><span>// Web Hacking</span><span id="badge-web"></span></div>
+          <div class="course-title">Web Hacking</div>
+          <div class="course-desc">SQLi, XSS, OWASP Top 10, Burp Suite, IDOR. Les vulnérabilités web les plus critiques.</div>
           <div class="course-tags">
             <span class="badge badge-red">🌐 Web</span>
-            <span class="badge badge-gray">~50 min</span>
-          </div>
-        </div>
-
-        <div class="course-card coming-soon" data-status="bientot">
-          <div class="course-number">05</div>
-          <div class="course-day"><span>// Cryptographie</span><span class="coming-tag">BIENTÔT</span></div>
-          <div class="course-title">Cryptographie Appliquée</div>
-          <div class="course-desc">Chiffrement symétrique, asymétrique, hachage, PKI. La science qui protège vos données.</div>
-          <div class="course-tags">
-            <span class="badge badge-yellow">🔐 Crypto</span>
+            <span class="badge badge-blue">11 slides</span>
+            <span class="badge badge-yellow">7 QCM</span>
             <span class="badge badge-gray">~45 min</span>
           </div>
-        </div>
+          <div class="course-progress-wrap" id="prog-web" style="display:none">
+            <div class="course-progress-label"><span id="prog-web-label">En cours</span><span id="prog-web-score"></span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-web-fill" style="width:0%"></div></div>
+          </div>
+          <span class="course-cta" id="cta-web">Commencer →</span>
+        </a>
 
-        <div class="course-card coming-soon" data-status="bientot">
-          <div class="course-number">06</div>
-          <div class="course-day"><span>// OSINT</span><span class="coming-tag">BIENTÔT</span></div>
-          <div class="course-title">OSINT & Reconnaissance</div>
-          <div class="course-desc">Google Dorks, WHOIS, Shodan, réseaux sociaux. Collecter des informations publiques comme un professionnel.</div>
+        <!-- CRYPTOGRAPHIE -->
+        <a href="crypto.html" class="course-card" data-status="disponible" id="card-crypto">
+          <div class="course-number">05</div>
+          <div class="course-day"><span>// Cryptographie</span><span id="badge-crypto"></span></div>
+          <div class="course-title">Cryptographie Appliquée</div>
+          <div class="course-desc">AES, RSA, SHA-256, bcrypt, PKI, TLS. La science qui protège vos données.</div>
           <div class="course-tags">
-            <span class="badge badge-green">🕵️ OSINT</span>
+            <span class="badge badge-yellow">🔐 Crypto</span>
+            <span class="badge badge-blue">10 slides</span>
+            <span class="badge badge-yellow">8 QCM</span>
             <span class="badge badge-gray">~40 min</span>
           </div>
-        </div>
+          <div class="course-progress-wrap" id="prog-crypto" style="display:none">
+            <div class="course-progress-label"><span id="prog-crypto-label">En cours</span><span id="prog-crypto-score"></span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-crypto-fill" style="width:0%"></div></div>
+          </div>
+          <span class="course-cta" id="cta-crypto">Commencer →</span>
+        </a>
+
+        <!-- OSINT -->
+        <a href="osint.html" class="course-card" data-status="disponible" id="card-osint">
+          <div class="course-number">06</div>
+          <div class="course-day"><span>// OSINT</span><span id="badge-osint"></span></div>
+          <div class="course-title">OSINT & Reconnaissance</div>
+          <div class="course-desc">Google Dorks, WHOIS, Shodan, réseaux sociaux, métadonnées. Maîtrise les sources publiques.</div>
+          <div class="course-tags">
+            <span class="badge badge-green">🕵️ OSINT</span>
+            <span class="badge badge-blue">10 slides</span>
+            <span class="badge badge-yellow">8 QCM</span>
+            <span class="badge badge-gray">~40 min</span>
+          </div>
+          <div class="course-progress-wrap" id="prog-osint" style="display:none">
+            <div class="course-progress-label"><span id="prog-osint-label">En cours</span><span id="prog-osint-score"></span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-osint-fill" style="width:0%"></div></div>
+          </div>
+          <span class="course-cta" id="cta-osint">Commencer →</span>
+        </a>
 
       </div>
     </div>
@@ -309,7 +332,7 @@ async function init() {
   document.getElementById('stat-qcm').textContent = (qcmData || []).length;
 
   // Update course cards
-  var courses = ['j1','j2','j3'];
+  var courses = ['j1','j2','j3','web','crypto','osint'];
   courses.forEach(function(id) {
     var comp = completions.find(function(c){ return c.course_id === id; });
     if (comp) {

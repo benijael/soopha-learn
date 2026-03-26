@@ -181,11 +181,14 @@
 
 <script>
 var COURSES = {
-  j1: { title: "Introduction à la Cybersécurité", day: "Jour 1", qcm: 12 },
-  j2: { title: "Ingénierie Sociale & Phishing",    day: "Jour 2", qcm: 9  },
-  j3: { title: "Réseaux & Outils",                  day: "Jour 3", qcm: 8  }
+  j1:     { title: "Introduction à la Cybersécurité", day: "Module 1", qcm: 12 },
+  j2:     { title: "Ingénierie Sociale & Phishing",   day: "Module 2", qcm: 9  },
+  j3:     { title: "Réseaux & Outils",                day: "Module 3", qcm: 8  },
+  web:    { title: "Web Hacking",                     day: "Module 4", qcm: 7  },
+  crypto: { title: "Cryptographie Appliquée",         day: "Module 5", qcm: 8  },
+  osint:  { title: "OSINT & Reconnaissance",          day: "Module 6", qcm: 8  }
 };
-var ALL_COURSES = ['j1','j2','j3'];
+var ALL_COURSES = ['j1','j2','j3','web','crypto','osint'];
 var currentUser = null;
 var currentProfile = null;
 
