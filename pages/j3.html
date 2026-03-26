@@ -924,21 +924,7 @@ canvas#matrix { position:fixed; inset:0; z-index:0; opacity:.04; pointer-events:
   <div id="slide-counter">01 / 17</div>
   <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
 </div>
-<script>
-var cur=document.getElementById('cursor'),dot=document.getElementById('cursor-dot');
-document.addEventListener('mousemove',function(e){cur.style.left=(e.clientX-10)+'px';cur.style.top=(e.clientY-10)+'px';dot.style.left=e.clientX+'px';dot.style.top=e.clientY+'px';});
-var c=document.getElementById('matrix'),ctx=c.getContext('2d');
-function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}resize();window.addEventListener('resize',resize);
-var chars='01アイウTCPIPUDPHTTPSSH443{}PORT';var fs=13,drops;
-function init(){drops=Array(Math.floor(c.width/fs)).fill(1);}init();window.addEventListener('resize',init);
-setInterval(function(){ctx.fillStyle='rgba(2,8,16,0.05)';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='rgba(0,120,255,0.65)';ctx.font=fs+'px monospace';drops.forEach(function(y,i){ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);if(y*fs>c.height&&Math.random()>.975)drops[i]=0;drops[i]++;});},55);
-var current=1,total=17;
-function navigate(dir){var next=current+dir;if(next<1||next>total)return;var cs=document.getElementById('slide-'+current);var ns=document.getElementById('slide-'+next);cs.classList.remove('active');cs.classList.add('exit');setTimeout(function(){cs.classList.remove('exit');},450);ns.classList.add('active');current=next;updateUI();}
-function updateUI(){document.getElementById('slide-counter').textContent=String(current).padStart(2,'0')+' / '+String(total).padStart(2,'0');document.getElementById('prev-btn').disabled=current===1;document.getElementById('next-btn').disabled=current===total;document.getElementById('progress-fill').style.width=((current/total)*100)+'%';}
-document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key===' ')navigate(1);if(e.key==='ArrowLeft')navigate(-1);});
-var tx=0;document.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;});document.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)navigate(dx<0?1:-1);});
-updateUI();
-</script>
+
 </body>
 </html></div>
 
