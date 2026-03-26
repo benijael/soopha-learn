@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Formations — SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+.page { padding: 2.5rem 0 4rem; }
+
+/* HERO */
+.page-hero {
+  background: rgba(0,255,136,0.03);
+  border-bottom: 1px solid var(--green-border);
+  padding: 2.5rem 0;
+  margin-bottom: 2.5rem;
+}
+.page-hero h1 { margin-bottom: 0.4rem; }
+.page-hero p { font-family: var(--mono); font-size: 0.75rem; color: rgba(0,255,136,0.4); letter-spacing: 0.15em; }
+
+/* FILTER TABS */
+.filter-tabs {
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+.filter-tab {
+  font-family: var(--mono); font-size: 0.68rem;
+  padding: 0.4rem 1rem; cursor: pointer;
+  border: 1px solid var(--green-border);
+  color: rgba(0,255,136,0.4); letter-spacing: 0.1em;
+  text-transform: uppercase; transition: all 0.2s;
+  background: transparent;
+}
+.filter-tab:hover, .filter-tab.active {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(0,255,136,0.06);
+}
+
+/* CATALOGUE GRID */
+.catalogue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px,1fr));
+  gap: 1.2rem;
+  margin-bottom: 3rem;
+}
+
+/* COURSE CARD */
+.course-card {
+  background: rgba(4,15,8,0.9);
+  border: 1px solid var(--green-border);
+  border-radius: 2px;
+  padding: 1.8rem;
+  text-decoration: none; color: inherit;
+  display: block; position: relative;
+  transition: all 0.2s;
+}
+.course-card::before {
+  content: ''; position: absolute; top: -1px; left: -1px;
+  width: 14px; height: 14px;
+  border-top: 2px solid var(--green); border-left: 2px solid var(--green);
+}
+.course-card:hover {
+  border-color: rgba(0,255,136,0.4);
+  box-shadow: 0 0 20px rgba(0,255,136,0.08);
+  transform: translateY(-2px); opacity: 1;
+}
+.course-card.completed { border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.04); }
+.course-card.coming-soon { opacity: 0.45; pointer-events: none; border-style: dashed; }
+
+.course-number {
+  font-family: var(--display); font-size: 3rem; font-weight: 900;
+  color: rgba(0,255,136,0.06); position: absolute; top: 0.8rem; right: 1rem; line-height: 1;
+}
+.course-day { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.25em; color: rgba(0,255,136,0.35); margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; }
+.course-title { font-family: var(--display); font-size: 0.92rem; font-weight: 700; color: #fff; letter-spacing: 0.04em; margin-bottom: 0.5rem; line-height: 1.3; }
+.course-desc { font-size: 0.78rem; color: rgba(200,255,220,0.5); line-height: 1.5; margin-bottom: 1rem; }
+.course-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.course-progress-wrap { margin-top: 0.5rem; }
+.course-progress-label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.6rem; color: rgba(0,255,136,0.35); margin-bottom: 0.3rem; }
+.progress-bar { background: rgba(0,255,136,0.08); border-radius: 2px; height: 4px; overflow: hidden; }
+.progress-fill { background: var(--green); height: 100%; box-shadow: 0 0 6px var(--green); transition: width 0.5s; }
+.course-cta { font-family: var(--mono); font-size: 0.7rem; color: var(--green); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.8rem; display: block; }
+
+/* SECTION TITLE */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+/* COMING SOON */
+.coming-tag {
+  font-family: var(--mono); font-size: 0.58rem;
+  color: rgba(255,215,0,0.5); letter-spacing: 0.12em;
+  border: 1px solid rgba(255,215,0,0.2);
+  padding: 0.15rem 0.5rem;
+}
+
+/* STATS BAR */
+.stats-bar {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 1rem; margin-bottom: 2.5rem;
+}
+.stats-bar-item {
+  padding: 1rem; text-align: center;
+  border: 1px solid var(--green-border);
+  background: rgba(0,255,136,0.03);
+}
+
+@media (max-width: 600px) {
+  .stats-bar { grid-template-columns: repeat(2,1fr); }
+  .catalogue-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">SooPHA <span>LEARN</span></a>
+  <div class="navbar-links">
+    <a href="dashboard.html" class="navbar-link">Dashboard</a>
+    <a href="formations.html" class="navbar-link active">Formations</a>
+    <button class="btn btn-secondary btn-sm" onclick="logout()">Déconnexion</button>
+  </div>
+</nav>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <span>Chargement...</span>
+</div>
+
+<div id="page-content" style="display:none">
+
+  <div class="page-hero">
+    <div class="container">
+      <h1>FORMATIONS</h1>
+      <p>// Cybersécurité · Afrique Francophone · 2026</p>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="container">
+
+      <!-- STATS -->
+      <div class="stats-bar">
+        <div class="stats-bar-item">
+          <div class="stat-val" id="stat-total">3</div>
+          <div class="stat-label">Cours disponibles</div>
+        </div>
+        <div class="stats-bar-item">
+          <div class="stat-val" id="stat-completed">0</div>
+          <div class="stat-label">Terminés</div>
+        </div>
+        <div class="stats-bar-item">
+          <div class="stat-val" id="stat-avg">0%</div>
+          <div class="stat-label">Score moyen</div>
+        </div>
+        <div class="stats-bar-item">
+          <div class="stat-val" id="stat-qcm">0</div>
+          <div class="stat-label">QCM répondus</div>
+        </div>
+      </div>
+
+      <!-- FILTER TABS -->
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterCourses('all', this)">Tous</button>
+        <button class="filter-tab" onclick="filterCourses('disponible', this)">Disponibles</button>
+        <button class="filter-tab" onclick="filterCourses('en-cours', this)">En cours</button>
+        <button class="filter-tab" onclick="filterCourses('termine', this)">Terminés ✅</button>
+        <button class="filter-tab" onclick="filterCourses('bientot', this)">À venir</button>
+      </div>
+
+      <!-- CATALOGUE -->
+      <div class="catalogue-grid" id="catalogue-grid">
+
+        <!-- J1 -->
+        <a href="j1.html" class="course-card" data-status="disponible" id="card-j1">
+          <div class="course-number">J1</div>
+          <div class="course-day">
+            <span>// Jour 1</span>
+            <span id="badge-j1"></span>
+          </div>
+          <div class="course-title">Introduction à la Cybersécurité</div>
+          <div class="course-desc">CIA, menaces africaines, acteurs, métiers, Red vs Blue Team. Les fondamentaux pour comprendre l'écosystème cyber.</div>
+          <div class="course-tags">
+            <span class="badge badge-green">🛡️ Bases</span>
+            <span class="badge badge-blue">17 slides</span>
+            <span class="badge badge-yellow">12 QCM</span>
+            <span class="badge badge-gray">~45 min</span>
+          </div>
+          <div class="course-progress-wrap" id="prog-j1" style="display:none">
+            <div class="course-progress-label">
+              <span id="prog-j1-label">En cours</span>
+              <span id="prog-j1-score"></span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-j1-fill" style="width:0%"></div></div>
+          </div>
+          <span class="course-cta" id="cta-j1">Commencer →</span>
+        </a>
+
+        <!-- J2 -->
+        <a href="j2.html" class="course-card" data-status="disponible" id="card-j2">
+          <div class="course-number">J2</div>
+          <div class="course-day">
+            <span>// Jour 2</span>
+            <span id="badge-j2"></span>
+          </div>
+          <div class="course-title">Ingénierie Sociale & Phishing</div>
+          <div class="course-desc">L'art de la manipulation. Phishing, vishing, smishing, deepfakes. Reconnaître et contrer les attaques humaines.</div>
+          <div class="course-tags">
+            <span class="badge badge-red">⚠️ Attaques</span>
+            <span class="badge badge-blue">18 slides</span>
+            <span class="badge badge-yellow">9 QCM</span>
+            <span class="badge badge-gray">~40 min</span>
+          </div>
+          <div class="course-progress-wrap" id="prog-j2" style="display:none">
+            <div class="course-progress-label">
+              <span id="prog-j2-label">En cours</span>
+              <span id="prog-j2-score"></span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-j2-fill" style="width:0%"></div></div>
+          </div>
+          <span class="course-cta" id="cta-j2">Commencer →</span>
+        </a>
+
+        <!-- J3 -->
+        <a href="j3.html" class="course-card" data-status="disponible" id="card-j3">
+          <div class="course-number">J3</div>
+          <div class="course-day">
+            <span>// Jour 3</span>
+            <span id="badge-j3"></span>
+          </div>
+          <div class="course-title">Réseaux & Outils</div>
+          <div class="course-desc">Modèle OSI, TCP/IP, ports, Wireshark, Nmap. Les outils essentiels du hacker et la défense réseau.</div>
+          <div class="course-tags">
+            <span class="badge badge-blue">🌐 Réseaux</span>
+            <span class="badge badge-blue">17 slides</span>
+            <span class="badge badge-yellow">8 QCM</span>
+            <span class="badge badge-gray">~40 min</span>
+          </div>
+          <div class="course-progress-wrap" id="prog-j3" style="display:none">
+            <div class="course-progress-label">
+              <span id="prog-j3-label">En cours</span>
+              <span id="prog-j3-score"></span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-j3-fill" style="width:0%"></div></div>
+          </div>
+          <span class="course-cta" id="cta-j3">Commencer →</span>
+        </a>
+
+        <!-- COMING SOON -->
+        <div class="course-card coming-soon" data-status="bientot">
+          <div class="course-number">04</div>
+          <div class="course-day"><span>// Web Hacking</span><span class="coming-tag">BIENTÔT</span></div>
+          <div class="course-title">Web Hacking — Les bases</div>
+          <div class="course-desc">HTTP, injections SQL, XSS, Burp Suite. Les vulnérabilités web les plus courantes et comment les exploiter.</div>
+          <div class="course-tags">
+            <span class="badge badge-red">🌐 Web</span>
+            <span class="badge badge-gray">~50 min</span>
+          </div>
+        </div>
+
+        <div class="course-card coming-soon" data-status="bientot">
+          <div class="course-number">05</div>
+          <div class="course-day"><span>// Cryptographie</span><span class="coming-tag">BIENTÔT</span></div>
+          <div class="course-title">Cryptographie Appliquée</div>
+          <div class="course-desc">Chiffrement symétrique, asymétrique, hachage, PKI. La science qui protège vos données.</div>
+          <div class="course-tags">
+            <span class="badge badge-yellow">🔐 Crypto</span>
+            <span class="badge badge-gray">~45 min</span>
+          </div>
+        </div>
+
+        <div class="course-card coming-soon" data-status="bientot">
+          <div class="course-number">06</div>
+          <div class="course-day"><span>// OSINT</span><span class="coming-tag">BIENTÔT</span></div>
+          <div class="course-title">OSINT & Reconnaissance</div>
+          <div class="course-desc">Google Dorks, WHOIS, Shodan, réseaux sociaux. Collecter des informations publiques comme un professionnel.</div>
+          <div class="course-tags">
+            <span class="badge badge-green">🕵️ OSINT</span>
+            <span class="badge badge-gray">~40 min</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var currentUser = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+
+  // Load completions
+  var completions = await getCompletedCourses(currentUser.id);
+  var stats = await getUserStats(currentUser.id);
+
+  // Stats bar
+  document.getElementById('stat-completed').textContent = stats.coursesCompleted;
+  document.getElementById('stat-avg').textContent = stats.avgScore + '%';
+
+  var { data: qcmData } = await supabase.from('qcm_results').select('id').eq('user_id', currentUser.id);
+  document.getElementById('stat-qcm').textContent = (qcmData || []).length;
+
+  // Update course cards
+  var courses = ['j1','j2','j3'];
+  courses.forEach(function(id) {
+    var comp = completions.find(function(c){ return c.course_id === id; });
+    if (comp) {
+      var pct = Math.round(comp.score_pct);
+      var card = document.getElementById('card-' + id);
+      card.dataset.status = 'termine';
+      card.classList.add('completed');
+
+      document.getElementById('prog-' + id).style.display = 'block';
+      document.getElementById('prog-' + id + '-fill').style.width = pct + '%';
+      document.getElementById('prog-' + id + '-label').textContent = pct >= 70 ? '✅ Terminé' : '📚 À revoir';
+      document.getElementById('prog-' + id + '-score').textContent = pct + '%';
+      document.getElementById('cta-' + id).textContent = 'Revoir →';
+      document.getElementById('badge-' + id).textContent = pct >= 70 ? '✅' : '⚠️';
+    } else {
+      // Check if in progress (has some QCM results)
+    }
+  });
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('page-content').style.display = 'block';
+}
+
+function filterCourses(status, btn) {
+  // Update tabs
+  document.querySelectorAll('.filter-tab').forEach(function(t){ t.classList.remove('active'); });
+  btn.classList.add('active');
+
+  // Filter cards
+  document.querySelectorAll('.course-card').forEach(function(card) {
+    if (status === 'all') {
+      card.style.display = 'block';
+    } else {
+      card.style.display = card.dataset.status === status ? 'block' : 'none';
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>

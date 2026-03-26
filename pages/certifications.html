@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes Certifications — SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+.page { padding: 2.5rem 0 4rem; }
+.page-hero { background: rgba(0,255,136,0.03); border-bottom: 1px solid var(--green-border); padding: 2.5rem 0; margin-bottom: 2.5rem; }
+.page-hero h1 { margin-bottom: 0.4rem; }
+.page-hero p { font-family: var(--mono); font-size: 0.75rem; color: rgba(0,255,136,0.4); letter-spacing: 0.15em; }
+
+/* CERTIF CARDS */
+.certif-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(340px,1fr));
+  gap: 1.5rem; margin-bottom: 3rem;
+}
+.certif-card {
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.certif-card::after {
+  content: ''; position: absolute; bottom: -1px; right: -1px;
+  width: 14px; height: 14px;
+  border-bottom: 2px solid var(--green); border-right: 2px solid var(--green);
+}
+.certif-watermark {
+  position: absolute; top: 50%; right: 1.5rem;
+  transform: translateY(-50%);
+  font-family: var(--display); font-size: 5rem; font-weight: 900;
+  color: rgba(0,255,136,0.04); line-height: 1;
+  pointer-events: none; user-select: none;
+}
+.certif-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 1.2rem;
+}
+.certif-icon { font-size: 2.5rem; }
+.certif-score {
+  font-family: var(--display); font-size: 1.8rem; font-weight: 900;
+  text-shadow: 0 0 12px var(--green);
+}
+.certif-score.pass { color: var(--green); }
+.certif-score.fail { color: #ff8800; }
+.certif-course { font-family: var(--display); font-size: 0.85rem; font-weight: 700; color: #fff; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+.certif-date { font-family: var(--mono); font-size: 0.65rem; color: rgba(0,255,136,0.35); letter-spacing: 0.1em; margin-bottom: 1.2rem; }
+.certif-name { font-family: var(--mono); font-size: 0.72rem; color: rgba(0,255,136,0.5); letter-spacing: 0.08em; margin-bottom: 1.5rem; }
+.certif-status {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em;
+  padding: 0.3rem 0.8rem; border-radius: 2px; margin-bottom: 1rem; display: inline-block;
+}
+.certif-status.pass { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); color: var(--green); }
+.certif-status.fail { background: rgba(255,136,0,0.1); border: 1px solid rgba(255,136,0,0.3); color: #ff8800; }
+.certif-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+/* LOCKED CARD */
+.certif-card-locked {
+  padding: 2rem;
+  border-style: dashed;
+  opacity: 0.5;
+  text-align: center;
+}
+.certif-card-locked .lock-icon { font-size: 2rem; margin-bottom: 0.8rem; opacity: 0.4; }
+.certif-card-locked .lock-title { font-family: var(--display); font-size: 0.8rem; color: rgba(0,255,136,0.5); margin-bottom: 0.4rem; }
+.certif-card-locked .lock-sub { font-family: var(--mono); font-size: 0.65rem; color: rgba(0,255,136,0.25); }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 4rem 2rem; }
+.empty-state-icon { font-size: 4rem; margin-bottom: 1.5rem; opacity: 0.5; }
+.empty-state h2 { color: rgba(0,255,136,0.5); margin-bottom: 0.8rem; font-size: 1.2rem; }
+.empty-state p { font-family: var(--mono); font-size: 0.75rem; color: rgba(0,255,136,0.3); margin-bottom: 2rem; line-height: 1.7; }
+
+/* CERT PDF PREVIEW */
+#cert-preview-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.92);
+  display: none; align-items: center; justify-content: center;
+  padding: 2rem;
+}
+#cert-preview-overlay.show { display: flex; }
+.cert-preview-box {
+  background: #fff;
+  width: 100%; max-width: 800px;
+  padding: 60px;
+  position: relative;
+  border: 3px solid #009e60;
+  box-shadow: 0 0 0 8px #fcd116, 0 0 0 16px #003189;
+}
+.cert-close {
+  position: fixed; top: 1.5rem; right: 1.5rem;
+  background: var(--green); color: var(--bg);
+  border: none; padding: 0.5rem 1.2rem;
+  font-family: var(--display); font-size: 0.75rem;
+  font-weight: 700; letter-spacing: 0.1em; cursor: pointer;
+}
+.cert-download {
+  position: fixed; top: 1.5rem; right: 8rem;
+  background: transparent; color: var(--green);
+  border: 1px solid var(--green); padding: 0.5rem 1.2rem;
+  font-family: var(--display); font-size: 0.75rem;
+  font-weight: 700; letter-spacing: 0.1em; cursor: pointer;
+}
+
+/* CERTIFICATE CONTENT */
+.cert-content {
+  text-align: center;
+  font-family: 'Georgia', serif;
+  color: #1a1a1a;
+}
+.cert-logo-area { margin-bottom: 30px; }
+.cert-brand { font-size: 28px; font-weight: bold; color: #009e60; letter-spacing: 4px; }
+.cert-brand-sub { font-size: 11px; letter-spacing: 8px; color: #666; margin-top: 4px; }
+.cert-gabon-bar { display: flex; height: 4px; width: 200px; margin: 16px auto; border-radius: 2px; overflow: hidden; }
+.cert-gabon-bar span:nth-child(1){flex:1;background:#009e60}
+.cert-gabon-bar span:nth-child(2){flex:1;background:#fcd116}
+.cert-gabon-bar span:nth-child(3){flex:1;background:#003189}
+.cert-title-text { font-size: 14px; letter-spacing: 6px; color: #888; text-transform: uppercase; margin-bottom: 20px; }
+.cert-certifie { font-size: 13px; color: #555; margin-bottom: 12px; }
+.cert-name { font-size: 38px; color: #1a1a1a; font-style: italic; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #ddd; }
+.cert-body { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 24px; }
+.cert-course-name { font-size: 22px; font-weight: bold; color: #009e60; margin: 8px 0; }
+.cert-score-area { display: inline-block; background: #f5f5f5; border: 2px solid #009e60; padding: 10px 30px; margin: 16px 0; border-radius: 4px; }
+.cert-score-val { font-size: 32px; font-weight: bold; color: #009e60; }
+.cert-score-label { font-size: 11px; color: #888; letter-spacing: 3px; }
+.cert-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
+.cert-sig { text-align: center; }
+.cert-sig-line { width: 140px; height: 1px; background: #ccc; margin-bottom: 6px; }
+.cert-sig-name { font-size: 13px; font-weight: bold; color: #333; }
+.cert-sig-title { font-size: 10px; color: #888; letter-spacing: 2px; }
+.cert-id { font-size: 9px; color: #bbb; text-align: center; letter-spacing: 1px; }
+
+@media (max-width: 600px) {
+  .certif-grid { grid-template-columns: 1fr; }
+  .cert-preview-box { padding: 30px; }
+  .cert-name { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">SooPHA <span>LEARN</span></a>
+  <div class="navbar-links">
+    <a href="dashboard.html" class="navbar-link">Dashboard</a>
+    <a href="formations.html" class="navbar-link">Formations</a>
+    <button class="btn btn-secondary btn-sm" onclick="logout()">Déconnexion</button>
+  </div>
+</nav>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <span>Chargement...</span>
+</div>
+
+<div id="page-content" style="display:none">
+  <div class="page-hero">
+    <div class="container">
+      <h1>MES CERTIFICATIONS</h1>
+      <p>// Télécharge tes certificats · Partage sur LinkedIn</p>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="container">
+      <div id="certif-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CERTIFICATE PREVIEW OVERLAY -->
+<div id="cert-preview-overlay">
+  <button class="cert-download" onclick="printCert()">⬇ Télécharger PDF</button>
+  <button class="cert-close" onclick="closeCert()">✕ Fermer</button>
+  <div class="cert-preview-box" id="cert-preview-content"></div>
+</div>
+
+<script>
+var COURSES = {
+  j1: { title: "Introduction à la Cybersécurité", day: "Jour 1", qcm: 12 },
+  j2: { title: "Ingénierie Sociale & Phishing",    day: "Jour 2", qcm: 9  },
+  j3: { title: "Réseaux & Outils",                  day: "Jour 3", qcm: 8  }
+};
+var ALL_COURSES = ['j1','j2','j3'];
+var currentUser = null;
+var currentProfile = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  currentProfile = await getProfile(currentUser.id);
+  var completions = await getCompletedCourses(currentUser.id);
+  renderCertifications(completions);
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('page-content').style.display = 'block';
+}
+
+function renderCertifications(completions) {
+  var container = document.getElementById('certif-container');
+  var meta = currentUser.user_metadata || {};
+  var fullname = (currentProfile && currentProfile.display_name)
+    ? currentProfile.display_name
+    : (meta.full_name || meta.given_name || 'Apprenant');
+
+  if (completions.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📜</div>
+        <h2>Aucune certification pour l'instant</h2>
+        <p>Complète tes premiers cours pour obtenir tes certifications.<br>Un certificat PDF est généré automatiquement à chaque cours terminé.</p>
+        <a href="formations.html" class="btn btn-primary">Commencer une formation →</a>
+      </div>`;
+    return;
+  }
+
+  var html = '<div class="certif-grid">';
+  var completedIds = completions.map(function(c){ return c.course_id; });
+
+  // Completed courses
+  completions.forEach(function(comp) {
+    var course = COURSES[comp.course_id];
+    if (!course) return;
+    var pct = Math.round(comp.score_pct);
+    var pass = pct >= 70;
+    var date = new Date(comp.completed_at).toLocaleDateString('fr-FR', {day:'2-digit',month:'long',year:'numeric'});
+    var certId = 'SPH-' + comp.course_id.toUpperCase() + '-' + currentUser.id.slice(0,6).toUpperCase();
+
+    html += `
+      <div class="card certif-card">
+        <div class="certif-watermark">${comp.course_id.toUpperCase()}</div>
+        <div class="certif-header">
+          <div class="certif-icon">${pass ? '🏆' : '📚'}</div>
+          <div>
+            <div class="certif-score ${pass ? 'pass' : 'fail'}">${pct}%</div>
+          </div>
+        </div>
+        <div class="certif-course">${course.title}</div>
+        <div class="certif-date">Complété le ${date}</div>
+        <div class="certif-name">👤 ${fullname}</div>
+        <div class="certif-status ${pass ? 'pass' : 'fail'}">${pass ? '✅ CERTIFIÉ' : '⚠️ SCORE INSUFFISANT (< 70%)'}</div>
+        <div class="certif-actions">
+          ${pass ? `<button class="btn btn-primary btn-sm" onclick="showCert('${comp.course_id}', '${fullname}', ${pct}, '${date}', '${certId}')">📜 Voir le certificat</button>` : ''}
+          <a href="${comp.course_id}.html" class="btn btn-secondary btn-sm">🔄 Refaire le cours</a>
+        </div>
+      </div>`;
+  });
+
+  // Locked courses
+  ALL_COURSES.forEach(function(id) {
+    if (completedIds.indexOf(id) === -1) {
+      var course = COURSES[id];
+      html += `
+        <div class="card certif-card-locked">
+          <div class="lock-icon">🔒</div>
+          <div class="lock-title">${course.title}</div>
+          <div class="lock-sub">Complète ce cours pour débloquer le certificat</div>
+          <div style="margin-top:1rem">
+            <a href="${id}.html" class="btn btn-secondary btn-sm">Commencer →</a>
+          </div>
+        </div>`;
+    }
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function showCert(courseId, name, score, date, certId) {
+  var course = COURSES[courseId];
+  var overlay = document.getElementById('cert-preview-overlay');
+  var content = document.getElementById('cert-preview-content');
+
+  content.innerHTML = `
+    <div class="cert-content" id="cert-to-print">
+      <div class="cert-logo-area">
+        <div class="cert-brand">SooPHA LEARN</div>
+        <div class="cert-brand-sub">CYBERSÉCURITÉ · AFRIQUE FRANCOPHONE</div>
+        <div class="cert-gabon-bar"><span></span><span></span><span></span></div>
+      </div>
+      <div class="cert-title-text">Certificat de Formation</div>
+      <div class="cert-certifie">Ce certificat est décerné à</div>
+      <div class="cert-name">${name}</div>
+      <div class="cert-body">
+        pour avoir complété avec succès la formation
+        <div class="cert-course-name">${course.title}</div>
+        du programme SooPHA Masterclass en Cybersécurité
+      </div>
+      <div class="cert-score-area">
+        <div class="cert-score-val">${score}%</div>
+        <div class="cert-score-label">SCORE FINAL</div>
+      </div>
+      <div class="cert-footer">
+        <div class="cert-sig">
+          <div class="cert-sig-line"></div>
+          <div class="cert-sig-name">Béni-Jaël MBATA</div>
+          <div class="cert-sig-title">FONDATEUR · SOOPHA LEARN</div>
+        </div>
+        <div class="cert-id">
+          ID : ${certId}<br>
+          Délivré le ${date}<br>
+          soopha-learn.com
+        </div>
+        <div class="cert-sig">
+          <div class="cert-sig-line"></div>
+          <div class="cert-sig-name">${course.day}</div>
+          <div class="cert-sig-title">PROGRAMME 2026</div>
+        </div>
+      </div>
+    </div>`;
+
+  overlay.classList.add('show');
+}
+
+function closeCert() {
+  document.getElementById('cert-preview-overlay').classList.remove('show');
+}
+
+function printCert() {
+  var cert = document.getElementById('cert-to-print');
+  var win = window.open('', '_blank');
+  win.document.write(`
+    <!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>Certificat SooPHA Learn</title>
+    <style>
+      body { margin: 0; padding: 40px; font-family: Georgia, serif; background: #fff; }
+      .cert-brand { font-size: 28px; font-weight: bold; color: #009e60; letter-spacing: 4px; text-align: center; }
+      .cert-brand-sub { font-size: 11px; letter-spacing: 8px; color: #666; margin-top: 4px; text-align: center; }
+      .cert-gabon-bar { display: flex; height: 4px; width: 200px; margin: 16px auto; border-radius: 2px; overflow: hidden; }
+      .cert-gabon-bar span:nth-child(1){flex:1;background:#009e60}
+      .cert-gabon-bar span:nth-child(2){flex:1;background:#fcd116}
+      .cert-gabon-bar span:nth-child(3){flex:1;background:#003189}
+      ${cert.closest('.cert-preview-box').innerHTML.match(/<style[^>]*>(.*?)<\/style>/s)?.[1] || ''}
+      .cert-content { text-align: center; color: #1a1a1a; }
+      .cert-title-text { font-size: 14px; letter-spacing: 6px; color: #888; text-transform: uppercase; margin-bottom: 20px; }
+      .cert-certifie { font-size: 13px; color: #555; margin-bottom: 12px; }
+      .cert-name { font-size: 38px; font-style: italic; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #ddd; }
+      .cert-body { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 24px; }
+      .cert-course-name { font-size: 22px; font-weight: bold; color: #009e60; margin: 8px 0; }
+      .cert-score-area { display: inline-block; background: #f5f5f5; border: 2px solid #009e60; padding: 10px 30px; margin: 16px 0; border-radius: 4px; }
+      .cert-score-val { font-size: 32px; font-weight: bold; color: #009e60; }
+      .cert-score-label { font-size: 11px; color: #888; letter-spacing: 3px; }
+      .cert-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
+      .cert-sig { text-align: center; }
+      .cert-sig-line { width: 140px; height: 1px; background: #ccc; margin-bottom: 6px; }
+      .cert-sig-name { font-size: 13px; font-weight: bold; color: #333; }
+      .cert-sig-title { font-size: 10px; color: #888; letter-spacing: 2px; }
+      .cert-id { font-size: 9px; color: #bbb; text-align: center; letter-spacing: 1px; }
+      @media print { body { padding: 20px; } }
+    </style>
+    </head><body>${cert.outerHTML}</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(function(){ win.print(); }, 500);
+}
+
+init();
+</script>
+</body>
+</html>
