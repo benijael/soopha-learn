@@ -5,4 +5,4 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // ═══════════════════════════════════════════════════════
 //  Ne touche pas au reste
 // ═══════════════════════════════════════════════════════
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+//const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
