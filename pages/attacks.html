@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Types d'Attaques Cyber · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html, body { overflow: hidden; height: 100%; }
+body::before { height: 3px; }
+#topbar { position:fixed; top:3px; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,4,10,0.97); border-bottom:1px solid rgba(255,68,102,.18); backdrop-filter:blur(12px); font-size:.65rem; color:rgba(255,68,102,.4); }
+.tb-left { display:flex; gap:1.5rem; align-items:center; }
+.tb-right { display:flex; gap:1.2rem; align-items:center; }
+.tb-back { color:rgba(255,68,102,.5); text-decoration:none; font-size:.65rem; letter-spacing:.08em; transition:color .2s; }
+.tb-back:hover { color:#ff4466; opacity:1; }
+.tb-dot { width:6px; height:6px; background:#ff4466; border-radius:50%; display:inline-block; animation:blink 1.4s infinite; margin-right:.3rem; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.tb-user { font-family:var(--mono); font-size:.62rem; color:rgba(255,68,102,.4); }
+#progress-top { position:fixed; top:34px; left:0; right:0; z-index:200; height:2px; background:rgba(255,68,102,.06); }
+#progress-fill { height:100%; background:#ff4466; box-shadow:0 0 8px #ff4466; transition:width .5s ease; }
+#scanlines { position:fixed; inset:0; z-index:1; pointer-events:none; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px); }
+#vignette  { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%); }
+canvas#matrix { position:fixed; inset:0; z-index:0; opacity:.04; pointer-events:none; }
+#slides { position:fixed; inset:0; z-index:10; padding-top:36px; padding-bottom:44px; overflow:hidden; }
+.slide { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:1.5rem 4rem; opacity:0; pointer-events:none; transition:opacity .4s ease,transform .4s ease; transform:translateX(40px); overflow-y:auto; }
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.exit   { opacity:0; transform:translateX(-40px); }
+.gabon-bar { display:flex; height:3px; width:60px; border-radius:2px; overflow:hidden; margin:.6rem 0; }
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(255,68,102,.35); text-transform:uppercase; margin-bottom:.5rem; }
+.slide h1 { font-family:var(--display)!important; font-weight:900!important; font-size:clamp(1.8rem,3.5vw,2.8rem)!important; color:#fff!important; text-align:center; letter-spacing:.1em; line-height:1.15; margin-bottom:.4rem!important; text-shadow:0 0 40px #ff4466,0 0 80px rgba(255,68,102,.2); }
+.slide h2 { font-family:var(--display)!important; font-weight:700!important; font-size:clamp(1.1rem,2vw,1.7rem)!important; color:#ff4466!important; letter-spacing:.08em; margin-bottom:1rem!important; }
+.slide h3 { font-family:var(--display)!important; font-weight:400!important; font-size:clamp(.8rem,1.2vw,1rem)!important; color:rgba(255,68,102,.55)!important; letter-spacing:.2em; text-transform:uppercase; margin-bottom:1.5rem!important; }
+.card { background:rgba(2,8,18,.88); border:1px solid rgba(255,68,102,.18); border-radius:2px; padding:1.4rem 1.8rem; position:relative; backdrop-filter:blur(10px); max-width:880px; width:100%; }
+.card::before { content:''; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:2px solid #ff4466; border-left:2px solid #ff4466; }
+.card::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:2px solid #ff4466; border-right:2px solid #ff4466; }
+.bullets { list-style:none; display:flex; flex-direction:column; gap:.55rem; }
+.bullets li { display:flex; align-items:flex-start; gap:.7rem; font-family:var(--body); font-size:clamp(.8rem,1.3vw,.95rem); color:rgba(220,230,255,.85); line-height:1.5; animation:fadeIn .4s ease both; }
+.bullets li::before { content:'▶'; color:#ff4466; font-size:.55rem; margin-top:.35rem; flex-shrink:0; }
+.bullets li strong { color:#fff; }
+.bullets li.ok::before { content:'✅'; font-size:.7rem; }
+.bullets li.warn::before { content:'⚠'; color:#ffd700; font-size:.7rem; }
+.bullets li.danger::before { content:'🔴'; font-size:.7rem; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; max-width:880px; width:100%; }
+.pill { display:inline-block; padding:.25rem .7rem; font-size:.65rem; letter-spacing:.06em; border-radius:2px; font-family:var(--mono); }
+.pill-green  { background:rgba(0,255,136,.1);  border:1px solid rgba(0,255,136,.3);  color:#00ff88; }
+.pill-red    { background:rgba(255,68,102,.1); border:1px solid rgba(255,68,102,.3); color:#ff4466; }
+.pill-yellow { background:rgba(255,215,0,.08); border:1px solid rgba(255,215,0,.3);  color:#ffd700; }
+.pill-blue   { background:rgba(0,170,255,.08); border:1px solid rgba(0,170,255,.3);  color:#00aaff; }
+.pill-orange { background:rgba(255,136,0,.1);  border:1px solid rgba(255,136,0,.3);  color:#ff8800; }
+.pill-purple { background:rgba(200,136,255,.1);border:1px solid rgba(200,136,255,.3);color:#cc88ff; }
+.quote { border-left:3px solid #ff4466; padding:.7rem 1rem; background:rgba(255,68,102,.04); font-family:var(--body); font-style:italic; font-size:clamp(.9rem,1.5vw,1.15rem); color:#e0e8ff; line-height:1.6; }
+.terminal { background:rgba(0,0,4,.7); border:1px solid rgba(255,68,102,.15); border-left:3px solid #ff4466; padding:.8rem 1.1rem; font-family:var(--mono); font-size:.78rem; color:rgba(255,68,102,.8); line-height:1.8; }
+.term-prompt { color:#ff4466; }
+.term-out    { color:rgba(255,255,255,.5); }
+.hdiv { display:flex; align-items:center; gap:1rem; color:rgba(255,68,102,.2); font-size:.62rem; letter-spacing:.2em; margin:.8rem 0; }
+.hdiv::before,.hdiv::after { content:''; flex:1; height:1px; background:rgba(255,68,102,.12); }
+@keyframes glitch {
+  0%,90%,100%{text-shadow:0 0 40px #ff4466,0 0 80px rgba(255,68,102,.2)}
+  91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}
+  93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}
+  95%{text-shadow:0 0 40px #ff4466;transform:translate(0)}
+}
+.glitch { animation:glitch 7s infinite; }
+#qcm-overlay { position:fixed; inset:0; z-index:300; background:rgba(2,4,12,.97); display:none; flex-direction:column; align-items:center; justify-content:center; padding:2rem; }
+#qcm-overlay.show { display:flex; animation:fadeInOv .3s ease; }
+@keyframes fadeInOv { from{opacity:0} to{opacity:1} }
+.qcm-box { max-width:680px; width:100%; background:rgba(2,8,18,.97); border:1px solid rgba(255,68,102,.25); border-radius:2px; padding:2.5rem; position:relative; box-shadow:0 0 40px rgba(255,68,102,.1); }
+.qcm-box::before { content:''; position:absolute; top:-1px; left:-1px; width:18px; height:18px; border-top:2px solid #ff4466; border-left:2px solid #ff4466; }
+.qcm-box::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:18px; height:18px; border-bottom:2px solid #ff4466; border-right:2px solid #ff4466; }
+.qcm-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid rgba(255,68,102,.15); }
+.qcm-label { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(255,68,102,.4); text-transform:uppercase; }
+.qcm-prog  { font-family:var(--mono); font-size:.65rem; color:rgba(255,68,102,.35); }
+.qcm-saving { font-family:var(--mono); font-size:.62rem; color:rgba(255,68,102,.35); margin-bottom:.5rem; display:none; }
+.qcm-saving.show { display:block; }
+.qcm-question { font-family:var(--display); font-size:clamp(.9rem,1.8vw,1.1rem); font-weight:700; color:#fff; line-height:1.4; margin-bottom:1.8rem; }
+.qcm-options { display:flex; flex-direction:column; gap:.65rem; margin-bottom:1.5rem; }
+.qcm-option { display:flex; align-items:flex-start; gap:.9rem; padding:.8rem 1.1rem; background:rgba(0,0,8,.3); border:1px solid rgba(255,68,102,.1); cursor:pointer; border-radius:2px; transition:all .15s; font-family:var(--body); font-size:.88rem; color:rgba(200,210,255,.75); line-height:1.4; }
+.qcm-option:hover:not(.disabled) { border-color:rgba(255,68,102,.35); background:rgba(255,68,102,.06); color:rgba(220,230,255,.95); }
+.qcm-option.correct  { border-color:#ff4466!important; background:rgba(255,68,102,.12)!important; color:#ff4466!important; }
+.qcm-option.wrong    { border-color:#ff4466!important; background:rgba(255,68,102,.08)!important; color:#ff4466!important; }
+.qcm-option.disabled { cursor:default; pointer-events:none; }
+.option-letter { font-family:var(--display); font-size:.68rem; font-weight:700; color:rgba(255,68,102,.4); min-width:18px; flex-shrink:0; margin-top:.1rem; }
+.qcm-option.correct .option-letter,.qcm-option.wrong .option-letter { color:inherit; }
+.qcm-feedback { padding:.8rem 1rem; border-radius:2px; font-family:var(--mono); font-size:.8rem; line-height:1.5; display:none; margin-bottom:1.2rem; }
+.qcm-feedback.correct { background:rgba(255,68,102,.07); border:1px solid rgba(255,68,102,.2); color:rgba(255,68,102,.9); }
+.qcm-feedback.wrong   { background:rgba(255,68,102,.06); border:1px solid rgba(255,68,102,.2); color:rgba(255,100,130,.9); }
+.qcm-btn { font-family:var(--display); font-size:.75rem; font-weight:700; letter-spacing:.12em; padding:.7rem 1.8rem; background:#ff4466; color:var(--bg); border:none; cursor:pointer; clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition:all .2s; text-transform:uppercase; display:none; }
+.qcm-btn.show { display:inline-block; }
+#completion-modal { position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; padding:2rem; }
+#completion-modal.show { display:flex; animation:fadeInOv .3s ease; }
+.completion-box { max-width:500px; width:100%; background:rgba(2,8,18,.98); border:1px solid rgba(255,68,102,.3); border-radius:2px; padding:3rem 2.5rem; text-align:center; box-shadow:0 0 60px rgba(255,68,102,.15); position:relative; }
+.completion-box::before { content:''; position:absolute; top:-1px; left:-1px; width:20px; height:20px; border-top:2px solid #ff4466; border-left:2px solid #ff4466; }
+.completion-icon  { font-size:4rem; margin-bottom:1rem; }
+.completion-title { font-family:var(--display); font-size:1.5rem; font-weight:900; color:#fff; margin-bottom:.5rem; }
+.completion-score { font-family:var(--display); font-size:3.5rem; font-weight:900; color:#ff4466; text-shadow:0 0 30px #ff4466; margin:1rem 0; }
+.completion-sub   { font-family:var(--mono); font-size:.78rem; color:rgba(255,68,102,.5); margin-bottom:.5rem; line-height:1.6; }
+.completion-saved { font-family:var(--mono); font-size:.68rem; color:rgba(255,68,102,.35); margin-bottom:1.5rem; }
+.completion-btn { font-family:var(--display); font-size:.78rem; font-weight:700; letter-spacing:.12em; padding:.8rem 1.8rem; text-decoration:none; display:inline-block; clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); cursor:pointer; border:none; margin:.3rem; text-transform:uppercase; transition:all .2s; }
+.completion-btn-primary   { background:#ff4466; color:var(--bg); }
+.completion-btn-primary:hover { box-shadow:0 0 20px rgba(255,68,102,.5); opacity:1; }
+.completion-btn-secondary { background:transparent; color:#ff4466; border:1px solid rgba(255,68,102,.3)!important; clip-path:none; border-radius:2px; }
+#bottombar { position:fixed; bottom:0; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,4,12,.97); border-top:1px solid rgba(255,68,102,.15); backdrop-filter:blur(12px); }
+.nav-btn { background:transparent; border:1px solid rgba(255,68,102,.2); color:rgba(255,68,102,.55); padding:.32rem .9rem; font-family:var(--mono); font-size:.65rem; cursor:pointer; transition:all .2s; clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%); }
+.nav-btn:hover { border-color:#ff4466; color:#ff4466; background:rgba(255,68,102,.05); }
+.nav-btn:disabled { opacity:.2; cursor:not-allowed; }
+#slide-counter { font-family:var(--display); font-size:.72rem; color:#ff4466; }
+.qcm-indicator { font-family:var(--mono); font-size:.62rem; color:rgba(255,215,0,.5); letter-spacing:.08em; }
+@media (max-width:768px) { .slide { padding:1rem 1.2rem; } .grid2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>Types d'Attaques Cyber</span>
+  </div>
+  <div class="tb-right">
+    <span class="tb-user" id="tb-username"></span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+<div id="slides">
+
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// Types d'Attaques Cyber</div>
+  <h1 class="glitch">ANATOMIE<br>DES ATTAQUES</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Comprendre pour mieux défendre</h3>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin-top:.8rem">
+    <span class="pill pill-red">💀 Malware</span>
+    <span class="pill pill-orange">🌊 DDoS</span>
+    <span class="pill pill-yellow">🔒 Ransomware</span>
+    <span class="pill pill-purple">🕵️ APT</span>
+    <span class="pill pill-blue">👤 MitM</span>
+  </div>
+  <div style="margin-top:1.5rem" class="terminal"><span class="term-prompt">attacker@darkweb:~$ </span><span class="term-out">// Connaître l'ennemi est la première étape pour le vaincre.</span></div>
+  <div style="margin-top:1.5rem;font-size:.68rem;color:rgba(255,68,102,.25);letter-spacing:.15em">← → POUR NAVIGUER</div>
+</div>
+
+<div class="slide" data-index="1">
+  <div class="slide-tag">// 01 · Panorama</div>
+  <h2>La taxonomie des cyberattaques</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;max-width:900px;width:100%">
+    <div style="border:1px solid rgba(255,68,102,.3);background:rgba(255,68,102,.05);padding:.9rem;text-align:center">
+      <div style="font-size:1.8rem;margin-bottom:.4rem">💣</div>
+      <div style="font-family:var(--display);font-size:.7rem;color:#ff4466;font-weight:700;margin-bottom:.3rem">DESTRUCTION</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(220,200,200,.7)">DDoS, Wipers, Sabotage d'infra</div>
+    </div>
+    <div style="border:1px solid rgba(255,136,0,.3);background:rgba(255,136,0,.05);padding:.9rem;text-align:center">
+      <div style="font-size:1.8rem;margin-bottom:.4rem">💰</div>
+      <div style="font-family:var(--display);font-size:.7rem;color:#ff8800;font-weight:700;margin-bottom:.3rem">EXTORSION</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(220,210,190,.7)">Ransomware, Sextorsion, Fraude</div>
+    </div>
+    <div style="border:1px solid rgba(255,215,0,.3);background:rgba(255,215,0,.05);padding:.9rem;text-align:center">
+      <div style="font-size:1.8rem;margin-bottom:.4rem">🕵️</div>
+      <div style="font-family:var(--display);font-size:.7rem;color:#ffd700;font-weight:700;margin-bottom:.3rem">ESPIONNAGE</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(230,220,180,.7)">APT, Spyware, Keylogger</div>
+    </div>
+    <div style="border:1px solid rgba(0,170,255,.3);background:rgba(0,170,255,.05);padding:.9rem;text-align:center">
+      <div style="font-size:1.8rem;margin-bottom:.4rem">🎭</div>
+      <div style="font-family:var(--display);font-size:.7rem;color:#00aaff;font-weight:700;margin-bottom:.3rem">USURPATION</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.7)">Phishing, MitM, Spoofing</div>
+    </div>
+    <div style="border:1px solid rgba(200,136,255,.3);background:rgba(200,136,255,.05);padding:.9rem;text-align:center">
+      <div style="font-size:1.8rem;margin-bottom:.4rem">🔓</div>
+      <div style="font-family:var(--display);font-size:.7rem;color:#cc88ff;font-weight:700;margin-bottom:.3rem">INTRUSION</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(220,200,255,.7)">Exploitation, Brute Force, Zero-Day</div>
+    </div>
+    <div style="border:1px solid rgba(0,255,136,.3);background:rgba(0,255,136,.05);padding:.9rem;text-align:center">
+      <div style="font-size:1.8rem;margin-bottom:.4rem">🧬</div>
+      <div style="font-family:var(--display);font-size:.7rem;color:#00ff88;font-weight:700;margin-bottom:.3rem">PROPAGATION</div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(200,255,220,.7)">Virus, Worm, Botnet, Supply Chain</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="2" data-qcm="2">
+  <div class="slide-tag">// 02 · Malware</div>
+  <h2 style="color:#ff4466!important;text-shadow:0 0 20px rgba(255,68,102,.4)!important">Malware — Les logiciels malveillants</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;max-width:900px;width:100%">
+    <div style="border:1px solid rgba(255,68,102,.25);background:rgba(255,68,102,.04);padding:.85rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#ff4466;margin-bottom:.3rem">🦠 VIRUS</div>
+      <div style="font-family:var(--body);font-size:.73rem;color:rgba(220,200,200,.7);line-height:1.4;margin-bottom:.3rem">S'attache à un fichier légitime et se propage quand il est exécuté. Nécessite une action humaine.</div>
+      <div style="font-size:.62rem;color:rgba(255,68,102,.4)">Ex: Virus I Love You (2000) — 45M de PC infectés</div>
+    </div>
+    <div style="border:1px solid rgba(255,136,0,.25);background:rgba(255,136,0,.04);padding:.85rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#ff8800;margin-bottom:.3rem">🪱 WORM</div>
+      <div style="font-family:var(--body);font-size:.73rem;color:rgba(230,210,190,.7);line-height:1.4;margin-bottom:.3rem">Se propage <strong style="color:#fff">seul</strong> sur le réseau sans action utilisateur. Exploite des vulnérabilités réseau.</div>
+      <div style="font-size:.62rem;color:rgba(255,136,0,.4)">Ex: WannaCry (2017) — exploite EternalBlue (NSA)</div>
+    </div>
+    <div style="border:1px solid rgba(255,215,0,.25);background:rgba(255,215,0,.04);padding:.85rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#ffd700;margin-bottom:.3rem">🐴 TROJAN</div>
+      <div style="font-family:var(--body);font-size:.73rem;color:rgba(230,220,180,.7);line-height:1.4;margin-bottom:.3rem">Se déguise en logiciel légitime. Crée une backdoor ou vole des données une fois installé.</div>
+      <div style="font-size:.62rem;color:rgba(255,215,0,.4)">Ex: RAT (Remote Access Trojan) — contrôle total</div>
+    </div>
+    <div style="border:1px solid rgba(200,136,255,.25);background:rgba(200,136,255,.04);padding:.85rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#cc88ff;margin-bottom:.3rem">🕵️ SPYWARE</div>
+      <div style="font-family:var(--body);font-size:.73rem;color:rgba(220,200,255,.7);line-height:1.4;margin-bottom:.3rem">Surveille silencieusement l'activité. Capture frappes clavier, écrans, mots de passe.</div>
+      <div style="font-size:.62rem;color:rgba(200,136,255,.4)">Ex: Pegasus — espionnage de journalistes et activistes</div>
+    </div>
+    <div style="border:1px solid rgba(0,170,255,.25);background:rgba(0,170,255,.04);padding:.85rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#00aaff;margin-bottom:.3rem">📺 ADWARE</div>
+      <div style="font-family:var(--body);font-size:.73rem;color:rgba(200,220,255,.7);line-height:1.4;margin-bottom:.3rem">Affiche de la publicité non désirée. Souvent groupé avec des logiciels gratuits douteux.</div>
+      <div style="font-size:.62rem;color:rgba(0,170,255,.4)">Moins dangereux mais porte d'entrée possible</div>
+    </div>
+    <div style="border:1px solid rgba(0,255,136,.25);background:rgba(0,255,136,.04);padding:.85rem">
+      <div style="font-family:var(--display);font-size:.68rem;color:#00ff88;margin-bottom:.3rem">🫥 ROOTKIT</div>
+      <div style="font-family:var(--body);font-size:.73rem;color:rgba(200,255,220,.7);line-height:1.4;margin-bottom:.3rem">Se cache dans le système d'exploitation. Presque indétectable, survit aux redémarrages.</div>
+      <div style="font-size:.62rem;color:rgba(0,255,136,.4)">Ex: Sony BMG rootkit (2005) — scandale mondial</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="3" data-qcm="3">
+  <div class="slide-tag">// 03 · Ransomware</div>
+  <h2 style="color:#ff8800!important">Ransomware — La prise d'otage numérique</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">🔒 MÉCANISME</div>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <div style="display:flex;gap:.8rem;align-items:flex-start;padding:.5rem .7rem;border:1px solid rgba(255,136,0,.15);background:rgba(255,136,0,.03)">
+          <span style="font-family:var(--display);color:#ff8800;font-weight:900;min-width:20px">1</span>
+          <div style="font-family:var(--body);font-size:.78rem;color:rgba(230,210,190,.8)">Infection via phishing, exploit ou accès RDP compromis</div>
+        </div>
+        <div style="display:flex;gap:.8rem;align-items:flex-start;padding:.5rem .7rem;border:1px solid rgba(255,136,0,.15);background:rgba(255,136,0,.03)">
+          <span style="font-family:var(--display);color:#ff8800;font-weight:900;min-width:20px">2</span>
+          <div style="font-family:var(--body);font-size:.78rem;color:rgba(230,210,190,.8)">Propagation silencieuse sur tout le réseau (latéralisation)</div>
+        </div>
+        <div style="display:flex;gap:.8rem;align-items:flex-start;padding:.5rem .7rem;border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.05)">
+          <span style="font-family:var(--display);color:#ff4466;font-weight:900;min-width:20px">3</span>
+          <div style="font-family:var(--body);font-size:.78rem;color:rgba(220,200,200,.8)"><strong style="color:#fff">Chiffrement de tous les fichiers</strong> (AES-256 + RSA)</div>
+        </div>
+        <div style="display:flex;gap:.8rem;align-items:flex-start;padding:.5rem .7rem;border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.05)">
+          <span style="font-family:var(--display);color:#ff4466;font-weight:900;min-width:20px">4</span>
+          <div style="font-family:var(--body);font-size:.78rem;color:rgba(220,200,200,.8)">Demande de rançon en <strong style="color:#fff">Bitcoin</strong> contre la clé de déchiffrement</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">🌍 CAS RÉELS AFRICAINS</div>
+      <ul class="bullets">
+        <li class="danger"><strong>Transnet (Afrique du Sud, 2021)</strong> — Port de Durban paralysé. Chaîne logistique nationale bloquée. 40M$ de pertes.</li>
+        <li class="danger"><strong>SONATEL (Sénégal, 2023)</strong> — Ransomware LockBit sur les systèmes internes. Données exfiltrées.</li>
+        <li class="danger"><strong>Hôpital Laquintinie (Cameroun, 2022)</strong> — Dossiers patients chiffrés. Opérations reportées.</li>
+      </ul>
+      <div class="hdiv">PROTECTION</div>
+      <ul class="bullets">
+        <li class="ok">Backups <strong>offline</strong> réguliers (règle 3-2-1)</li>
+        <li class="ok">Pas de <strong>RDP exposé</strong> sur Internet</li>
+        <li class="ok">EDR + <strong>segmentation réseau</strong></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="4" data-qcm="4">
+  <div class="slide-tag">// 04 · DDoS</div>
+  <h2 style="color:#00aaff!important">DDoS — Noyer la cible sous les requêtes</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,170,255,.4);margin-bottom:.6rem">🌊 FONCTIONNEMENT</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(200,220,255,.8);line-height:1.5;margin-bottom:.8rem">Des milliers de machines infectées (<strong>botnet</strong>) envoient simultanément des requêtes vers une cible jusqu'à la saturer.</div>
+      <div class="terminal" style="font-size:.72rem">
+        <span class="term-prompt">Normal    :</span> <span class="term-out">100 req/s → Serveur répond OK</span><br>
+        <span class="term-prompt">DDoS      :</span> <span style="color:#ff4466">10 000 000 req/s → Serveur mort</span><br><br>
+        <span class="term-prompt">Volumétric:</span> <span class="term-out">Sature la bande passante (Gbps)</span><br>
+        <span class="term-prompt">Applicatif:</span> <span class="term-out">Épuise les ressources serveur (Layer 7)</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,170,255,.4);margin-bottom:.6rem">💥 EXEMPLES MARQUANTS</div>
+      <ul class="bullets">
+        <li class="danger"><strong>GitHub (2018)</strong> — 1.35 Tbps. Le plus grand DDoS de l'histoire à l'époque.</li>
+        <li class="danger"><strong>Élections kényanes (2022)</strong> — Site de la Commission électorale attaqué le jour du vote.</li>
+        <li class="danger"><strong>MTN Nigeria (2021)</strong> — Indisponibilité de 6h pendant les transferts de fin de mois.</li>
+        <li class="danger"><strong>Cloudflare (2023)</strong> — 71M req/s — record mondial actuel.</li>
+      </ul>
+      <div class="hdiv">DÉFENSE</div>
+      <ul class="bullets">
+        <li class="ok"><strong>CDN</strong> (Cloudflare, Akamai) — absorbe le trafic</li>
+        <li class="ok"><strong>Rate limiting</strong> et filtrage IP</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="5" data-qcm="5">
+  <div class="slide-tag">// 05 · Man-in-the-Middle</div>
+  <h2>MitM — L'espion au milieu</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.6rem">🎭 MÉCANISME</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(230,220,180,.8);line-height:1.5;margin-bottom:.8rem">L'attaquant se positionne <strong>entre la victime et le serveur</strong>, interceptant et potentiellement modifiant toutes les communications.</div>
+      <div class="terminal" style="font-size:.72rem">
+        <span class="term-out">Victime → [ATTAQUANT] → Serveur</span><br><br>
+        <span class="term-prompt">ARP Spoofing :</span> <span class="term-out">Empoisonne le cache ARP du réseau local</span><br>
+        <span class="term-prompt">SSL Strip    :</span> <span class="term-out">Rétrograde HTTPS → HTTP</span><br>
+        <span class="term-prompt">Evil Twin    :</span> <span class="term-out">Faux point Wi-Fi (même nom que l'original)</span><br>
+        <span class="term-prompt">DNS Spoofing  :</span> <span class="term-out">Redirige vers un faux site</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.6rem">🌍 SCÉNARIO GABON</div>
+      <div style="background:rgba(255,68,102,.06);border:1px solid rgba(255,68,102,.2);padding:.9rem;margin-bottom:.8rem;font-family:var(--body);font-size:.8rem;color:rgba(220,200,200,.85);line-height:1.5">
+        📍 <strong style="color:#fff">Café à Libreville.</strong> Tu te connectes au Wi-Fi "Orange_Free_Wifi". L'attaquant a créé ce réseau. Il intercepte ta connexion Mobile Money. Il voit ton numéro de compte et te redirige vers un faux site Orange. Tu entres ton PIN. Il a tout.
+      </div>
+      <div class="hdiv">PROTECTIONS</div>
+      <ul class="bullets">
+        <li class="ok"><strong>VPN</strong> sur les réseaux publics</li>
+        <li class="ok">Vérifier le <strong>cadenas HTTPS</strong> et le certificat</li>
+        <li class="ok">Éviter les <strong>Wi-Fi publics</strong> pour les transactions</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="6" data-qcm="6">
+  <div class="slide-tag">// 06 · APT</div>
+  <h2 style="color:#cc88ff!important">APT — Advanced Persistent Threat</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">🏛️ DÉFINITION</div>
+      <div class="quote" style="margin-bottom:.8rem;font-size:.82rem">Attaque <strong style="color:#cc88ff">sophistiquée, longue durée, souvent étatique</strong>. L'attaquant s'infiltre et reste invisible des mois voire des années.</div>
+      <ul class="bullets">
+        <li><strong>Objectif</strong> : espionnage, sabotage, vol de données stratégiques</li>
+        <li><strong>Acteurs</strong> : groupes soutenus par des États (APT28/Russie, APT41/Chine)</li>
+        <li><strong>Durée</strong> : 200 jours en moyenne avant détection</li>
+        <li><strong>Méthode</strong> : spear phishing → pivot → exfiltration silencieuse</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(200,136,255,.4);margin-bottom:.6rem">💥 CAS RÉELS CÉLÈBRES</div>
+      <ul class="bullets">
+        <li class="danger"><strong>Stuxnet (2010)</strong> — Worm USA/Israël qui a physiquement détruit les centrifugeuses nucléaires iraniennes. Premier cyberarme physique.</li>
+        <li class="danger"><strong>SolarWinds (2020)</strong> — APT russe infiltre 18 000 organisations via une mise à jour logicielle. Pentagon, Microsoft, FireEye touchés.</li>
+        <li class="danger"><strong>APT en Afrique (2023)</strong> — Groupes ciblant les ministères des finances africains. Opérations silencieuses sur 18+ mois.</li>
+      </ul>
+      <div style="margin-top:.7rem;font-family:var(--body);font-size:.75rem;color:rgba(220,200,255,.6)">💡 Les APT ne font pas de bruit. Leur force = l'invisibilité.</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="7" data-qcm="7">
+  <div class="slide-tag">// 07 · Brute Force & Credential Stuffing</div>
+  <h2>Attaques sur les mots de passe</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">🔨 BRUTE FORCE</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(220,200,200,.8);line-height:1.5;margin-bottom:.7rem">Tester toutes les combinaisons possibles jusqu'à trouver.</div>
+      <div class="terminal" style="font-size:.7rem">
+        <span class="term-prompt">Hashcat -a 3 hash.txt ?a?a?a?a?a?a?a?a</span><br>
+        <span style="color:#ff4466">8 chars = 95^8 = 6.6 quadrillions</span><br>
+        <span class="term-out">GPU RTX 4090 : ~100 milliards/sec</span><br>
+        <span style="color:#ff4466">→ 8 chars cassés en ~18 heures !</span>
+      </div>
+      <div style="margin-top:.6rem;font-family:var(--body);font-size:.75rem;color:rgba(255,200,200,.6)">12 chars mixtes = 300 000 années même avec ce GPU</div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">🗂️ CREDENTIAL STUFFING</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(230,210,190,.8);line-height:1.5;margin-bottom:.7rem">Utiliser des couples email/password <strong>issus de leaks</strong> sur d'autres sites. Fonctionne car 85% des gens réutilisent leurs mots de passe.</div>
+      <div class="terminal" style="font-size:.7rem">
+        <span class="term-prompt">Collection#1 leak (2019):</span><br>
+        <span class="term-out">773 millions d'emails + passwords</span><br>
+        <span style="color:#ff8800">→ Testés automatiquement sur des milliers de sites</span>
+      </div>
+      <div class="hdiv">DÉFENSE</div>
+      <ul class="bullets">
+        <li class="ok"><strong>MFA</strong> — rend les credentials seuls inutiles</li>
+        <li class="ok"><strong>Mot de passe unique</strong> par site (gestionnaire)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="8" data-qcm="8">
+  <div class="slide-tag">// 08 · Zero-Day</div>
+  <h2>Zero-Day — L'arme ultime</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">💣 C'EST QUOI</div>
+      <div class="quote" style="margin-bottom:.8rem;font-size:.82rem">Une vulnérabilité inconnue du fabricant et pour laquelle <strong style="color:#ff4466">aucun patch n'existe encore</strong>. "0 jours" pour se défendre.</div>
+      <div class="terminal" style="font-size:.7rem">
+        <span class="term-prompt">Timeline :</span><br>
+        <span class="term-out">Jour 0 : Vulnérabilité découverte par l'attaquant</span><br>
+        <span style="color:#ff4466">Jour 0 → ? : Exploitation active (personne ne sait)</span><br>
+        <span class="term-out">Jour N : Découverte par un chercheur / éditeur</span><br>
+        <span class="term-out">Jour N+x : Patch publié (souvent 90 jours)</span><br>
+        <span class="term-out">Pendant toute cette période → défense impossible</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">💰 LE MARCHÉ NOIR DES 0-DAY</div>
+      <div style="display:grid;grid-template-columns:1fr;gap:.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem .7rem;border:1px solid rgba(255,68,102,.15);background:rgba(255,68,102,.04)">
+          <span style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,200,.8)">0-Day Chrome (RCE)</span>
+          <span style="font-family:var(--display);font-size:.8rem;color:#ff4466;font-weight:700">$500K - $2M</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem .7rem;border:1px solid rgba(255,68,102,.15);background:rgba(255,68,102,.04)">
+          <span style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,200,.8)">0-Day iOS (full chain)</span>
+          <span style="font-family:var(--display);font-size:.8rem;color:#ff4466;font-weight:700">$2.5M - $5M</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem .7rem;border:1px solid rgba(255,136,0,.15);background:rgba(255,136,0,.04)">
+          <span style="font-family:var(--body);font-size:.75rem;color:rgba(230,210,190,.8)">0-Day Windows (LPE)</span>
+          <span style="font-family:var(--display);font-size:.8rem;color:#ff8800;font-weight:700">$200K - $400K</span>
+        </div>
+      </div>
+      <div style="margin-top:.7rem;font-family:var(--body);font-size:.75rem;color:rgba(220,200,200,.6)">💡 Zerodium, NSO Group achètent et revendent aux États. Pegasus = 0-Day iOS.</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="9" data-qcm="9">
+  <div class="slide-tag">// 09 · Supply Chain Attack</div>
+  <h2>Supply Chain — Attaquer par le fournisseur</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.6rem">🔗 PRINCIPE</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.8rem">Plutôt que d'attaquer la cible directement, on <strong>compromise un fournisseur ou un logiciel de confiance</strong> qu'elle utilise.</div>
+      <div style="display:flex;flex-direction:column;gap:.4rem">
+        <div style="padding:.5rem .7rem;border:1px solid rgba(0,255,136,.1);background:rgba(0,255,136,.03);font-family:var(--body);font-size:.75rem;color:rgba(200,255,220,.7)">
+          <strong style="color:#fff">SolarWinds (2020)</strong> — Mise à jour Orion corrompue → 18 000 entreprises infectées dont le Pentagone
+        </div>
+        <div style="padding:.5rem .7rem;border:1px solid rgba(0,255,136,.1);background:rgba(0,255,136,.03);font-family:var(--body);font-size:.75rem;color:rgba(200,255,220,.7)">
+          <strong style="color:#fff">XZ Utils (2024)</strong> — Backdoor injectée dans une bibliothèque Linux utilisée par des millions de serveurs
+        </div>
+        <div style="padding:.5rem .7rem;border:1px solid rgba(0,255,136,.1);background:rgba(0,255,136,.03);font-family:var(--body);font-size:.75rem;color:rgba(200,255,220,.7)">
+          <strong style="color:#fff">npm typosquatting</strong> — Faux packages avec faute de frappe. Ex: "lodahs" au lieu de "lodash"
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.6rem">🌍 IMPACT EN AFRIQUE</div>
+      <ul class="bullets">
+        <li class="danger">Beaucoup d'entreprises africaines utilisent des <strong>logiciels piratés</strong> sans mises à jour → vecteur idéal</li>
+        <li class="danger">Dépendance aux <strong>fournisseurs technologiques étrangers</strong> sans audit</li>
+        <li class="danger">Logiciels de comptabilité locaux peu audités = <strong>cibles faciles</strong></li>
+      </ul>
+      <div class="hdiv">DÉFENSE</div>
+      <ul class="bullets">
+        <li class="ok"><strong>SBOM</strong> (Software Bill of Materials) — inventaire des composants</li>
+        <li class="ok">Vérifier les <strong>signatures numériques</strong> des mises à jour</li>
+        <li class="ok"><strong>Zero Trust</strong> — ne faire confiance à aucun fournisseur par défaut</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="10" data-qcm="10">
+  <div class="slide-tag">// 10 · Botnet</div>
+  <h2>Botnet — L'armée de zombies</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">🤖 FONCTIONNEMENT</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(230,210,190,.8);line-height:1.5;margin-bottom:.8rem">Un réseau de milliers d'ordinateurs infectés (<strong>bots/zombies</strong>) contrôlés à distance par un serveur C&C (Command & Control).</div>
+      <div class="terminal" style="font-size:.7rem">
+        <span class="term-prompt">C&C Server → </span><span class="term-out">broadcast("launch_ddos", target)</span><br>
+        <span class="term-prompt">Bot #1-50K  → </span><span style="color:#ff8800">flood(target, 1M_packets/sec)</span><br><br>
+        <span class="term-prompt">Mirai Botnet (2016):</span><br>
+        <span class="term-out">600 000 appareils IoT (caméras, routeurs)</span><br>
+        <span style="color:#ff4466">→ Dyn DNS hors ligne → Twitter, Netflix, GitHub down</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.6rem">💸 LES SERVICES D'UN BOTNET</div>
+      <ul class="bullets">
+        <li><strong>DDoS-for-hire</strong> — attaquer un site pour ~10$/h</li>
+        <li><strong>Spam campaigns</strong> — envoyer des millions d'emails de phishing</li>
+        <li><strong>Cryptomining</strong> — miner de la crypto sur tes machines</li>
+        <li><strong>Credential stuffing</strong> — tester des millions de logins</li>
+        <li><strong>Proxy</strong> — masquer l'origine des attaques</li>
+      </ul>
+      <div style="margin-top:.8rem;font-family:var(--body);font-size:.75rem;color:rgba(255,200,150,.6)">💡 Ton téléphone ou routeur pourrait faire partie d'un botnet sans que tu le saches.</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="11">
+  <div class="slide-tag">// 11 · Cyber Kill Chain</div>
+  <h2>La Kill Chain — Anatomie d'une attaque complète</h2>
+  <div style="display:flex;flex-direction:column;gap:.45rem;max-width:860px;width:100%">
+    <div style="display:flex;align-items:center;gap:1rem;padding:.6rem 1rem;border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.04)">
+      <div style="font-family:var(--display);font-size:.75rem;font-weight:700;color:#ff4466;min-width:130px">01 · RECONNAISSANCE</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,200,.75)">OSINT sur la cible, cartographie réseau, identification des systèmes</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;padding:.6rem 1rem;border:1px solid rgba(255,100,50,.2);background:rgba(255,100,50,.04)">
+      <div style="font-family:var(--display);font-size:.75rem;font-weight:700;color:#ff6432;min-width:130px">02 · WEAPONIZATION</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,200,.75)">Création du malware, préparation du payload, exploitation choisie</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;padding:.6rem 1rem;border:1px solid rgba(255,136,0,.2);background:rgba(255,136,0,.04)">
+      <div style="font-family:var(--display);font-size:.75rem;font-weight:700;color:#ff8800;min-width:130px">03 · DELIVERY</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(230,210,190,.75)">Envoi via phishing, clé USB, exploit web, accès physique</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;padding:.6rem 1rem;border:1px solid rgba(255,180,0,.2);background:rgba(255,180,0,.04)">
+      <div style="font-family:var(--display);font-size:.75rem;font-weight:700;color:#ffb400;min-width:130px">04 · EXPLOITATION</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(230,220,180,.75)">Déclenchement de la vulnérabilité, exécution de code</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;padding:.6rem 1rem;border:1px solid rgba(200,200,0,.2);background:rgba(200,200,0,.04)">
+      <div style="font-family:var(--display);font-size:.75rem;font-weight:700;color:#cccc00;min-width:130px">05 · INSTALLATION</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(225,225,180,.75)">Backdoor persistante, rootkit, création de comptes cachés</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;padding:.6rem 1rem;border:1px solid rgba(100,200,100,.2);background:rgba(100,200,100,.04)">
+      <div style="font-family:var(--display);font-size:.75rem;font-weight:700;color:#64c864;min-width:130px">06 · C&C</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(200,230,200,.75)">Communication avec le serveur de contrôle, maintien de l'accès</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;padding:.6rem 1rem;border:1px solid rgba(0,255,136,.25);background:rgba(0,255,136,.05)">
+      <div style="font-family:var(--display);font-size:.75rem;font-weight:700;color:#00ff88;min-width:130px">07 · OBJECTIF</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(200,255,220,.75)">Exfiltration, chiffrement, sabotage — la mission accomplie</div>
+    </div>
+  </div>
+  <div style="margin-top:.8rem;font-family:var(--mono);font-size:.68rem;color:rgba(0,255,136,.3)">// Modèle Lockheed Martin · Couper n'importe quel maillon brise la chaîne</div>
+</div>
+
+<div class="slide" data-index="12">
+  <div class="slide-tag">// Récap · Types d'Attaques</div>
+  <h2>Ce qu'on a vu</h2>
+  <div class="grid2" style="max-width:820px">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.7rem">✅ ATTAQUES MAÎTRISÉES</div>
+      <ul class="bullets">
+        <li class="ok">Malware — virus, worm, trojan, spyware, rootkit</li>
+        <li class="ok">Ransomware — mécanisme et cas africains</li>
+        <li class="ok">DDoS et botnets</li>
+        <li class="ok">Man-in-the-Middle</li>
+        <li class="ok">APT — attaques étatiques persistantes</li>
+        <li class="ok">Brute Force et Credential Stuffing</li>
+        <li class="ok">Zero-Day et leur valeur marchande</li>
+        <li class="ok">Supply Chain Attack</li>
+        <li class="ok">Cyber Kill Chain — anatomie complète</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">🛡️ PRINCIPES DE DÉFENSE</div>
+      <ul class="bullets">
+        <li>Chaque attaque a une <strong>contre-mesure</strong> — connaître les deux</li>
+        <li><strong>Patch management</strong> — mettre à jour = supprimer 80% des vecteurs</li>
+        <li><strong>MFA</strong> — neutralise brute force et credential stuffing</li>
+        <li><strong>Backup offline</strong> — le seul vrai rempart contre le ransomware</li>
+        <li><strong>Zero Trust</strong> — ne jamais faire confiance, toujours vérifier</li>
+      </ul>
+      <div style="margin-top:.8rem"><span class="pill pill-red">⚔️ Comprendre = mieux défendre</span></div>
+    </div>
+  </div>
+  <div style="margin-top:1.5rem;text-align:center">
+    <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+    <div style="font-size:.65rem;color:rgba(255,68,102,.25);margin-top:.7rem;letter-spacing:.1em">SooPHA Learn × Types d'Attaques × Afrique Francophone</div>
+  </div>
+</div>
+
+</div>
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Formation terminée !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 13</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+<script>
+var QCM = {
+  2: { question:"Quelle est la différence principale entre un virus et un worm ?", options:["Un virus est plus dangereux qu'un worm", "Un virus nécessite une action humaine pour se propager, un worm se propage seul", "Un worm cible uniquement les mobiles", "Un virus ne peut infecter que les fichiers .exe"], correct:1, explanation:"Un virus s'attache à un fichier et se propage quand l'utilisateur exécute ce fichier. Un worm exploite des vulnérabilités réseau pour se propager automatiquement sans intervention humaine." },
+  3: { question:"Dans une attaque ransomware, pourquoi les backups offline sont-ils la meilleure protection ?", options:["Ils empêchent l'infection initiale", "Ils sont inaccessibles au ransomware qui ne peut pas les chiffrer, permettant une restauration complète", "Ils alertent automatiquement les autorités", "Ils ralentissent la propagation du ransomware"], correct:1, explanation:"Un ransomware chiffre tous les fichiers accessibles sur le réseau. Des backups offline (disques déconnectés) sont physiquement inaccessibles au malware, permettant de restaurer les données sans payer la rançon." },
+  4: { question:"Un botnet DDoS utilise principalement :", options:["Les serveurs de l'attaquant uniquement", "Des milliers de machines infectées (zombies) contrôlées à distance", "Des requêtes légitimes envoyées très rapidement", "Des vulnérabilités zero-day uniquement"], correct:1, explanation:"Un botnet est un réseau de machines infectées (PC, routeurs, caméras IoT) contrôlées par un serveur C&C. L'attaquant les dirige simultanément vers une cible, multipliant sa puissance de feu par des milliers." },
+  5: { question:"Dans une attaque Man-in-the-Middle via Evil Twin, l'attaquant :", options:["Pirate directement le routeur de la victime", "Crée un faux point d'accès Wi-Fi imitant un réseau légitime", "Exploite une vulnérabilité du protocole HTTPS", "Envoie un email de phishing à la victime"], correct:1, explanation:"L'attaque Evil Twin consiste à créer un faux point d'accès Wi-Fi avec le même nom qu'un réseau légitime. Quand la victime s'y connecte, tout son trafic passe par l'attaquant." },
+  6: { question:"Qu'est-ce qui distingue principalement une APT d'une cyberattaque classique ?", options:["Une APT utilise forcément des malwares très complexes", "Une APT est longue durée, furtive et souvent soutenue par un État avec des objectifs stratégiques", "Une APT cible uniquement les gouvernements", "Une APT ne peut pas être détectée"], correct:1, explanation:"Une APT se distingue par sa persistance (mois à années), sa sophistication, sa furtivité et ses objectifs stratégiques (espionnage, sabotage). Elle est généralement menée par des groupes étatiques aux ressources illimitées." },
+  7: { question:"Le Credential Stuffing est efficace principalement à cause de :", options:["La faiblesse des algorithmes de chiffrement", "La réutilisation des mots de passe par les utilisateurs sur plusieurs sites", "L'absence de HTTPS sur les sites cibles", "Des failles dans les protocoles d'authentification"], correct:1, explanation:"85% des internautes réutilisent leurs mots de passe. Avec les milliards de couples email/password issus de leaks (RockYou, Collection#1...), les attaquants testent automatiquement ces credentials sur des milliers de sites." },
+  8: { question:"Pourquoi un Zero-Day est-il particulièrement dangereux ?", options:["Il est automatiquement diffusé sur tous les systèmes", "Il exploite une vulnérabilité inconnue du fabricant pour laquelle aucun patch n'existe", "Il cible uniquement les systèmes Windows", "Il nécessite un accès physique à la machine"], correct:1, explanation:"Un Zero-Day exploite une vulnérabilité que personne (même l'éditeur) ne connaît encore. Sans patch disponible, il n'existe aucune défense technique — seule la détection comportementale peut parfois l'identifier." },
+  9: { question:"L'attaque SolarWinds (2020) est un exemple de Supply Chain Attack parce que :", options:["Elle a ciblé directement les serveurs du gouvernement américain", "Les attaquants ont compromis une mise à jour logicielle distribuée à 18 000 organisations", "Elle a utilisé un ransomware pour extorquer des rançons", "Elle a exploité une faille zero-day dans Windows"], correct:1, explanation:"SolarWinds illustre parfaitement la Supply Chain Attack : plutôt que d'attaquer chaque cible individuellement, les attaquants ont compromis le logiciel Orion de SolarWinds, touchant automatiquement 18 000 clients qui ont installé la mise à jour corrompue." },
+  10: { question:"Quelle activité n'est PAS typiquement associée à un botnet ?", options:["Lancement d'attaques DDoS", "Envoi de spam et phishing", "Cryptomining sur les machines infectées", "Chiffrement du disque dur de la victime pour rançon"], correct:3, explanation:"Le chiffrement du disque pour rançon est une opération de ransomware, pas une activité typique de botnet. Un botnet utilise les machines infectées pour DDoS, spam, cryptomining et proxy — des activités qui profitent de la puissance collective sans alerter la victime." },
+};
+var COURSE_ID="attacks",TOTAL=13,current=0,currentUser=null,qcmAnswered={},qcmScores={},currentQcmSlide=null;
+async function init(){
+  currentUser=await requireAuth();if(!currentUser)return;
+  var p=await getProfile(currentUser.id);
+  document.getElementById("tb-username").textContent="@"+((p&&p.username)||"user");
+  var saved=await getCourseProgress(currentUser.id,COURSE_ID);
+  saved.forEach(function(r){qcmAnswered[r.slide_index]=true;qcmScores[r.slide_index]=r.is_correct?1:0;});
+  updateUI();
+}
+function navigate(dir){
+  var next=current+dir;if(next<0||next>=TOTAL)return;
+  if(dir>0&&QCM[current]&&!qcmAnswered[current]){showQcm(current);return;}
+  var curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index=\""+next+"\"]");
+  curEl.classList.remove("active");curEl.classList.add("exit");
+  setTimeout(function(){curEl.classList.remove("exit");},400);
+  nextEl.classList.add("active");current=next;updateUI();
+}
+function updateUI(){
+  document.getElementById("slide-counter").textContent=String(current+1).padStart(2,"0")+" / "+String(TOTAL).padStart(2,"0");
+  document.getElementById("prev-btn").disabled=current===0;
+  document.getElementById("next-btn").disabled=current===TOTAL-1;
+  document.getElementById("progress-fill").style.width=((current+1)/TOTAL*100)+"%";
+  var ind=document.getElementById("qcm-ind");
+  if(QCM[current])ind.textContent=qcmAnswered[current]?(qcmScores[current]===1?"✅ QCM répondu":"❌ QCM répondu"):"⚡ QCM requis";
+  else ind.textContent="";
+}
+function showQcm(idx){
+  var qcm=QCM[idx];if(!qcm)return;
+  currentQcmSlide=idx;
+  document.getElementById("qcm-prog").textContent="QCM "+(Object.keys(qcmAnswered).length+1)+" / "+Object.keys(QCM).length;
+  document.getElementById("qcm-question").textContent=qcm.question;
+  document.getElementById("qcm-feedback").style.display="none";
+  document.getElementById("qcm-feedback").className="qcm-feedback";
+  document.getElementById("qcm-next-btn").classList.remove("show");
+  document.getElementById("qcm-saving").classList.remove("show");
+  var letters=["A","B","C","D"],html="";
+  qcm.options.forEach(function(opt,i){html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+"</span>"+opt+"</div>";});
+  document.getElementById("qcm-options").innerHTML=html;
+  if(qcmAnswered[idx]){restoreQcmState(idx);document.getElementById("qcm-next-btn").classList.add("show");}
+  document.getElementById("qcm-overlay").classList.add("show");
+}
+async function selectOption(el,optIdx){
+  if(qcmAnswered[currentQcmSlide])return;
+  var qcm=QCM[currentQcmSlide],correct=optIdx===qcm.correct;
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  if(!correct)el.classList.add("wrong");
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(correct?"correct":"wrong");
+  fb.textContent=(correct?"✅ Correct ! ":"❌ Incorrect. ")+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true;qcmScores[currentQcmSlide]=correct?1:0;updateUI();
+  if(currentUser){
+    document.getElementById("qcm-saving").classList.add("show");
+    await saveQcmProgress(currentUser.id,COURSE_ID,currentQcmSlide,correct);
+    document.getElementById("qcm-saving").classList.remove("show");
+    if(Object.keys(qcmAnswered).length===Object.keys(QCM).length){
+      var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+      var pct=(c/tot)*100;
+      await completeCourse(currentUser.id,COURSE_ID,pct);
+      setTimeout(function(){closeQcmAndAdvance();showCompletion(pct);},1200);
+      return;
+    }
+  }
+  document.getElementById("qcm-next-btn").classList.add("show");
+}
+function restoreQcmState(idx){
+  var qcm=QCM[idx],score=qcmScores[idx];
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(score===1?"correct":"wrong");
+  fb.textContent=(score===1?"✅ Déjà répondu. ":"❌ Réponse incorrecte. ")+qcm.explanation;
+}
+function closeQcmAndAdvance(){
+  document.getElementById("qcm-overlay").classList.remove("show");
+  if(currentQcmSlide===current&&current<TOTAL-1){
+    var next=current+1,curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index=\""+next+"\"]");
+    curEl.classList.remove("active");curEl.classList.add("exit");
+    setTimeout(function(){curEl.classList.remove("exit");},400);
+    nextEl.classList.add("active");current=next;updateUI();
+  }
+}
+function showCompletion(pct){
+  var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById("comp-score").textContent=Math.round(pct)+"%";
+  if(pct>=70){document.getElementById("comp-icon").textContent="🏆";document.getElementById("comp-title").textContent="Excellent !";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Cours maîtrisé !";}
+  else{document.getElementById("comp-icon").textContent="📚";document.getElementById("comp-title").textContent="Formation terminée";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Révise pour améliorer ton score.";}
+  document.getElementById("completion-modal").classList.add("show");
+}
+document.addEventListener("keydown",function(e){
+  if(document.getElementById("qcm-overlay").classList.contains("show"))return;
+  if(e.key==="ArrowRight"||e.key===" "){e.preventDefault();navigate(1);}
+  if(e.key==="ArrowLeft")navigate(-1);
+});
+var touchX=0;
+document.addEventListener("touchstart",function(e){touchX=e.touches[0].clientX;});
+document.addEventListener("touchend",function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById("qcm-overlay").classList.contains("show"))navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById("matrix"),ctx=c.getContext("2d");
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener("resize",resize);
+  var chars="01ABCDEF{}CTFFlag",fs=13,drops;
+  function init(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  init();window.addEventListener("resize",init);
+  setInterval(function(){
+    ctx.fillStyle="rgba(2,4,12,0.05)";ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle="#ff4466";ctx.font=fs+"px monospace";
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

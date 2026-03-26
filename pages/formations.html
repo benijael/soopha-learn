@@ -147,7 +147,7 @@
       <!-- STATS -->
       <div class="stats-bar">
         <div class="stats-bar-item">
-          <div class="stat-val" id="stat-total">6</div>
+          <div class="stat-val" id="stat-total">7</div>
           <div class="stat-label">Cours disponibles</div>
         </div>
         <div class="stats-bar-item">
@@ -251,9 +251,28 @@
           <span class="course-cta" id="cta-j3">Commencer →</span>
         </a>
 
+                <!-- ATTACKS -->
+        <a href="attacks.html" class="course-card" data-status="disponible" id="card-attacks">
+          <div class="course-number">04</div>
+          <div class="course-day"><span>// Types d'Attaques</span><span id="badge-attacks"></span></div>
+          <div class="course-title">Types d'Attaques Cyber</div>
+          <div class="course-desc">Malware, Ransomware, DDoS, APT, MitM, Zero-Day, Supply Chain. Exemples réels africains et Kill Chain.</div>
+          <div class="course-tags">
+            <span class="badge badge-red">💀 Attaques</span>
+            <span class="badge badge-blue">13 slides</span>
+            <span class="badge badge-yellow">10 QCM</span>
+            <span class="badge badge-gray">~55 min</span>
+          </div>
+          <div class="course-progress-wrap" id="prog-attacks" style="display:none">
+            <div class="course-progress-label"><span id="prog-attacks-label">En cours</span><span id="prog-attacks-score"></span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-attacks-fill" style="width:0%"></div></div>
+          </div>
+          <span class="course-cta" id="cta-attacks">Commencer →</span>
+        </a>
+
         <!-- WEB HACKING -->
         <a href="web.html" class="course-card" data-status="disponible" id="card-web">
-          <div class="course-number">04</div>
+          <div class="course-number">05</div>
           <div class="course-day"><span>// Web Hacking</span><span id="badge-web"></span></div>
           <div class="course-title">Web Hacking</div>
           <div class="course-desc">SQLi, XSS, OWASP Top 10, Burp Suite, IDOR. Les vulnérabilités web les plus critiques.</div>
@@ -272,7 +291,7 @@
 
         <!-- CRYPTOGRAPHIE -->
         <a href="crypto.html" class="course-card" data-status="disponible" id="card-crypto">
-          <div class="course-number">05</div>
+          <div class="course-number">06</div>
           <div class="course-day"><span>// Cryptographie</span><span id="badge-crypto"></span></div>
           <div class="course-title">Cryptographie Appliquée</div>
           <div class="course-desc">AES, RSA, SHA-256, bcrypt, PKI, TLS. La science qui protège vos données.</div>
@@ -291,7 +310,7 @@
 
         <!-- OSINT -->
         <a href="osint.html" class="course-card" data-status="disponible" id="card-osint">
-          <div class="course-number">06</div>
+          <div class="course-number">07</div>
           <div class="course-day"><span>// OSINT</span><span id="badge-osint"></span></div>
           <div class="course-title">OSINT & Reconnaissance</div>
           <div class="course-desc">Google Dorks, WHOIS, Shodan, réseaux sociaux, métadonnées. Maîtrise les sources publiques.</div>
@@ -332,7 +351,7 @@ async function init() {
   document.getElementById('stat-qcm').textContent = (qcmData || []).length;
 
   // Update course cards
-  var courses = ['j1','j2','j3','web','crypto','osint'];
+  var courses = ['j1','j2','j3','attacks','web','crypto','osint'];
   courses.forEach(function(id) {
     var comp = completions.find(function(c){ return c.course_id === id; });
     if (comp) {
