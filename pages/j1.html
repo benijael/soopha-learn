@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J1 — Introduction à la Cybersécurité · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html, body { overflow: hidden; height: 100%; }
+
+/* GABON TOP */
+body::before { height: 3px; }
+
+/* TOPBAR */
+#topbar {
+  position: fixed; top: 3px; left: 0; right: 0; z-index: 200;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .5rem 1.5rem;
+  background: rgba(2,8,4,0.97);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  font-size: .65rem; color: rgba(0,255,136,.4);
+}
+.tb-left { display: flex; gap: 1.5rem; align-items: center; }
+.tb-right { display: flex; gap: 1.2rem; align-items: center; }
+.tb-back { color: rgba(0,255,136,.5); text-decoration: none; font-size: .65rem; letter-spacing: .08em; transition: color .2s; }
+.tb-back:hover { color: var(--green); opacity: 1; }
+.tb-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; display: inline-block; animation: blink 1.4s infinite; margin-right: .3rem; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.tb-user { font-family: var(--mono); font-size: .62rem; color: rgba(0,255,136,.4); }
+
+/* PROGRESS TOP */
+#progress-top { position: fixed; top: 34px; left: 0; right: 0; z-index: 200; height: 2px; background: rgba(0,255,136,.06); }
+#progress-fill { height: 100%; background: linear-gradient(90deg,#009e60,var(--green)); box-shadow: 0 0 8px var(--green); transition: width .5s ease; }
+
+/* SCANLINES + VIGNETTE */
+#scanlines { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px); }
+#vignette  { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.65) 100%); }
+canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-events: none; }
+
+/* SLIDES CONTAINER */
+#slides { position: fixed; inset: 0; z-index: 10; padding-top: 36px; padding-bottom: 44px; overflow: hidden; }
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  padding: 1.5rem 4rem;
+  opacity: 0; pointer-events: none;
+  transition: opacity .4s ease, transform .4s ease;
+  transform: translateX(40px);
+  overflow-y: auto;
+}
+.slide.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+.slide.exit   { opacity: 0; transform: translateX(-40px); }
+
+/* SLIDE COMPONENTS */
+.gabon-bar { display: flex; height: 3px; width: 60px; border-radius: 2px; overflow: hidden; margin: .6rem 0; }
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}
+.gabon-bar span:nth-child(2){flex:1;background:#fcd116}
+.gabon-bar span:nth-child(3){flex:1;background:#003189}
+
+.slide-tag { font-family: var(--mono); font-size: .6rem; letter-spacing: .3em; color: rgba(0,255,136,.35); text-transform: uppercase; margin-bottom: .5rem; }
+
+.slide h1 { font-family: var(--display) !important; font-weight: 900 !important; font-size: clamp(1.8rem,3.5vw,2.8rem) !important; color: #fff !important; text-align: center; letter-spacing: .1em; text-shadow: 0 0 40px var(--green),0 0 80px rgba(0,255,136,.2); line-height: 1.15; margin-bottom: .4rem !important; }
+.slide h2 { font-family: var(--display) !important; font-weight: 700 !important; font-size: clamp(1.1rem,2vw,1.7rem) !important; color: var(--green) !important; letter-spacing: .08em; margin-bottom: 1rem !important; }
+.slide h3 { font-family: var(--display) !important; font-weight: 400 !important; font-size: clamp(.8rem,1.2vw,1rem) !important; color: rgba(0,255,136,.55) !important; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 1.5rem !important; }
+
+.card { background: rgba(4,15,8,.88); border: 1px solid var(--border); border-radius: 2px; padding: 1.4rem 1.8rem; position: relative; backdrop-filter: blur(10px); max-width: 880px; width: 100%; }
+.card::before { content: ''; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px; border-top: 2px solid var(--green); border-left: 2px solid var(--green); }
+.card::after  { content: ''; position: absolute; bottom: -1px; right: -1px; width: 14px; height: 14px; border-bottom: 2px solid var(--green); border-right: 2px solid var(--green); }
+
+.bullets { list-style: none; display: flex; flex-direction: column; gap: .55rem; }
+.bullets li { display: flex; align-items: flex-start; gap: .7rem; font-family: var(--body); font-size: clamp(.8rem,1.3vw,.95rem); color: rgba(220,255,235,.85); line-height: 1.5; animation: fadeIn .4s ease both; }
+.bullets li::before { content: '▶'; color: var(--green); font-size: .55rem; margin-top: .35rem; flex-shrink: 0; }
+.bullets li strong { color: #fff; }
+.bullets li.warn::before   { content: '⚠'; color: var(--yellow); font-size: .7rem; }
+.bullets li.danger::before { content: '🔴'; font-size: .7rem; }
+.bullets li.ok::before     { content: '✅'; font-size: .7rem; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 880px; width: 100%; }
+
+.pill { display: inline-block; padding: .25rem .7rem; font-size: .65rem; letter-spacing: .06em; border-radius: 2px; font-family: var(--mono); }
+.pill-green  { background: rgba(0,255,136,.1);  border: 1px solid rgba(0,255,136,.3);  color: var(--green); }
+.pill-red    { background: rgba(255,68,102,.1);  border: 1px solid rgba(255,68,102,.3);  color: #ff4466; }
+.pill-yellow { background: rgba(255,215,0,.08);  border: 1px solid rgba(255,215,0,.3);   color: #ffd700; }
+.pill-blue   { background: rgba(0,170,255,.08);  border: 1px solid rgba(0,170,255,.3);   color: #00aaff; }
+
+.big-stat { font-family: var(--display); font-weight: 900; font-size: clamp(2rem,4vw,3.5rem); color: var(--green); text-shadow: 0 0 20px var(--green); line-height: 1; }
+
+.quote { border-left: 3px solid var(--green); padding: .7rem 1rem; background: rgba(0,255,136,.04); font-family: var(--body); font-style: italic; font-size: clamp(.9rem,1.5vw,1.15rem); color: #e0ffe8; line-height: 1.6; }
+
+.terminal { background: rgba(0,0,0,.5); border: 1px solid rgba(0,255,136,.15); border-left: 3px solid var(--green); padding: .8rem 1.1rem; font-family: var(--mono); font-size: .78rem; color: rgba(0,255,136,.8); line-height: 1.8; }
+.term-prompt { color: var(--green); }
+.term-out    { color: rgba(255,255,255,.5); }
+
+.cia-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .9rem; max-width: 860px; width: 100%; }
+.cia-card { padding: 1.3rem 1rem; text-align: center; border: 1px solid var(--border); background: rgba(0,255,136,.06); }
+.cia-letter { font-family: var(--display); font-weight: 900; font-size: 2.8rem; line-height: 1; margin-bottom: .3rem; }
+.cia-word   { font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; margin-bottom: .6rem; }
+.cia-desc   { font-family: var(--body); font-size: .82rem; color: rgba(220,255,235,.7); line-height: 1.5; }
+.cia-card.c .cia-letter { color: #00ff88; text-shadow: 0 0 20px #00ff88; }
+.cia-card.i .cia-letter { color: #ffd700; text-shadow: 0 0 20px #ffd700; }
+.cia-card.a .cia-letter { color: #00aaff; text-shadow: 0 0 20px #00aaff; }
+
+.hdiv { display: flex; align-items: center; gap: 1rem; color: rgba(0,255,136,.2); font-size: .62rem; letter-spacing: .2em; margin: .8rem 0; }
+.hdiv::before,.hdiv::after { content: ''; flex: 1; height: 1px; background: rgba(0,255,136,.12); }
+
+@keyframes glitch {
+  0%,90%,100%{text-shadow:0 0 40px var(--green),0 0 80px rgba(0,255,136,.2)}
+  91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}
+  93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}
+  95%{text-shadow:0 0 40px var(--green);transform:translate(0)}
+}
+.glitch { animation: glitch 7s infinite; }
+
+/* QCM OVERLAY */
+#qcm-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(2,8,4,.97);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 2rem;
+}
+#qcm-overlay.show { display: flex; animation: fadeInOv .3s ease; }
+@keyframes fadeInOv { from{opacity:0} to{opacity:1} }
+
+.qcm-box {
+  max-width: 680px; width: 100%;
+  background: rgba(4,15,8,.97);
+  border: 1px solid rgba(0,255,136,.25);
+  border-radius: 2px;
+  padding: 2.5rem;
+  position: relative;
+  box-shadow: 0 0 40px rgba(0,255,136,.1);
+}
+.qcm-box::before { content: ''; position: absolute; top: -1px; left: -1px; width: 18px; height: 18px; border-top: 2px solid var(--green); border-left: 2px solid var(--green); }
+.qcm-box::after  { content: ''; position: absolute; bottom: -1px; right: -1px; width: 18px; height: 18px; border-bottom: 2px solid var(--green); border-right: 2px solid var(--green); }
+
+.qcm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.qcm-label { font-family: var(--mono); font-size: .6rem; letter-spacing: .3em; color: rgba(0,255,136,.4); text-transform: uppercase; }
+.qcm-prog  { font-family: var(--mono); font-size: .65rem; color: rgba(0,255,136,.35); }
+
+.qcm-saving { font-family: var(--mono); font-size: .62rem; color: rgba(0,255,136,.35); margin-bottom: .5rem; display: none; }
+.qcm-saving.show { display: block; }
+
+.qcm-question { font-family: var(--display); font-size: clamp(.9rem,1.8vw,1.1rem); font-weight: 700; color: #fff; line-height: 1.4; margin-bottom: 1.8rem; letter-spacing: .03em; }
+
+.qcm-options { display: flex; flex-direction: column; gap: .65rem; margin-bottom: 1.5rem; }
+.qcm-option {
+  display: flex; align-items: flex-start; gap: .9rem;
+  padding: .8rem 1.1rem;
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(0,255,136,.1);
+  cursor: pointer; border-radius: 2px;
+  transition: all .15s;
+  font-family: var(--body); font-size: .88rem;
+  color: rgba(200,255,220,.75); line-height: 1.4;
+}
+.qcm-option:hover:not(.disabled) { border-color: rgba(0,255,136,.35); background: rgba(0,255,136,.06); color: rgba(200,255,220,.95); }
+.qcm-option.correct  { border-color: var(--green) !important; background: rgba(0,255,136,.12) !important; color: var(--green) !important; }
+.qcm-option.wrong    { border-color: #ff4466 !important; background: rgba(255,68,102,.08) !important; color: #ff4466 !important; }
+.qcm-option.disabled { cursor: default; pointer-events: none; }
+.option-letter { font-family: var(--display); font-size: .68rem; font-weight: 700; color: rgba(0,255,136,.4); min-width: 18px; flex-shrink: 0; margin-top: .1rem; }
+.qcm-option.correct .option-letter, .qcm-option.wrong .option-letter { color: inherit; }
+
+.qcm-feedback { padding: .8rem 1rem; border-radius: 2px; font-family: var(--mono); font-size: .8rem; line-height: 1.5; display: none; margin-bottom: 1.2rem; }
+.qcm-feedback.correct { background: rgba(0,255,136,.07); border: 1px solid rgba(0,255,136,.2); color: rgba(0,255,136,.9); }
+.qcm-feedback.wrong   { background: rgba(255,68,102,.06); border: 1px solid rgba(255,68,102,.2); color: rgba(255,100,130,.9); }
+
+.qcm-btn { font-family: var(--display); font-size: .75rem; font-weight: 700; letter-spacing: .12em; padding: .7rem 1.8rem; background: var(--green); color: var(--bg); border: none; cursor: pointer; clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition: all .2s; text-transform: uppercase; display: none; }
+.qcm-btn.show { display: inline-block; }
+.qcm-btn:hover { box-shadow: 0 0 20px rgba(0,255,136,.4); }
+
+/* COMPLETION MODAL */
+#completion-modal { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.9); display: none; align-items: center; justify-content: center; padding: 2rem; }
+#completion-modal.show { display: flex; animation: fadeInOv .3s ease; }
+.completion-box { max-width: 500px; width: 100%; background: rgba(4,15,8,.98); border: 1px solid rgba(0,255,136,.3); border-radius: 2px; padding: 3rem 2.5rem; text-align: center; box-shadow: 0 0 60px rgba(0,255,136,.15); position: relative; }
+.completion-box::before { content: ''; position: absolute; top: -1px; left: -1px; width: 20px; height: 20px; border-top: 2px solid var(--green); border-left: 2px solid var(--green); }
+.completion-icon  { font-size: 4rem; margin-bottom: 1rem; }
+.completion-title { font-family: var(--display); font-size: 1.5rem; font-weight: 900; color: #fff; text-shadow: 0 0 20px var(--green); margin-bottom: .5rem; }
+.completion-score { font-family: var(--display); font-size: 3.5rem; font-weight: 900; color: var(--green); text-shadow: 0 0 30px var(--green); margin: 1rem 0; }
+.completion-sub   { font-family: var(--mono); font-size: .78rem; color: rgba(0,255,136,.5); margin-bottom: .5rem; line-height: 1.6; }
+.completion-saved { font-family: var(--mono); font-size: .68rem; color: rgba(0,255,136,.35); margin-bottom: 1.5rem; }
+.completion-btn { font-family: var(--display); font-size: .78rem; font-weight: 700; letter-spacing: .12em; padding: .8rem 1.8rem; text-decoration: none; display: inline-block; clip-path: polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); cursor: pointer; border: none; margin: .3rem; text-transform: uppercase; transition: all .2s; }
+.completion-btn-primary   { background: var(--green); color: var(--bg); }
+.completion-btn-primary:hover { box-shadow: 0 0 20px rgba(0,255,136,.5); opacity: 1; }
+.completion-btn-secondary { background: transparent; color: var(--green); border: 1px solid rgba(0,255,136,.3) !important; clip-path: none; border-radius: 2px; }
+
+/* BOTTOMBAR */
+#bottombar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; display: flex; justify-content: space-between; align-items: center; padding: .5rem 1.5rem; background: rgba(2,8,4,.97); border-top: 1px solid var(--border); backdrop-filter: blur(12px); font-size: .65rem; color: rgba(0,255,136,.4); }
+.nav-btn { background: transparent; border: 1px solid rgba(0,255,136,.2); color: rgba(0,255,136,.55); padding: .32rem .9rem; font-family: var(--mono); font-size: .65rem; cursor: pointer; transition: all .2s; clip-path: polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%); }
+.nav-btn:hover { border-color: var(--green); color: var(--green); background: rgba(0,255,136,.05); }
+.nav-btn:disabled { opacity: .2; cursor: not-allowed; }
+#slide-counter { font-family: var(--display); font-size: .72rem; color: var(--green); }
+.qcm-indicator { font-family: var(--mono); font-size: .62rem; color: rgba(255,215,0,.5); letter-spacing: .08em; }
+
+@media (max-width: 768px) {
+  .slide { padding: 1rem 1.2rem; }
+  .grid2 { grid-template-columns: 1fr; }
+  .cia-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>J1 — Introduction à la Cybersécurité</span>
+  </div>
+  <div class="tb-right">
+    <span class="tb-user" id="tb-username"></span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+
+<!-- ═══════════ SLIDES ═══════════ -->
+<div id="slides">
+
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// Jour 1 — Session 01</div>
+  <h1 class="glitch">BIENVENUE DANS<br>LA MATRICE</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Introduction à la Cybersécurité</h3>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin-top:.8rem">
+    <span class="pill pill-green">🛡️ Sensibilisation</span>
+    <span class="pill pill-yellow">⚡ Pratique</span>
+    <span class="pill pill-blue">🇬🇦 Contexte Local</span>
+  </div>
+  <div style="margin-top:2rem;font-size:.68rem;color:rgba(0,255,136,.25);letter-spacing:.15em">← → POUR NAVIGUER &nbsp;|&nbsp; ESPACE POUR AVANCER</div>
+</div>
+
+<div class="slide" data-index="1">
+  <div class="slide-tag">// 01 · Intervenant</div>
+  <h2>Qui suis-je ?</h2>
+  <div class="card" style="max-width:800px">
+    <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:1px solid var(--border)">
+      <div style="width:56px;height:56px;border-radius:50%;border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;box-shadow:0 0 16px rgba(0,255,136,.3)">🔐</div>
+      <div>
+        <div style="font-family:var(--display);font-size:1.1rem;color:#fff;font-weight:900;letter-spacing:.08em">Béni-Jaël MBATA</div>
+        <div style="font-size:.68rem;color:rgba(0,255,136,.5);letter-spacing:.15em;margin-top:.2rem">EXPERT CYBERSÉCURITÉ & ENTREPRENEUR TECH</div>
+        <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap">
+          <span class="pill pill-green" style="font-size:.58rem">🔐 IAM Specialist</span>
+          <span class="pill pill-blue"  style="font-size:.58rem">🌍 International</span>
+          <span class="pill pill-yellow" style="font-size:.58rem">🚀 SooPHA Founder</span>
+        </div>
+      </div>
+    </div>
+    <ul class="bullets">
+      <li>🔐 <strong>Spécialiste IAM</strong> — architecture et gestion des identités & des accès</li>
+      <li>💻 <strong>Près de 10 ans</strong> d'expérience en cybersécurité sur des environnements critiques</li>
+      <li>🌍 <strong>Consultant international</strong> — projets à fort enjeu stratégique</li>
+      <li>🚀 <strong>Fondateur de SooPHA</strong> — groupe tech multidisciplinaire à empreinte africaine</li>
+      <li>🎤 <strong>Speaker & Formateur</strong> — partager le savoir est une mission</li>
+    </ul>
+    <div class="hdiv">POURQUOI JE SUIS LÀ</div>
+    <div class="quote" style="font-size:.85rem">"Vous avez le potentiel de devenir les gardiens du cyberespace africain. <strong style="color:var(--green)">Cette semaine, je vous donne les clés.</strong>"</div>
+  </div>
+</div>
+
+<div class="slide" data-index="2" data-qcm="2">
+  <div class="slide-tag">// 02 · Accroche</div>
+  <h2 style="color:#ff4466 !important;text-shadow:0 0 20px #ff4466">Ça se passe EN CE MOMENT</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;max-width:840px;width:100%;margin:.8rem 0">
+    <div style="border:1px solid rgba(255,68,102,.3);background:rgba(255,68,102,.05);padding:.9rem;text-align:center">
+      <div class="big-stat" style="color:#ff4466;text-shadow:0 0 20px #ff4466;font-size:2.4rem">1</div>
+      <div style="font-size:.65rem;color:rgba(255,200,200,.6);margin:.2rem 0 .4rem">cyberattaque / 39 secondes</div>
+      <div style="font-family:var(--body);font-size:.73rem;color:rgba(220,200,200,.6);line-height:1.4">Soit plus de <strong style="color:#fff">2 200 attaques/jour</strong> dans le monde</div>
+    </div>
+    <div style="border:1px solid rgba(0,255,136,.25);background:rgba(0,255,136,.04);padding:.9rem;text-align:center">
+      <div class="big-stat" style="font-size:2.4rem">$8T</div>
+      <div style="font-size:.65rem;color:rgba(0,255,136,.5);margin:.2rem 0 .4rem">coût mondial · 2023</div>
+      <div style="font-family:var(--body);font-size:.73rem;color:rgba(200,230,200,.6);line-height:1.4"><strong style="color:#fff">3e économie mondiale</strong></div>
+    </div>
+    <div style="border:1px solid rgba(255,215,0,.25);background:rgba(255,215,0,.04);padding:.9rem;text-align:center">
+      <div class="big-stat" style="color:#ffd700;text-shadow:0 0 20px #ffd700;font-size:2.4rem">+60%</div>
+      <div style="font-size:.65rem;color:rgba(255,215,0,.5);margin:.2rem 0 .4rem">hausse · Afrique subsaharienne</div>
+      <div style="font-family:var(--body);font-size:.73rem;color:rgba(230,220,180,.6);line-height:1.4"><strong style="color:#fff">Moins protégée</strong> mais plus connectée</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;max-width:840px;width:100%">
+    <div style="border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.04);padding:.8rem"><div style="font-family:var(--display);font-size:.7rem;color:#ff4466;margin-bottom:.3rem;font-weight:700">🇰🇪 Kenya — 2023</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,200,200,.8);line-height:1.4"><strong style="color:#fff">500M$</strong> de fonds publics détournés via phishing ciblé</div></div>
+    <div style="border:1px solid rgba(255,136,0,.2);background:rgba(255,136,0,.04);padding:.8rem"><div style="font-family:var(--display);font-size:.7rem;color:#ff8800;margin-bottom:.3rem;font-weight:700">📡 MTN Group</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(230,210,190,.8);line-height:1.4"><strong style="color:#fff">63M de clients</strong> exposés — données revendues</div></div>
+    <div style="border:1px solid rgba(255,215,0,.2);background:rgba(255,215,0,.04);padding:.8rem"><div style="font-family:var(--display);font-size:.7rem;color:#ffd700;margin-bottom:.3rem;font-weight:700">📱 Mobile Money · Gabon</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(230,225,190,.8);line-height:1.4">Fraudes en hausse de <strong style="color:#fff">+200%</strong> depuis 2020</div></div>
+  </div>
+</div>
+
+<div class="slide" data-index="3" data-qcm="3">
+  <div class="slide-tag">// 03 · Définition</div>
+  <h2>C'est quoi la Cybersécurité ?</h2>
+  <div class="quote" style="max-width:700px;margin-bottom:1.2rem;font-size:.95rem">"L'ensemble des pratiques, technologies et processus conçus pour <strong style="color:var(--green)">protéger les systèmes, réseaux et données</strong> contre les attaques, dommages ou accès non autorisés."</div>
+  <div class="card" style="max-width:750px">
+    <ul class="bullets">
+      <li>Protéger les <strong>données personnelles</strong> — les vôtres, celles de vos clients</li>
+      <li>Garantir la <strong>continuité des services</strong> — un hôpital piraté = des vies en danger</li>
+      <li>Défendre les <strong>infrastructures critiques</strong> — énergie, banques, télécoms</li>
+      <li>Ce n'est pas que de la technique — c'est aussi <strong>humain, juridique, stratégique</strong></li>
+    </ul>
+  </div>
+</div>
+
+<div class="slide" data-index="4" data-qcm="4">
+  <div class="slide-tag">// 04 · Les 3 Piliers</div>
+  <h2>Le triangle fondamental — CIA</h2>
+  <div class="cia-grid">
+    <div class="cia-card c"><div class="cia-letter">C</div><div class="cia-word">Confidentialité</div><div class="cia-desc">Seules les personnes autorisées accèdent à l'information</div></div>
+    <div class="cia-card i"><div class="cia-letter">I</div><div class="cia-word">Intégrité</div><div class="cia-desc">L'information n'est pas modifiée de façon non autorisée</div></div>
+    <div class="cia-card a"><div class="cia-letter">A</div><div class="cia-word">Disponibilité</div><div class="cia-desc">L'information est accessible quand on en a besoin</div></div>
+  </div>
+  <div style="margin-top:1rem;font-size:.68rem;color:rgba(0,255,136,.3);letter-spacing:.1em">// Toute décision en cybersécurité découle de ces 3 principes</div>
+</div>
+
+<div class="slide" data-index="5" data-qcm="5">
+  <div class="slide-tag">// 04a · Confidentialité</div>
+  <h2 style="color:#00ff88 !important">C — Confidentialité</h2>
+  <div class="grid2">
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.6rem">DÉFINITION</div><ul class="bullets"><li>L'information n'est visible que par ceux qui <strong>ont le droit</strong> de la voir</li><li>Basée sur le principe du <strong>moindre privilège</strong></li><li>Mise en œuvre par : <strong>chiffrement, contrôle d'accès, authentification</strong></li></ul></div>
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">VIOLATION = ?</div><ul class="bullets"><li class="danger">Vos SMS Mobile Money interceptés</li><li class="danger">Un employé lit les salaires de ses collègues</li><li class="danger">Fuite de données clients d'une banque</li></ul><div style="margin-top:.8rem;font-family:var(--body);font-size:.78rem;color:rgba(255,200,200,.7)">Exemple : SIM Swap → accès à votre compte bancaire</div></div>
+  </div>
+</div>
+
+<div class="slide" data-index="6" data-qcm="6">
+  <div class="slide-tag">// 04b · Intégrité</div>
+  <h2 style="color:#ffd700 !important;text-shadow:0 0 20px rgba(255,215,0,.4) !important">I — Intégrité</h2>
+  <div class="grid2">
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.6rem">DÉFINITION</div><ul class="bullets"><li>Garantir que la donnée n'a <strong>pas été modifiée</strong> sans autorisation</li><li>Vérifiable grâce aux <strong>signatures numériques et hash</strong></li><li>Un fichier téléchargé est-il <strong>identique</strong> à l'original ?</li></ul></div>
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">VIOLATION = ?</div><ul class="bullets"><li class="danger">Un virement de 100K FCFA modifié en 10M</li><li class="danger">Un attaquant modifie votre page web</li><li class="danger">Des notes universitaires falsifiées</li></ul><div class="terminal" style="font-size:.72rem;margin-top:.8rem"><span class="term-prompt">$ </span>sha256sum fichier.pdf<br><span class="term-out">a3f8... ← si différent = fichier corrompu</span></div></div>
+  </div>
+</div>
+
+<div class="slide" data-index="7" data-qcm="7">
+  <div class="slide-tag">// 04c · Disponibilité</div>
+  <h2 style="color:#00aaff !important;text-shadow:0 0 20px rgba(0,170,255,.4) !important">A — Disponibilité</h2>
+  <div class="grid2">
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,170,255,.4);margin-bottom:.6rem">DÉFINITION</div><ul class="bullets"><li>Le système doit être <strong>accessible quand on en a besoin</strong></li><li>Protéger contre les <strong>pannes, surcharges, attaques DDoS</strong></li><li>Se mesure en <strong>uptime</strong> — 99.99% = 52 min de panne/an</li></ul></div>
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">VIOLATION = ?</div><ul class="bullets"><li class="danger">Site bancaire inaccessible pendant 24h</li><li class="danger">Hôpital paralysé par un ransomware</li><li class="danger">Réseau mobile saturé lors d'une élection</li></ul><div style="margin-top:.8rem;font-family:var(--body);font-size:.8rem;color:rgba(220,255,235,.6)">💡 Un hôpital piraté = des opérations annulées = des vies perdues</div></div>
+  </div>
+</div>
+
+<div class="slide" data-index="8" data-qcm="8">
+  <div class="slide-tag">// 05 · Contexte Afrique</div>
+  <h2>Le paysage des menaces en Afrique</h2>
+  <div class="card" style="max-width:800px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.5);margin-bottom:.5rem">🔴 MENACES MAJEURES</div><ul class="bullets"><li class="danger"><strong>Fraudes Mobile Money</strong> — MoMo, Orange Money</li><li class="danger"><strong>SIM Swapping</strong> — vol de numéro de téléphone</li><li class="danger"><strong>Phishing WhatsApp</strong> — "vous avez gagné un prix"</li><li class="danger"><strong>Ransomware</strong> ciblant les PME africaines</li></ul></div>
+      <div><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.5);margin-bottom:.5rem">⚠️ FACTEURS AGGRAVANTS</div><ul class="bullets"><li class="warn">Faible culture cyber dans les organisations</li><li class="warn">Infrastructure IT vieillissante</li><li class="warn">Pénurie d'experts locaux</li><li class="warn">Lois cybersécurité peu appliquées</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" data-index="9">
+  <div class="slide-tag">// 06 · Focus 🇬🇦</div>
+  <h2>Et au Gabon spécifiquement ?</h2>
+  <div class="card" style="max-width:780px">
+    <ul class="bullets">
+      <li><strong>Explosion du Mobile Money</strong> — Airtel, Moov : cibles privilégiées des fraudeurs</li>
+      <li><strong>Réseaux sociaux</strong> — fake news, arnaques WhatsApp, usurpation d'identité</li>
+      <li><strong>Administrations publiques</strong> — peu sécurisées, données citoyens exposées</li>
+      <li><strong>PME non préparées</strong> — aucune politique de sécurité, mots de passe "1234"</li>
+      <li><strong>Jeunesse connectée</strong> — opportunité immense de former la prochaine génération</li>
+    </ul>
+    <div class="hdiv">OPPORTUNITÉ</div>
+    <div class="quote" style="font-size:.85rem">"Le Gabon manque cruellement d'experts cyber locaux. <strong style="color:var(--green)">Vous êtes cette génération qui peut changer ça.</strong>"</div>
+  </div>
+</div>
+
+<div class="slide" data-index="10" data-qcm="10">
+  <div class="slide-tag">// 07 · Résilience</div>
+  <h2>PCA & PRA — Survivre à une cyberattaque</h2>
+  <div class="grid2" style="max-width:840px">
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.6rem">🟢 PCA — Plan de Continuité d'Activité</div><div style="font-family:var(--body);font-size:.8rem;color:rgba(220,255,235,.75);line-height:1.5;margin-bottom:.7rem">Objectif : <strong>ne jamais s'arrêter</strong>. Même sous attaque, les activités critiques continuent.</div><ul class="bullets"><li>Anticiper les scénarios <strong>avant qu'ils arrivent</strong></li><li>Basculer sur des <strong>systèmes backup</strong> automatiquement</li></ul><div style="margin-top:.7rem;padding:.5rem .8rem;background:rgba(0,255,136,.05);border-left:2px solid var(--green);font-family:var(--body);font-size:.75rem;color:rgba(200,255,220,.6)">💡 Comme le <strong style="color:#fff">groupe électrogène</strong> quand l'électricité coupe</div></div>
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.6rem">🟡 PRA — Plan de Reprise d'Activité</div><div style="font-family:var(--body);font-size:.8rem;color:rgba(220,255,235,.75);line-height:1.5;margin-bottom:.7rem">Objectif : <strong>reprendre le plus vite possible</strong> après interruption.</div><ul class="bullets"><li><strong>RTO</strong> — combien de temps max hors service ?</li><li><strong>RPO</strong> — jusqu'où remonter dans les données ?</li><li>Backups réguliers, <strong>procédures testées</strong></li></ul><div style="margin-top:.7rem;padding:.5rem .8rem;background:rgba(255,215,0,.04);border-left:2px solid #ffd700;font-family:var(--body);font-size:.75rem;color:rgba(255,240,190,.6)">💡 Le <strong style="color:#fff">plan pour rallumer</strong> après la panne</div></div>
+  </div>
+</div>
+
+<div class="slide" data-index="11" data-qcm="11">
+  <div class="slide-tag">// 08 · Infrastructures critiques</div>
+  <h2>OIV — Opérateurs d'Importance Vitale</h2>
+  <div class="grid2" style="max-width:840px">
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">🏛️ DÉFINITION</div><div style="font-family:var(--body);font-size:.8rem;color:rgba(220,255,235,.8);line-height:1.5;margin-bottom:.7rem">Organisations dont l'<strong>interruption mettrait en danger la nation entière</strong>. Cybersécurité = souveraineté.</div><div style="display:flex;gap:.4rem;flex-wrap:wrap"><span class="pill pill-red" style="font-size:.6rem">⚡ Énergie</span><span class="pill pill-blue" style="font-size:.6rem">💧 Eau</span><span class="pill pill-yellow" style="font-size:.6rem">📡 Télécoms</span><span class="pill pill-green" style="font-size:.6rem">🏥 Santé</span><span class="pill pill-green" style="font-size:.6rem">🏦 Finance</span><span class="pill pill-red" style="font-size:.6rem">✈️ Transport</span></div></div>
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,170,255,.4);margin-bottom:.6rem">🇬🇦 AU GABON</div><ul class="bullets"><li><strong>SOGARA</strong> — raffinage pétrolier</li><li><strong>SEEG</strong> — eau et électricité</li><li><strong>Airtel / Moov</strong> — télécoms, Mobile Money</li><li><strong>BGFIBank / Trésor</strong> — système financier</li><li><strong>CHU de Libreville</strong> — santé publique</li></ul><div style="margin-top:.8rem;font-family:var(--body);font-size:.75rem;color:rgba(255,215,0,.55)">⚠️ Une attaque = crise nationale immédiate</div></div>
+  </div>
+</div>
+
+<div class="slide" data-index="12" data-qcm="12">
+  <div class="slide-tag">// 09 · Les Acteurs</div>
+  <h2>Qui attaque, et pourquoi ?</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;max-width:880px;width:100%">
+    <div class="card" style="padding:.9rem"><div style="font-family:var(--display);font-size:.68rem;color:#ffd700;margin-bottom:.4rem">💰 CYBERCRIMINELS</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4;margin-bottom:.4rem">Motivation <strong>financière</strong> — ransomware, fraude</div><div style="font-family:var(--mono);font-size:.62rem;color:rgba(255,215,0,.4)">→ 80% des cyberattaques</div></div>
+    <div class="card" style="padding:.9rem"><div style="font-family:var(--display);font-size:.68rem;color:#ff4466;margin-bottom:.4rem">🏴 HACKTIVISTES</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4;margin-bottom:.4rem">Motivation <strong>idéologique</strong> — DDoS, défacement</div><div style="font-family:var(--mono);font-size:.62rem;color:rgba(255,68,102,.4)">→ Ex: Anonymous</div></div>
+    <div class="card" style="padding:.9rem"><div style="font-family:var(--display);font-size:.68rem;color:#00aaff;margin-bottom:.4rem">🏛️ ÉTATS-NATIONS</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4;margin-bottom:.4rem">Motivation <strong>géopolitique</strong> — espionnage</div><div style="font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.4)">→ APT, ressources illimitées</div></div>
+    <div class="card" style="padding:.9rem"><div style="font-family:var(--display);font-size:.68rem;color:#ff8800;margin-bottom:.4rem">😤 INSIDERS</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4;margin-bottom:.4rem"><strong>Employé mécontent ou négligent</strong></div><div style="font-family:var(--mono);font-size:.62rem;color:rgba(255,136,0,.4)">→ Menace la plus sous-estimée</div></div>
+    <div class="card" style="padding:.9rem"><div style="font-family:var(--display);font-size:.68rem;color:var(--green);margin-bottom:.4rem">🎓 SCRIPT KIDDIES</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4;margin-bottom:.4rem">Peu de compétences, <strong>outils tout faits</strong></div><div style="font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.4)">→ Nombreux et imprévisibles</div></div>
+    <div class="card" style="padding:.9rem"><div style="font-family:var(--display);font-size:.68rem;color:#aaffcc;margin-bottom:.4rem">🔍 PENTESTERS</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4;margin-bottom:.4rem">Hackers <strong>mandatés légalement</strong></div><div style="font-family:var(--mono);font-size:.62rem;color:rgba(170,255,200,.4)">→ Vrai métier bien rémunéré</div></div>
+  </div>
+</div>
+
+<div class="slide" data-index="13" data-qcm="13">
+  <div class="slide-tag">// 10 · Les Métiers</div>
+  <h2>Les métiers de la cyber</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;max-width:880px;width:100%">
+    <div style="border:1px solid rgba(255,68,102,.25);background:rgba(255,68,102,.04);padding:.85rem"><div style="font-family:var(--display);font-size:.68rem;color:#ff4466;margin-bottom:.3rem">⚔️ PENTESTEUR / RED TEAM</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4">Simule des attaques pour trouver les failles avant les hackers</div><div style="margin-top:.3rem;font-size:.6rem;color:rgba(255,68,102,.4)">Kali · Metasploit · Burp Suite</div></div>
+    <div style="border:1px solid rgba(0,170,255,.25);background:rgba(0,170,255,.04);padding:.85rem"><div style="font-family:var(--display);font-size:.68rem;color:#00aaff;margin-bottom:.3rem">🛡️ ANALYSTE SOC / BLUE TEAM</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4">Surveille 24/7, détecte et répond aux incidents</div><div style="margin-top:.3rem;font-size:.6rem;color:rgba(0,170,255,.4)">SIEM · EDR · Splunk</div></div>
+    <div style="border:1px solid rgba(200,136,255,.25);background:rgba(200,136,255,.04);padding:.85rem"><div style="font-family:var(--display);font-size:.68rem;color:#cc88ff;margin-bottom:.3rem">🔍 ANALYSTE FORENSIC</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4">Enquêteur numérique — analyse après une attaque</div><div style="margin-top:.3rem;font-size:.6rem;color:rgba(200,136,255,.4)">Autopsy · FTK · Volatility</div></div>
+    <div style="border:1px solid rgba(0,255,136,.2);background:rgba(0,255,136,.04);padding:.85rem"><div style="font-family:var(--display);font-size:.68rem;color:var(--green);margin-bottom:.3rem">🕵️ THREAT INTELLIGENCE</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4">Anticipe les attaques en analysant les menaces</div><div style="margin-top:.3rem;font-size:.6rem;color:rgba(0,255,136,.35)">OSINT · MITRE ATT&CK</div></div>
+    <div style="border:1px solid rgba(255,136,0,.25);background:rgba(255,136,0,.04);padding:.85rem"><div style="font-family:var(--display);font-size:.68rem;color:#ff8800;margin-bottom:.3rem">🔐 EXPERT IAM</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4">Gère qui a accès à quoi dans une organisation</div><div style="margin-top:.3rem;font-size:.6rem;color:rgba(255,136,0,.4)">Active Directory · One Identity</div></div>
+    <div style="border:1px solid rgba(255,215,0,.2);background:rgba(255,215,0,.04);padding:.85rem"><div style="font-family:var(--display);font-size:.68rem;color:#ffd700;margin-bottom:.3rem">⚖️ RSSI / GRC</div><div style="font-family:var(--body);font-size:.75rem;color:rgba(220,255,235,.7);line-height:1.4">Pilote la stratégie globale, gère les risques</div><div style="margin-top:.3rem;font-size:.6rem;color:rgba(255,215,0,.35)">ISO 27001 · RGPD</div></div>
+  </div>
+</div>
+
+<div class="slide" data-index="14" data-qcm="14">
+  <div class="slide-tag">// 11 · Red vs Blue</div>
+  <h2>Les deux camps</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:840px;width:100%">
+    <div style="border:1px solid rgba(255,68,102,.35);background:rgba(255,68,102,.05);padding:1.2rem">
+      <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.8rem;padding-bottom:.7rem;border-bottom:1px solid rgba(255,68,102,.2)"><span style="font-size:1.8rem">🔴</span><div><div style="font-family:var(--display);font-size:.9rem;font-weight:700;color:#ff4466">RED TEAM</div><div style="font-size:.6rem;color:rgba(255,68,102,.5);letter-spacing:.1em">ATTAQUE · OFFENSE</div></div></div>
+      <ul class="bullets"><li><strong>Pense comme un attaquant</strong> — cherche à entrer</li><li>Tests d'intrusion avec <strong>contrat signé</strong></li><li>Produit un <strong>rapport de vulnérabilités</strong></li></ul>
+      <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.7rem"><span class="pill pill-red" style="font-size:.58rem">Kali</span><span class="pill pill-red" style="font-size:.58rem">Metasploit</span><span class="pill pill-red" style="font-size:.58rem">Burp Suite</span></div>
+    </div>
+    <div style="border:1px solid rgba(0,170,255,.35);background:rgba(0,170,255,.05);padding:1.2rem">
+      <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.8rem;padding-bottom:.7rem;border-bottom:1px solid rgba(0,170,255,.2)"><span style="font-size:1.8rem">🔵</span><div><div style="font-family:var(--display);font-size:.9rem;font-weight:700;color:#00aaff">BLUE TEAM</div><div style="font-size:.6rem;color:rgba(0,170,255,.5);letter-spacing:.1em">DÉFENSE · PROTECTION</div></div></div>
+      <ul class="bullets"><li><strong>Surveille en permanence</strong> — logs, alertes</li><li>Détecte et <strong>répond en temps réel</strong></li><li>Renforce les défenses : <strong>MFA, politiques</strong></li></ul>
+      <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.7rem"><span class="pill pill-blue" style="font-size:.58rem">SIEM</span><span class="pill pill-blue" style="font-size:.58rem">EDR/XDR</span><span class="pill pill-blue" style="font-size:.58rem">Firewall</span></div>
+    </div>
+  </div>
+  <div style="margin-top:.8rem;max-width:840px;width:100%;padding:.7rem 1rem;background:rgba(170,136,255,.04);border:1px solid rgba(170,136,255,.2);font-family:var(--body);font-size:.78rem;color:rgba(220,210,255,.75)">💜 <strong style="color:#aa88ff">Purple Team</strong> — fait collaborer Red et Blue en temps réel. Plus efficace que les deux séparément.</div>
+</div>
+
+<div class="slide" data-index="15">
+  <div class="slide-tag">// Discussion ouverte</div>
+  <h2>À vous de jouer 🎤</h2>
+  <div class="card" style="max-width:720px">
+    <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.8rem">QUESTIONS OUVERTES</div>
+    <ul class="bullets">
+      <li>Avez-vous déjà été victime d'une arnaque en ligne ?</li>
+      <li>Vous avez reçu un message WhatsApp suspect ? Comment l'avez-vous identifié ?</li>
+      <li>Quel métier de la cyber vous attire le plus, et pourquoi ?</li>
+      <li>Selon vous, qui est responsable de la sécurité dans une entreprise ?</li>
+    </ul>
+  </div>
+  <div class="terminal" style="margin-top:1rem;max-width:720px;width:100%">
+    <span class="term-prompt">root@gaboctf:~$ </span>
+    <span class="term-out">// Pas de mauvaises réponses. Chaque expérience est une leçon.</span>
+  </div>
+</div>
+
+<div class="slide" data-index="16">
+  <div class="slide-tag">// Récap J1 · Preview J2</div>
+  <h2>J1 — Ce qu'on a vu</h2>
+  <div class="grid2" style="max-width:820px">
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">✅ ACQUIS AUJOURD'HUI</div><ul class="bullets"><li class="ok">CIA — les 3 piliers de la cybersécurité</li><li class="ok">Les types d'attaquants et leurs motivations</li><li class="ok">Les menaces locales au Gabon et en Afrique</li><li class="ok">Les métiers et les deux équipes</li></ul></div>
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,136,0,.4);margin-bottom:.7rem">⚡ DEMAIN — J2</div><ul class="bullets"><li><strong>L'art de la manipulation</strong></li><li>Phishing, vishing, smishing</li><li>Démo live d'un faux email convaincant</li><li>Atelier : sauras-tu repérer le piège ?</li></ul><div style="margin-top:.7rem"><span class="pill pill-yellow">⚠️ Prépare-toi à être manipulé</span></div></div>
+  </div>
+  <div style="margin-top:1.5rem;text-align:center">
+    <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+    <div style="font-size:.65rem;color:rgba(0,255,136,.25);margin-top:.7rem;letter-spacing:.1em">SooPHA Learn × Cybersécurité — Afrique Francophone 2026</div>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Formation terminée !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved" id="comp-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 17</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  QCM DATA
+// ═══════════════════════════════════════════
+var QCM = {
+  2: { question:"Selon les chiffres présentés, combien de cyberattaques se produisent approximativement par jour dans le monde ?", options:["500 attaques/jour","2 200 attaques/jour","10 000 attaques/jour","50 attaques/jour"], correct:1, explanation:"Avec 1 attaque toutes les 39 secondes, cela représente environ 2 200 attaques par jour." },
+  3: { question:"Quelle est la meilleure analogie pour décrire la cybersécurité ?", options:["Un antivirus sur votre ordinateur","Le système immunitaire numérique d'une organisation","Un pare-feu entre internet et votre réseau","Un mot de passe fort"], correct:1, explanation:"La cybersécurité est comparable au système immunitaire : elle protège l'ensemble de l'organisme contre les menaces." },
+  4: { question:"Que signifie le 'A' dans le triangle CIA de la cybersécurité ?", options:["Authentification","Autorisation","Disponibilité (Availability)","Anonymat"], correct:2, explanation:"CIA = Confidentialité, Intégrité, Disponibilité. La disponibilité garantit que les systèmes sont accessibles quand on en a besoin." },
+  5: { question:"Quel principe de sécurité est appliqué pour garantir la Confidentialité ?", options:["Le principe de redondance","Le principe du moindre privilège","Le principe de non-répudiation","Le principe de disponibilité maximale"], correct:1, explanation:"Le principe du moindre privilège : chaque utilisateur n'a accès qu'aux ressources strictement nécessaires." },
+  6: { question:"Un virement bancaire de 100 000 FCFA est intercepté et modifié à 10 000 000 FCFA. Quel pilier CIA est violé ?", options:["Confidentialité","Intégrité","Disponibilité","Authentification"], correct:1, explanation:"La modification non autorisée d'une donnée est une violation de l'Intégrité." },
+  7: { question:"Qu'est-ce qu'une attaque DDoS affecte principalement ?", options:["La Confidentialité des données","L'Intégrité des fichiers","La Disponibilité du service","L'Authentification des utilisateurs"], correct:2, explanation:"Une attaque DDoS sature un service jusqu'à le rendre inaccessible — attaque directe sur la Disponibilité." },
+  8: { question:"Quelle menace est la plus répandue en Afrique subsaharienne ?", options:["Les attaques d'États-nations","Les fraudes Mobile Money et SIM Swapping","Les APT","Le cyberespionnage industriel"], correct:1, explanation:"Les fraudes Mobile Money et le SIM Swapping profitent du fort taux de paiement mobile et d'une culture cybersécurité insuffisante." },
+  10: { question:"Quelle est la différence fondamentale entre un PCA et un PRA ?", options:["Le PCA est pour les grandes entreprises, le PRA pour les PME","Le PCA vise à ne jamais s'arrêter, le PRA vise à reprendre après une interruption","Le PCA gère les données, le PRA gère les serveurs","Ce sont des synonymes"], correct:1, explanation:"Le PCA maintient l'activité même sous attaque. Le PRA accepte l'interruption mais planifie une reprise rapide." },
+  11: { question:"Parmi ces organisations au Gabon, laquelle est considérée comme un OIV ?", options:["Un restaurant de Libreville","La SEEG (eau et électricité)","Une boutique de téléphonie","Une école privée"], correct:1, explanation:"La SEEG fournit eau et électricité à toute la population gabonaise. Une attaque constituerait une crise nationale." },
+  12: { question:"Quel type d'attaquant représente la menace la plus sous-estimée dans une organisation ?", options:["Les cybercriminels externes","Les États-nations","Les insiders (employés malveillants ou négligents)","Les script kiddies"], correct:2, explanation:"Les insiders sont déjà à l'intérieur du périmètre — le pare-feu ne sert à rien contre eux." },
+  13: { question:"Quel métier cyber surveille les systèmes 24h/24 et répond aux incidents en temps réel ?", options:["Pentesteur / Red Team","Analyste SOC / Blue Team","Expert IAM","Analyste Forensic"], correct:1, explanation:"L'analyste SOC surveille en permanence les alertes et coordonne la réponse aux incidents." },
+  14: { question:"Un pentesteur réalise une attaque contre une entreprise. Quelle condition est OBLIGATOIRE ?", options:["Être diplômé en cybersécurité","Avoir un contrat signé définissant le périmètre","Utiliser uniquement des outils open source","Informer les autorités avant chaque test"], correct:1, explanation:"Le pentest est légal UNIQUEMENT avec un contrat signé définissant le périmètre. Sans contrat = intrusion illégale." }
+};
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+var COURSE_ID = 'j1';
+var TOTAL = 17;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};   // {slideIndex: true}
+var qcmScores = {};     // {slideIndex: 1|0}
+var currentQcmSlide = null;
+
+// ═══════════════════════════════════════════
+//  INIT — Auth + load progress
+// ═══════════════════════════════════════════
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+
+  // Show username in topbar
+  var profile = await getProfile(currentUser.id);
+  var username = (profile && profile.username) || 'user';
+  document.getElementById('tb-username').textContent = '@' + username;
+
+  // Load saved progress from Supabase
+  var savedProgress = await getCourseProgress(currentUser.id, COURSE_ID);
+  savedProgress.forEach(function(row) {
+    qcmAnswered[row.slide_index] = true;
+    qcmScores[row.slide_index] = row.is_correct ? 1 : 0;
+  });
+
+  updateUI();
+}
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+
+  // Block advance if QCM pending
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) {
+    showQcm(current);
+    return;
+  }
+
+  var curEl  = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  curEl.classList.remove('active');
+  curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next;
+  updateUI();
+}
+
+function updateUI() {
+  document.getElementById('slide-counter').textContent =
+    String(current + 1).padStart(2,'0') + ' / ' + String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL - 1;
+  document.getElementById('progress-fill').style.width = ((current + 1) / TOTAL * 100) + '%';
+
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) {
+    ind.textContent = qcmAnswered[current]
+      ? (qcmScores[current] === 1 ? '✅ QCM répondu' : '❌ QCM répondu')
+      : '⚡ QCM requis';
+  } else {
+    ind.textContent = '';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  QCM
+// ═══════════════════════════════════════════
+function showQcm(slideIndex) {
+  var qcm = QCM[slideIndex];
+  if (!qcm) return;
+  currentQcmSlide = slideIndex;
+
+  var answered = Object.keys(qcmAnswered).length;
+  var total = Object.keys(QCM).length;
+  document.getElementById('qcm-prog').textContent = 'QCM ' + (answered + 1) + ' / ' + total;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display = 'none';
+  document.getElementById('qcm-feedback').className = 'qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+
+  var letters = ['A','B','C','D'];
+  var html = '';
+  qcm.options.forEach(function(opt, i) {
+    html += '<div class="qcm-option" onclick="selectOption(this,' + i + ')">' +
+      '<span class="option-letter">' + letters[i] + '</span>' + opt + '</div>';
+  });
+  document.getElementById('qcm-options').innerHTML = html;
+
+  // Restore if already answered
+  if (qcmAnswered[slideIndex]) {
+    restoreQcmState(slideIndex);
+    document.getElementById('qcm-next-btn').classList.add('show');
+  }
+
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+
+async function selectOption(el, optionIndex) {
+  if (qcmAnswered[currentQcmSlide]) return;
+
+  var qcm = QCM[currentQcmSlide];
+  var correct = optionIndex === qcm.correct;
+
+  // Disable all options
+  document.querySelectorAll('.qcm-option').forEach(function(o, i) {
+    o.classList.add('disabled');
+    if (i === qcm.correct) o.classList.add('correct');
+  });
+  if (!correct) el.classList.add('wrong');
+
+  // Feedback
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display = 'block';
+  fb.className = 'qcm-feedback ' + (correct ? 'correct' : 'wrong');
+  fb.textContent = (correct ? '✅ Correct ! ' : '❌ Incorrect. ') + qcm.explanation;
+
+  // Save locally
+  qcmAnswered[currentQcmSlide] = true;
+  qcmScores[currentQcmSlide] = correct ? 1 : 0;
+  updateUI();
+
+  // Save to Supabase
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+
+    // Check if all QCMs answered → complete course
+    var total = Object.keys(QCM).length;
+    if (Object.keys(qcmAnswered).length === total) {
+      var correctCount = Object.values(qcmScores).filter(function(v){ return v === 1; }).length;
+      var scorePct = (correctCount / total) * 100;
+      await completeCourse(currentUser.id, COURSE_ID, scorePct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(scorePct); }, 1200);
+      return;
+    }
+  }
+
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+
+function restoreQcmState(slideIndex) {
+  var qcm = QCM[slideIndex];
+  document.querySelectorAll('.qcm-option').forEach(function(o, i) {
+    o.classList.add('disabled');
+    if (i === qcm.correct) o.classList.add('correct');
+  });
+  var fb = document.getElementById('qcm-feedback');
+  var score = qcmScores[slideIndex];
+  fb.style.display = 'block';
+  fb.className = 'qcm-feedback ' + (score === 1 ? 'correct' : 'wrong');
+  fb.textContent = (score === 1 ? '✅ Déjà répondu correctement. ' : '❌ Réponse incorrecte. ') + qcm.explanation;
+}
+
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide === current && current < TOTAL - 1) {
+    var next = current + 1;
+    var curEl  = document.querySelector('.slide.active');
+    var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+    curEl.classList.remove('active');
+    curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+    nextEl.classList.add('active');
+    current = next;
+    updateUI();
+  }
+}
+
+function showCompletion(scorePct) {
+  var total = Object.keys(QCM).length;
+  var correct = Object.values(qcmScores).filter(function(v){ return v === 1; }).length;
+  var pct = Math.round(scorePct);
+
+  document.getElementById('comp-score').textContent = pct + '%';
+  if (pct >= 70) {
+    document.getElementById('comp-icon').textContent = '🏆';
+    document.getElementById('comp-title').textContent = 'Excellent travail !';
+    document.getElementById('comp-sub').textContent = correct + ' / ' + total + ' bonnes réponses. Tu maîtrises les bases de la cybersécurité !';
+  } else {
+    document.getElementById('comp-icon').textContent = '📚';
+    document.getElementById('comp-title').textContent = 'Formation terminée';
+    document.getElementById('comp-sub').textContent = correct + ' / ' + total + ' bonnes réponses. Relis les slides pour améliorer ton score.';
+  }
+  document.getElementById('completion-modal').classList.add('show');
+}
+
+// ═══════════════════════════════════════════
+//  KEYBOARD + TOUCH
+// ═══════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  if (document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); navigate(1); }
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+var touchX = 0;
+document.addEventListener('touchstart', function(e){ touchX = e.touches[0].clientX; });
+document.addEventListener('touchend', function(e){
+  var dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 50 && !document.getElementById('qcm-overlay').classList.contains('show')) {
+    navigate(dx < 0 ? 1 : -1);
+  }
+});
+
+// ═══════════════════════════════════════════
+//  MATRIX
+// ═══════════════════════════════════════════
+(function(){
+  var c = document.getElementById('matrix');
+  var ctx = c.getContext('2d');
+  function resize(){ c.width = window.innerWidth; c.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  var chars = 'アイウエオカキクケコ01ABCDEF{}CTFFlag';
+  var fs = 13, drops;
+  function init(){ drops = Array(Math.floor(c.width/fs)).fill(1); }
+  init(); window.addEventListener('resize', init);
+  setInterval(function(){
+    ctx.fillStyle = 'rgba(2,12,6,0.05)'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle = '#00ff88'; ctx.font = fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*fs, y*fs);
+      if(y*fs > c.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    });
+  }, 55);
+})();
+
+init();
+</script>
+</body>
+</html>
