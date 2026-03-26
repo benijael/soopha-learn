@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inscription — SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+.auth-page {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; position: relative;
+}
+canvas#matrix-auth { position: fixed; inset: 0; z-index: 0; opacity: 0.04; pointer-events: none; }
+.auth-card { position: relative; z-index: 1; width: 100%; max-width: 480px; padding: 2.5rem; animation: fadeUp 0.5s ease both; }
+.auth-logo { text-align: center; margin-bottom: 2rem; }
+.auth-logo a { font-family: var(--display); font-size: 1.3rem; font-weight: 900; color: #fff; letter-spacing: 0.15em; }
+.auth-logo a span { color: var(--green); text-shadow: 0 0 12px var(--green); }
+.auth-logo p { font-family: var(--mono); font-size: 0.65rem; color: rgba(0,255,136,0.35); letter-spacing: 0.2em; margin-top: 0.4rem; }
+.gabon-bar { display: flex; height: 2px; width: 40px; border-radius: 2px; overflow: hidden; margin: 0.8rem auto; }
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}
+.gabon-bar span:nth-child(2){flex:1;background:#fcd116}
+.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.auth-title { font-family: var(--display); font-size: 1rem; font-weight: 700; color: var(--green); letter-spacing: 0.15em; text-align: center; margin-bottom: 1.8rem; text-transform: uppercase; }
+.auth-footer { text-align: center; margin-top: 1.5rem; font-family: var(--mono); font-size: 0.72rem; color: rgba(0,255,136,0.35); }
+.auth-footer a { color: var(--green); }
+.password-strength { height: 3px; margin-top: 0.4rem; border-radius: 2px; transition: all 0.3s; background: rgba(0,255,136,0.1); }
+.strength-text { font-family: var(--mono); font-size: 0.62rem; margin-top: 0.2rem; }
+.country-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='%2300ff88'%3E%3Cpath d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<canvas id="matrix-auth"></canvas>
+<div class="auth-page">
+  <div class="card auth-card">
+    <div class="auth-logo">
+      <a href="../index.html">SooPHA <span>LEARN</span></a>
+      <div class="gabon-bar"><span></span><span></span><span></span></div>
+      <p>// Rejoins la communauté · 100% gratuit</p>
+    </div>
+
+    <div class="auth-title">Créer mon compte</div>
+
+    <div class="alert alert-error" id="error-alert"></div>
+    <div class="alert alert-success" id="success-alert"></div>
+
+    <form id="register-form" novalidate>
+      <div class="grid-2" style="gap:0.8rem;margin-bottom:0">
+        <div class="form-group">
+          <label class="form-label" for="firstname">Prénom</label>
+          <input type="text" id="firstname" class="form-input" placeholder="Ton prénom" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="lastname">Nom</label>
+          <input type="text" id="lastname" class="form-input" placeholder="Ton nom" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="username">Pseudo (public)</label>
+        <input type="text" id="username" class="form-input" placeholder="Ex: h4cker_gab0n" required minlength="3">
+        <div class="form-error" id="username-error">Minimum 3 caractères, pas d'espaces</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Adresse email</label>
+        <input type="email" id="email" class="form-input" placeholder="toi@exemple.com" required autocomplete="email">
+        <div class="form-error" id="email-error">Email invalide</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="country">Pays</label>
+        <select id="country" class="form-input country-select">
+          <option value="">Sélectionne ton pays</option>
+          <option value="GA">🇬🇦 Gabon</option>
+          <option value="SN">🇸🇳 Sénégal</option>
+          <option value="CI">🇨🇮 Côte d'Ivoire</option>
+          <option value="CM">🇨🇲 Cameroun</option>
+          <option value="CD">🇨🇩 RD Congo</option>
+          <option value="CG">🇨🇬 Congo-Brazzaville</option>
+          <option value="MG">🇲🇬 Madagascar</option>
+          <option value="ML">🇲🇱 Mali</option>
+          <option value="BF">🇧🇫 Burkina Faso</option>
+          <option value="NE">🇳🇪 Niger</option>
+          <option value="TG">🇹🇬 Togo</option>
+          <option value="BJ">🇧🇯 Bénin</option>
+          <option value="GN">🇬🇳 Guinée</option>
+          <option value="TN">🇹🇳 Tunisie</option>
+          <option value="MA">🇲🇦 Maroc</option>
+          <option value="DZ">🇩🇿 Algérie</option>
+          <option value="FR">🇫🇷 France</option>
+          <option value="other">Autre</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Mot de passe</label>
+        <input type="password" id="password" class="form-input" placeholder="Minimum 8 caractères" required minlength="8" autocomplete="new-password">
+        <div class="password-strength" id="strength-bar"></div>
+        <div class="strength-text" id="strength-text"></div>
+        <div class="form-error" id="password-error">Minimum 8 caractères</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="confirm-password">Confirme le mot de passe</label>
+        <input type="password" id="confirm-password" class="form-input" placeholder="••••••••" required autocomplete="new-password">
+        <div class="form-error" id="confirm-error">Les mots de passe ne correspondent pas</div>
+      </div>
+
+      <div style="font-family:var(--mono);font-size:0.68rem;color:rgba(0,255,136,0.3);margin-bottom:1.2rem;line-height:1.6">
+        En créant un compte tu acceptes les conditions d'utilisation de SooPHA Learn. Données protégées, jamais revendues.
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%" id="submit-btn">
+        <span id="btn-text">Créer mon compte</span>
+        <span class="spinner" id="btn-spinner" style="display:none"></span>
+      </button>
+    </form>
+
+    <div class="divider">OU</div>
+
+    <button class="btn btn-secondary" style="width:100%" id="google-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Continuer avec Google
+    </button>
+
+    <div class="auth-footer">
+      Déjà un compte ? <a href="login.html">Se connecter</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var c = document.getElementById('matrix-auth');
+  var ctx = c.getContext('2d');
+  function resize(){ c.width = window.innerWidth; c.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  var chars = 'アイウエオ01ABCDEF{}CTF'; var fs = 13, drops;
+  function init(){ drops = Array(Math.floor(c.width/fs)).fill(1); }
+  init(); window.addEventListener('resize', init);
+  setInterval(function(){
+    ctx.fillStyle = 'rgba(2,12,6,0.05)'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle = '#00ff88'; ctx.font = fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*fs, y*fs);
+      if(y*fs > c.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    });
+  }, 60);
+})();
+
+redirectIfAuthed();
+
+// Password strength
+document.getElementById('password').addEventListener('input', function(){
+  var val = this.value;
+  var bar = document.getElementById('strength-bar');
+  var text = document.getElementById('strength-text');
+  var score = 0;
+  if (val.length >= 8) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  var colors = ['', '#ff4466', '#ff8800', '#ffd700', '#00ff88'];
+  var labels = ['', 'Faible', 'Moyen', 'Bon', 'Excellent'];
+  bar.style.width = (score * 25) + '%';
+  bar.style.background = colors[score] || 'rgba(0,255,136,0.1)';
+  text.textContent = score > 0 ? labels[score] : '';
+  text.style.color = colors[score] || 'transparent';
+});
+
+function setLoading(loading) {
+  var btn = document.getElementById('submit-btn');
+  document.getElementById('btn-text').style.display = loading ? 'none' : 'inline';
+  document.getElementById('btn-spinner').style.display = loading ? 'inline-block' : 'none';
+  btn.disabled = loading;
+}
+
+function showError(msg) {
+  var el = document.getElementById('error-alert');
+  el.textContent = '⚠ ' + msg; el.classList.add('show');
+  document.getElementById('success-alert').classList.remove('show');
+}
+
+document.getElementById('register-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var firstname = document.getElementById('firstname').value.trim();
+  var lastname = document.getElementById('lastname').value.trim();
+  var username = document.getElementById('username').value.trim();
+  var email = document.getElementById('email').value.trim();
+  var country = document.getElementById('country').value;
+  var password = document.getElementById('password').value;
+  var confirm = document.getElementById('confirm-password').value;
+
+  // Validations
+  if (!firstname || !lastname) { showError('Prénom et nom requis.'); return; }
+  if (username.length < 3 || /\s/.test(username)) {
+    document.getElementById('username-error').classList.add('show');
+    showError('Pseudo invalide.'); return;
+  }
+  if (!email.includes('@')) {
+    document.getElementById('email-error').classList.add('show');
+    showError('Email invalide.'); return;
+  }
+  if (password.length < 8) {
+    document.getElementById('password-error').classList.add('show');
+    showError('Mot de passe trop court.'); return;
+  }
+  if (password !== confirm) {
+    document.getElementById('confirm-error').classList.add('show');
+    showError('Les mots de passe ne correspondent pas.'); return;
+  }
+
+  setLoading(true);
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email, password,
+      options: {
+        data: {
+          full_name: firstname + ' ' + lastname,
+          username: username,
+          country: country,
+          display_name: firstname
+        },
+        emailRedirectTo: window.location.origin + '/pages/login.html?confirmed=true'
+      }
+    });
+
+    if (error) {
+      if (error.message.includes('already registered')) {
+        showError('Cette adresse email est déjà utilisée. Connecte-toi.');
+      } else {
+        showError(error.message);
+      }
+      setLoading(false);
+      return;
+    }
+
+    // Succès
+    var successEl = document.getElementById('success-alert');
+    successEl.innerHTML = '✓ Compte créé ! <strong>Vérifie ta boîte mail</strong> pour confirmer ton adresse.';
+    successEl.classList.add('show');
+    document.getElementById('error-alert').classList.remove('show');
+    document.getElementById('register-form').style.opacity = '0.4';
+    document.getElementById('register-form').style.pointerEvents = 'none';
+
+  } catch (err) {
+    showError('Erreur réseau. Réessaie.');
+    setLoading(false);
+  }
+});
+
+document.getElementById('google-btn').addEventListener('click', async function() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + '/pages/dashboard.html' }
+  });
+  if (error) showError('Erreur Google : ' + error.message);
+});
+</script>
+</body>
+</html>

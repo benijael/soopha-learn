@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="SooPHA Learn — La plateforme de formation en cybersécurité pour la jeunesse africaine francophone.">
+<title>SooPHA Learn — Cybersécurité pour l'Afrique</title>
+<link rel="stylesheet" href="css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<style>
+/* ── HERO ── */
+.hero {
+  min-height: calc(100vh - 60px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 4rem 2rem;
+  position: relative; overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(0,80,40,0.2) 0%, transparent 70%);
+}
+canvas#matrix-hero {
+  position: absolute; inset: 0; z-index: 0;
+  opacity: 0.05; pointer-events: none;
+}
+.hero-content { position: relative; z-index: 1; max-width: 800px; }
+
+.hero-tag {
+  font-family: var(--mono); font-size: 0.68rem;
+  letter-spacing: 0.5em; color: rgba(0,255,136,0.35);
+  text-transform: uppercase; margin-bottom: 1.5rem;
+  animation: fadeUp 0.6s ease both;
+}
+.hero-title {
+  font-family: var(--display); font-size: clamp(2.4rem,6vw,4rem);
+  font-weight: 900; line-height: 1.05;
+  letter-spacing: 0.08em; margin-bottom: 0.5rem;
+  animation: fadeUp 0.6s 0.1s ease both;
+}
+.hero-title-main { color: #fff; text-shadow: 0 0 40px rgba(0,255,136,0.2); }
+.hero-title-accent { color: var(--green); text-shadow: 0 0 30px var(--green); }
+.hero-subtitle {
+  font-family: var(--mono); font-size: 0.85rem;
+  color: rgba(0,255,136,0.4); letter-spacing: 0.2em;
+  margin-bottom: 2rem;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+.hero-desc {
+  font-family: var(--body); font-size: clamp(0.95rem,2vw,1.1rem);
+  color: rgba(200,255,220,0.6); line-height: 1.7;
+  max-width: 580px; margin: 0 auto 2.5rem;
+  animation: fadeUp 0.6s 0.3s ease both;
+}
+.hero-cta {
+  display: flex; gap: 1rem; justify-content: center;
+  flex-wrap: wrap;
+  animation: fadeUp 0.6s 0.4s ease both;
+}
+.hero-stats {
+  display: flex; gap: 2rem; justify-content: center;
+  flex-wrap: wrap; margin-top: 3rem;
+  animation: fadeUp 0.6s 0.5s ease both;
+}
+.hero-stat {
+  padding: 0.8rem 1.5rem;
+  border: 1px solid var(--green-border);
+  background: rgba(0,255,136,0.03);
+}
+
+/* GABON BAR */
+.gabon-bar {
+  display: flex; height: 3px; width: 80px;
+  border-radius: 2px; overflow: hidden;
+  margin: 1rem auto;
+  animation: fadeUp 0.6s 0.15s ease both;
+}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}
+.gabon-bar span:nth-child(2){flex:1;background:#fcd116}
+.gabon-bar span:nth-child(3){flex:1;background:#003189}
+
+/* ── FEATURES ── */
+.features { padding: 5rem 0; }
+.features-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
+  gap: 1.2rem; margin-top: 2.5rem;
+}
+.feature-card { padding: 2rem 1.5rem; }
+.feature-icon { font-size: 2rem; margin-bottom: 1rem; }
+.feature-title {
+  font-family: var(--display); font-size: 0.9rem;
+  font-weight: 700; color: #fff; letter-spacing: 0.05em;
+  margin-bottom: 0.6rem;
+}
+.feature-desc {
+  font-size: 0.82rem; color: rgba(200,255,220,0.55); line-height: 1.6;
+}
+
+/* ── TOPICS ── */
+.topics { padding: 4rem 0; border-top: 1px solid var(--green-border); }
+.topics-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
+  gap: 0.8rem; margin-top: 2rem;
+}
+.topic-pill {
+  padding: 0.8rem 1rem; text-align: center;
+  border: 1px solid var(--green-border);
+  background: rgba(0,255,136,0.03);
+  font-family: var(--mono); font-size: 0.72rem;
+  color: rgba(0,255,136,0.6); letter-spacing: 0.08em;
+  transition: all var(--transition);
+}
+.topic-pill:hover {
+  border-color: rgba(0,255,136,0.4);
+  color: var(--green); background: rgba(0,255,136,0.06);
+}
+.topic-icon { font-size: 1.3rem; margin-bottom: 0.4rem; display: block; }
+
+/* ── AFRICA SECTION ── */
+.africa { padding: 5rem 0; border-top: 1px solid var(--green-border); }
+.africa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; }
+.africa-text h2 { margin-bottom: 1rem; }
+.africa-text p { margin-bottom: 1.5rem; }
+.africa-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.africa-stat-card {
+  padding: 1.2rem;
+  border: 1px solid var(--green-border);
+  background: rgba(0,255,136,0.03);
+  text-align: center;
+}
+
+/* ── CTA BOTTOM ── */
+.cta-bottom {
+  padding: 5rem 0; text-align: center;
+  border-top: 1px solid var(--green-border);
+}
+.cta-bottom h2 { margin-bottom: 1rem; }
+.cta-bottom p { margin-bottom: 2rem; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+/* ── FOOTER ── */
+.footer {
+  border-top: 1px solid var(--green-border);
+  padding: 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
+  font-family: var(--mono); font-size: 0.65rem;
+  color: rgba(0,255,136,0.25); letter-spacing: 0.1em;
+}
+.footer a { color: rgba(0,255,136,0.4); }
+.footer a:hover { color: var(--green); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 768px) {
+  .africa-grid { grid-template-columns: 1fr; gap: 2rem; }
+  .hero-stats { gap: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="/" class="navbar-brand">SooPHA <span>LEARN</span></a>
+  <div class="navbar-links">
+    <a href="#formations" class="navbar-link hide-mobile">Formations</a>
+    <a href="#about" class="navbar-link hide-mobile">À propos</a>
+    <a href="pages/login.html" class="btn btn-secondary btn-sm">Se connecter</a>
+    <a href="pages/register.html" class="btn btn-primary btn-sm">S'inscrire</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <canvas id="matrix-hero"></canvas>
+  <div class="hero-content">
+    <div class="hero-tag">// Cybersécurité · Afrique Francophone · 2026</div>
+    <h1 class="hero-title">
+      <span class="hero-title-main">FORME-TOI.</span><br>
+      <span class="hero-title-accent">PROUVE-LE.</span>
+    </h1>
+    <div class="gabon-bar"><span></span><span></span><span></span></div>
+    <div class="hero-subtitle">// SooPHA Learn — La cybersécurité accessible à tous</div>
+    <p class="hero-desc">
+      Des formations structurées, des QCM pour valider ta compréhension, des défis CTF pour affûter tes compétences. 
+      Conçu pour la jeunesse africaine francophone. <strong style="color:rgba(200,255,220,0.9)">100% gratuit.</strong>
+    </p>
+    <div class="hero-cta">
+      <a href="pages/register.html" class="btn btn-primary">Commencer gratuitement →</a>
+      <a href="#formations" class="btn btn-secondary">Voir les formations</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="stat-val" style="font-size:1.4rem">3</div>
+        <div class="stat-label">Formations</div>
+      </div>
+      <div class="hero-stat">
+        <div class="stat-val" style="font-size:1.4rem">40+</div>
+        <div class="stat-label">Slides</div>
+      </div>
+      <div class="hero-stat">
+        <div class="stat-val" style="font-size:1.4rem">100%</div>
+        <div class="stat-label">Gratuit</div>
+      </div>
+      <div class="hero-stat">
+        <div class="stat-val" style="font-size:1.4rem">🌍</div>
+        <div class="stat-label">Toute l'Afrique</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="about">
+  <div class="container">
+    <div class="section-title">POURQUOI SOOPHA LEARN</div>
+    <div class="features-grid">
+      <div class="card feature-card">
+        <div class="feature-icon">🎯</div>
+        <div class="feature-title">Formations structurées</div>
+        <div class="feature-desc">Du contenu pensé pour les débutants africains. Exemples locaux, contexte Gabon, Sénégal, Côte d'Ivoire, Cameroun.</div>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon">🧠</div>
+        <div class="feature-title">QCM de validation</div>
+        <div class="feature-desc">Un QCM après chaque slide pour valider la compréhension en temps réel. Explication détaillée pour chaque réponse.</div>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Suivi de progression</div>
+        <div class="feature-desc">Ton tableau de bord personnel. Scores, cours complétés, temps passé. Ta progression sauvegardée sur tous tes appareils.</div>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon">🏆</div>
+        <div class="feature-title">Certifications</div>
+        <div class="feature-desc">Un certificat PDF téléchargeable à ton nom pour chaque cours complété avec succès. Partage sur LinkedIn.</div>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon">⚔️</div>
+        <div class="feature-title">Défis CTF</div>
+        <div class="feature-desc">Des challenges pratiques en continu. Web, Cryptographie, OSINT, Forensics. Mets ta théorie en pratique.</div>
+      </div>
+      <div class="card feature-card">
+        <div class="feature-icon">🌍</div>
+        <div class="feature-title">Communauté africaine</div>
+        <div class="feature-desc">Rejoins une communauté de jeunes passionnés de cybersécurité à travers l'Afrique francophone. Classement continental.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOPICS -->
+<section class="topics" id="formations">
+  <div class="container">
+    <div class="section-title">DOMAINES DE FORMATION</div>
+    <div class="topics-grid">
+      <div class="topic-pill"><span class="topic-icon">🛡️</span>Introduction Cyber</div>
+      <div class="topic-pill"><span class="topic-icon">🌐</span>Web Hacking</div>
+      <div class="topic-pill"><span class="topic-icon">🔐</span>Cryptographie</div>
+      <div class="topic-pill"><span class="topic-icon">🕵️</span>OSINT</div>
+      <div class="topic-pill"><span class="topic-icon">📡</span>Forensics</div>
+      <div class="topic-pill"><span class="topic-icon">💀</span>Exploitation</div>
+      <div class="topic-pill"><span class="topic-icon">🖼️</span>Stéganographie</div>
+      <div class="topic-pill"><span class="topic-icon">🔑</span>IAM & Identités</div>
+    </div>
+    <div style="text-align:center;margin-top:2.5rem">
+      <a href="pages/register.html" class="btn btn-primary">Accéder aux formations →</a>
+    </div>
+  </div>
+</section>
+
+<!-- AFRICA SECTION -->
+<section class="africa">
+  <div class="container">
+    <div class="africa-grid">
+      <div class="africa-text">
+        <div class="section-title">CONÇU POUR L'AFRIQUE</div>
+        <h2 style="margin-bottom:1rem">La cybersécurité,<br><span style="color:var(--green)">un enjeu continental</span></h2>
+        <p>L'Afrique subsaharienne fait face à une hausse de +60% des cyberattaques. Les fraudes Mobile Money, le SIM Swapping et le phishing touchent des millions de personnes chaque année.</p>
+        <p>Les experts cyber locaux sont rares. <strong style="color:rgba(200,255,220,0.9)">Tu peux faire partie de la solution.</strong></p>
+        <a href="pages/register.html" class="btn btn-primary" style="margin-top:0.5rem">Je rejoins la communauté</a>
+      </div>
+      <div class="africa-stats">
+        <div class="card africa-stat-card">
+          <div class="stat-val" style="color:var(--red)">+60%</div>
+          <div class="stat-label">Cyberattaques en hausse en Afrique</div>
+        </div>
+        <div class="card africa-stat-card">
+          <div class="stat-val">$8T</div>
+          <div class="stat-label">Coût mondial cybercriminalité</div>
+        </div>
+        <div class="card africa-stat-card">
+          <div class="stat-val" style="color:var(--yellow)">2 200</div>
+          <div class="stat-label">Attaques par jour dans le monde</div>
+        </div>
+        <div class="card africa-stat-card">
+          <div class="stat-val" style="color:var(--green)">0</div>
+          <div class="stat-label">Coût pour apprendre ici</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BOTTOM -->
+<section class="cta-bottom">
+  <div class="container">
+    <h2>Prêt à commencer ?</h2>
+    <p>Crée ton compte gratuitement. Commence le premier cours en 2 minutes. Progresse à ton rythme.</p>
+    <a href="pages/register.html" class="btn btn-primary">Créer mon compte →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div>SooPHA Learn × Cybersécurité × Afrique Francophone</div>
+  <div style="display:flex;gap:1.5rem">
+    <a href="https://soopha-network.com" target="_blank">SooPHA Network</a>
+    <a href="https://ctfd.soopha-network.com" target="_blank">CTF Platform</a>
+  </div>
+</footer>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// Matrix background
+(function(){
+  var c = document.getElementById('matrix-hero');
+  var ctx = c.getContext('2d');
+  function resize(){ c.width = window.innerWidth; c.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  var chars = 'アイウエオ01ABCDEF{}CTFFlag';
+  var fs = 13, drops;
+  function init(){ drops = Array(Math.floor(c.width/fs)).fill(1); }
+  init(); window.addEventListener('resize', init);
+  setInterval(function(){
+    ctx.fillStyle = 'rgba(2,12,6,0.05)'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle = '#00ff88'; ctx.font = fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*fs, y*fs);
+      if(y*fs > c.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    });
+  }, 60);
+})();
+
+// Redirect if already logged in
+redirectIfAuthed();
+</script>
+</body>
+</html>

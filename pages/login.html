@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion — SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+.auth-page {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 2rem;
+  position: relative;
+}
+canvas#matrix-auth {
+  position: fixed; inset: 0; z-index: 0;
+  opacity: 0.04; pointer-events: none;
+}
+.auth-card {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 460px;
+  padding: 2.5rem;
+  animation: fadeUp 0.5s ease both;
+}
+.auth-logo {
+  text-align: center; margin-bottom: 2rem;
+}
+.auth-logo a {
+  font-family: var(--display); font-size: 1.3rem;
+  font-weight: 900; color: #fff; letter-spacing: 0.15em;
+}
+.auth-logo a span { color: var(--green); text-shadow: 0 0 12px var(--green); }
+.auth-logo p {
+  font-family: var(--mono); font-size: 0.65rem;
+  color: rgba(0,255,136,0.35); letter-spacing: 0.2em;
+  margin-top: 0.4rem;
+}
+.gabon-bar {
+  display: flex; height: 2px; width: 40px;
+  border-radius: 2px; overflow: hidden;
+  margin: 0.8rem auto;
+}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}
+.gabon-bar span:nth-child(2){flex:1;background:#fcd116}
+.gabon-bar span:nth-child(3){flex:1;background:#003189}
+
+.auth-title {
+  font-family: var(--display); font-size: 1rem;
+  font-weight: 700; color: var(--green);
+  letter-spacing: 0.15em; text-align: center;
+  margin-bottom: 1.8rem; text-transform: uppercase;
+}
+.auth-footer {
+  text-align: center; margin-top: 1.5rem;
+  font-family: var(--mono); font-size: 0.72rem;
+  color: rgba(0,255,136,0.35);
+}
+.auth-footer a { color: var(--green); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<canvas id="matrix-auth"></canvas>
+
+<div class="auth-page">
+  <div class="card auth-card">
+    <div class="auth-logo">
+      <a href="../index.html">SooPHA <span>LEARN</span></a>
+      <div class="gabon-bar"><span></span><span></span><span></span></div>
+      <p>// CYBERSÉCURITÉ · AFRIQUE FRANCOPHONE</p>
+    </div>
+
+    <div class="auth-title">Connexion</div>
+
+    <div class="alert alert-error" id="error-alert"></div>
+    <div class="alert alert-success" id="success-alert"></div>
+
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="email">Adresse email</label>
+        <input type="email" id="email" class="form-input" placeholder="toi@exemple.com" autocomplete="email" required>
+        <div class="form-error" id="email-error">Email invalide</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Mot de passe</label>
+        <input type="password" id="password" class="form-input" placeholder="••••••••" autocomplete="current-password" required>
+        <div class="form-error" id="password-error">Mot de passe requis</div>
+      </div>
+
+      <div style="text-align:right;margin-bottom:1.2rem">
+        <a href="forgot-password.html" style="font-family:var(--mono);font-size:0.68rem;color:rgba(0,255,136,0.4)">Mot de passe oublié ?</a>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%" id="submit-btn">
+        <span id="btn-text">Se connecter</span>
+        <span class="spinner" id="btn-spinner" style="display:none"></span>
+      </button>
+    </form>
+
+    <div class="divider">OU</div>
+
+    <button class="btn btn-secondary" style="width:100%" id="google-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Continuer avec Google
+    </button>
+
+    <div class="auth-footer">
+      Pas encore de compte ? <a href="register.html">S'inscrire gratuitement</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// Matrix
+(function(){
+  var c = document.getElementById('matrix-auth');
+  var ctx = c.getContext('2d');
+  function resize(){ c.width = window.innerWidth; c.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  var chars = 'アイウエオ01ABCDEF{}CTFFlag';
+  var fs = 13, drops;
+  function init(){ drops = Array(Math.floor(c.width/fs)).fill(1); }
+  init(); window.addEventListener('resize', init);
+  setInterval(function(){
+    ctx.fillStyle = 'rgba(2,12,6,0.05)'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle = '#00ff88'; ctx.font = fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*fs, y*fs);
+      if(y*fs > c.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    });
+  }, 60);
+})();
+
+// Redirect if already authed
+redirectIfAuthed();
+
+function setLoading(loading) {
+  var btn = document.getElementById('submit-btn');
+  var text = document.getElementById('btn-text');
+  var spinner = document.getElementById('btn-spinner');
+  btn.disabled = loading;
+  text.style.display = loading ? 'none' : 'inline';
+  spinner.style.display = loading ? 'inline-block' : 'none';
+}
+
+function showError(msg) {
+  var el = document.getElementById('error-alert');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('show');
+  document.getElementById('success-alert').classList.remove('show');
+}
+
+function showSuccess(msg) {
+  var el = document.getElementById('success-alert');
+  el.textContent = '✓ ' + msg;
+  el.classList.add('show');
+  document.getElementById('error-alert').classList.remove('show');
+}
+
+// LOGIN FORM
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var email = document.getElementById('email').value.trim();
+  var password = document.getElementById('password').value;
+
+  if (!email || !password) {
+    showError('Email et mot de passe requis.');
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      if (error.message.includes('Invalid login')) {
+        showError('Email ou mot de passe incorrect.');
+      } else if (error.message.includes('Email not confirmed')) {
+        showError('Confirme ton email avant de te connecter. Vérifie ta boîte mail.');
+      } else {
+        showError(error.message);
+      }
+      setLoading(false);
+      return;
+    }
+    // Succès → redirect
+    showSuccess('Connexion réussie ! Redirection...');
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+  } catch (err) {
+    showError('Erreur réseau. Réessaie.');
+    setLoading(false);
+  }
+});
+
+// GOOGLE LOGIN
+document.getElementById('google-btn').addEventListener('click', async function() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + '/pages/dashboard.html' }
+  });
+  if (error) showError('Erreur Google : ' + error.message);
+});
+
+// Check for email confirmation message
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('confirmed') === 'true') {
+  showSuccess('Email confirmé ! Tu peux te connecter.');
+}
+if (urlParams.get('reset') === 'sent') {
+  showSuccess('Email de réinitialisation envoyé. Vérifie ta boîte mail.');
+}
+</script>
+</body>
+</html>

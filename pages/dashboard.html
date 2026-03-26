@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+.page { padding: 2.5rem 0 4rem; }
+
+/* WELCOME BANNER */
+.welcome-banner {
+  background: rgba(0,255,136,0.04);
+  border: 1px solid var(--green-border);
+  border-left: 4px solid var(--green);
+  padding: 1.5rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem; margin-bottom: 2.5rem;
+}
+.welcome-name {
+  font-family: var(--display); font-size: clamp(1rem,2.5vw,1.4rem);
+  font-weight: 900; color: #fff; letter-spacing: 0.05em;
+}
+.welcome-name span { color: var(--green); text-shadow: 0 0 10px var(--green); }
+.welcome-sub {
+  font-family: var(--mono); font-size: 0.7rem;
+  color: rgba(0,255,136,0.4); margin-top: 0.2rem; letter-spacing: 0.08em;
+}
+
+/* STATS ROW */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 1rem; margin-bottom: 2.5rem;
+}
+.stat-card {
+  padding: 1.2rem 1rem; text-align: center;
+  border: 1px solid var(--green-border);
+  background: rgba(0,255,136,0.03);
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: -1px; left: -1px;
+  width: 10px; height: 10px;
+  border-top: 2px solid var(--green); border-left: 2px solid var(--green);
+}
+
+/* COURSE CARDS */
+.courses-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr));
+  gap: 1.2rem; margin-bottom: 2.5rem;
+}
+.course-card {
+  padding: 1.5rem; cursor: pointer; text-decoration: none; color: inherit; display: block;
+  transition: all var(--transition);
+}
+.course-card:hover { border-color: rgba(0,255,136,0.4); box-shadow: 0 0 20px rgba(0,255,136,0.08); transform: translateY(-2px); opacity: 1; }
+.course-number {
+  font-family: var(--display); font-size: 3rem; font-weight: 900;
+  color: rgba(0,255,136,0.06); position: absolute; top: 0.8rem; right: 1rem;
+  line-height: 1;
+}
+.course-day { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.25em; color: rgba(0,255,136,0.35); margin-bottom: 0.6rem; }
+.course-title { font-family: var(--display); font-size: 0.92rem; font-weight: 700; color: #fff; letter-spacing: 0.04em; margin-bottom: 0.5rem; line-height: 1.3; }
+.course-desc { font-size: 0.78rem; color: rgba(200,255,220,0.5); line-height: 1.5; margin-bottom: 1rem; }
+.course-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+.course-progress { margin-top: 0.8rem; }
+.course-progress-label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.6rem; color: rgba(0,255,136,0.35); margin-bottom: 0.3rem; }
+
+/* COMING SOON CARD */
+.course-card-soon {
+  padding: 1.5rem;
+  border: 1px dashed rgba(0,255,136,0.1);
+  background: rgba(4,15,8,0.4);
+  text-align: center;
+  color: rgba(0,255,136,0.25);
+}
+.course-card-soon-icon { font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.4; }
+.course-card-soon-title { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; }
+
+/* ACTIVITY FEED */
+.activity-item {
+  display: flex; align-items: flex-start; gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid rgba(0,255,136,0.06);
+  font-size: 0.82rem;
+}
+.activity-item:last-child { border-bottom: none; }
+.activity-icon {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(0,255,136,0.08); border: 1px solid var(--green-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; flex-shrink: 0;
+}
+.activity-text { color: rgba(200,255,220,0.7); line-height: 1.4; }
+.activity-time { font-family: var(--mono); font-size: 0.62rem; color: rgba(0,255,136,0.25); margin-top: 0.2rem; }
+
+/* LEADERBOARD PREVIEW */
+.lb-row {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.7rem 0; border-bottom: 1px solid rgba(0,255,136,0.06);
+  font-size: 0.82rem;
+}
+.lb-row:last-child { border-bottom: none; }
+.lb-rank {
+  font-family: var(--display); font-size: 0.8rem; font-weight: 700;
+  min-width: 28px; text-align: center;
+}
+.lb-username { flex: 1; font-family: var(--mono); color: rgba(200,255,220,0.8); font-size: 0.78rem; }
+.lb-score { font-family: var(--display); font-size: 0.8rem; color: var(--green); }
+.lb-country { font-size: 0.9rem; }
+
+/* SIDEBAR LAYOUT */
+.dashboard-layout { display: grid; grid-template-columns: 1fr 320px; gap: 2rem; align-items: start; }
+
+@media (max-width: 900px) {
+  .dashboard-layout { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 500px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* PROFILE CARD */
+.profile-card { padding: 1.5rem; text-align: center; margin-bottom: 1.2rem; }
+.profile-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: rgba(0,255,136,0.1); border: 2px solid var(--green-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; margin: 0 auto 0.8rem;
+  font-family: var(--display); font-weight: 900; color: var(--green);
+}
+.profile-name { font-family: var(--display); font-size: 0.9rem; font-weight: 700; color: #fff; letter-spacing: 0.05em; }
+.profile-username { font-family: var(--mono); font-size: 0.68rem; color: rgba(0,255,136,0.4); margin-top: 0.2rem; }
+.profile-country { font-size: 0.8rem; margin-top: 0.4rem; }
+.profile-badges { display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap; margin-top: 0.8rem; }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand">SooPHA <span>LEARN</span></a>
+  <div class="navbar-links">
+    <a href="dashboard.html" class="navbar-link active">Dashboard</a>
+    <a href="formations.html" class="navbar-link hide-mobile">Formations</a>
+    <button class="btn btn-secondary btn-sm" onclick="logout()">Déconnexion</button>
+  </div>
+</nav>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <span>Chargement...</span>
+</div>
+
+<div class="page" id="page-content" style="display:none">
+<div class="container">
+
+  <!-- WELCOME -->
+  <div class="welcome-banner">
+    <div>
+      <div class="welcome-name">Bonjour, <span id="user-firstname">—</span> 👋</div>
+      <div class="welcome-sub" id="user-tag">// Membre SooPHA Learn</div>
+    </div>
+    <div style="display:flex;gap:0.8rem;align-items:center">
+      <span class="badge badge-green" id="member-badge">Membre</span>
+      <span id="user-country" style="font-size:1.2rem"></span>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-val" id="stat-completed">0</div>
+      <div class="stat-label">Cours terminés</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-score">0%</div>
+      <div class="stat-label">Score moyen</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-qcm">0</div>
+      <div class="stat-label">QCM répondus</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-rank" style="font-size:1.2rem">—</div>
+      <div class="stat-label">Classement</div>
+    </div>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="dashboard-layout">
+
+    <!-- LEFT — FORMATIONS -->
+    <div>
+      <div class="section-title">MES FORMATIONS</div>
+      <div class="courses-grid" id="courses-grid">
+
+        <!-- J1 -->
+        <a href="j1.html" class="card course-card" id="course-j1">
+          <div class="course-number">J1</div>
+          <div class="course-day">// Jour 1</div>
+          <div class="course-title">Introduction à la Cybersécurité</div>
+          <div class="course-desc">CIA, menaces africaines, acteurs, métiers, Red vs Blue Team.</div>
+          <div class="course-tags">
+            <span class="badge badge-green">🛡️ Bases</span>
+            <span class="badge badge-blue">17 slides</span>
+            <span class="badge badge-yellow">12 QCM</span>
+          </div>
+          <div class="course-progress" id="prog-j1" style="display:none">
+            <div class="course-progress-label">
+              <span id="prog-j1-label">En cours</span>
+              <span id="prog-j1-score"></span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-j1-fill" style="width:0%"></div></div>
+          </div>
+          <div id="cta-j1" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+        </a>
+
+        <!-- J2 -->
+        <a href="j2.html" class="card course-card" id="course-j2">
+          <div class="course-number">J2</div>
+          <div class="course-day">// Jour 2</div>
+          <div class="course-title">Ingénierie Sociale & Phishing</div>
+          <div class="course-desc">L'art de la manipulation. Phishing, vishing, smishing, deepfakes.</div>
+          <div class="course-tags">
+            <span class="badge badge-red">⚠️ Attaques</span>
+            <span class="badge badge-blue">~15 slides</span>
+          </div>
+          <div class="course-progress" id="prog-j2" style="display:none">
+            <div class="course-progress-label">
+              <span id="prog-j2-label">En cours</span>
+              <span id="prog-j2-score"></span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-j2-fill" style="width:0%"></div></div>
+          </div>
+          <div id="cta-j2" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+        </a>
+
+        <!-- J3 -->
+        <a href="j3.html" class="card course-card" id="course-j3">
+          <div class="course-number">J3</div>
+          <div class="course-day">// Jour 3</div>
+          <div class="course-title">Outils & Pratique CTF</div>
+          <div class="course-desc">Prise en main des outils essentiels. Introduction au CTF, méthodologie.</div>
+          <div class="course-tags">
+            <span class="badge badge-green">💻 Pratique</span>
+            <span class="badge badge-blue">~15 slides</span>
+          </div>
+          <div class="course-progress" id="prog-j3" style="display:none">
+            <div class="course-progress-label">
+              <span id="prog-j3-label">En cours</span>
+              <span id="prog-j3-score"></span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-j3-fill" style="width:0%"></div></div>
+          </div>
+          <div id="cta-j3" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+        </a>
+
+        <!-- COMING SOON -->
+        <div class="course-card-soon">
+          <div class="course-card-soon-icon">🌐</div>
+          <div class="course-card-soon-title">Web Hacking<br><span style="font-size:0.6rem;opacity:0.5">Bientôt</span></div>
+        </div>
+        <div class="course-card-soon">
+          <div class="course-card-soon-icon">🔐</div>
+          <div class="course-card-soon-title">Cryptographie<br><span style="font-size:0.6rem;opacity:0.5">Bientôt</span></div>
+        </div>
+        <div class="course-card-soon">
+          <div class="course-card-soon-icon">🕵️</div>
+          <div class="course-card-soon-title">OSINT<br><span style="font-size:0.6rem;opacity:0.5">Bientôt</span></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div>
+
+      <!-- PROFILE -->
+      <div class="card profile-card">
+        <div class="profile-avatar" id="avatar-initials">?</div>
+        <div class="profile-name" id="profile-name">—</div>
+        <div class="profile-username" id="profile-username">@—</div>
+        <div class="profile-country" id="profile-country"></div>
+        <div class="profile-badges" id="profile-badges"></div>
+      </div>
+
+      <!-- LEADERBOARD -->
+      <div class="card" style="padding:1.5rem;margin-bottom:1.2rem">
+        <div class="section-title" style="margin-bottom:1rem">TOP APPRENANTS</div>
+        <div id="leaderboard-list">
+          <div style="font-family:var(--mono);font-size:0.72rem;color:rgba(0,255,136,0.25);text-align:center;padding:1rem">Chargement...</div>
+        </div>
+        <div style="text-align:center;margin-top:1rem">
+          <a href="leaderboard.html" class="btn btn-secondary btn-sm">Voir tout →</a>
+        </div>
+      </div>
+
+      <!-- QUICK LINKS -->
+      <div class="card" style="padding:1.5rem">
+        <div class="section-title" style="margin-bottom:1rem">LIENS RAPIDES</div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem">
+          <a href="https://ctfd.soopha-network.com" target="_blank" class="btn btn-secondary btn-sm" style="justify-content:flex-start">⚔️ Plateforme CTF</a>
+          <a href="certifications.html" class="btn btn-secondary btn-sm" style="justify-content:flex-start">📄 Mes certifications</a>
+          <a href="profile.html" class="btn btn-secondary btn-sm" style="justify-content:flex-start">👤 Mon profil</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+var currentUser = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+
+  var profile = await getProfile(currentUser.id);
+  var meta = currentUser.user_metadata || {};
+
+  // Welcome
+  var firstname = (profile && profile.display_name) || meta.display_name || meta.given_name || 'Apprenant';
+  var username = (profile && profile.username) || meta.username || 'user';
+  var country = (profile && profile.country) || meta.country || '';
+
+  document.getElementById('user-firstname').textContent = firstname;
+  document.getElementById('user-tag').textContent = '// @' + username + ' · SooPHA Learn';
+  document.getElementById('profile-name').textContent = (meta.full_name || firstname);
+  document.getElementById('profile-username').textContent = '@' + username;
+  document.getElementById('avatar-initials').textContent = firstname.charAt(0).toUpperCase();
+
+  // Country flags
+  var countryFlags = {
+    'GA':'🇬🇦','SN':'🇸🇳','CI':'🇨🇮','CM':'🇨🇲','CD':'🇨🇩','CG':'🇨🇬',
+    'MG':'🇲🇬','ML':'🇲🇱','BF':'🇧🇫','NE':'🇳🇪','TG':'🇹🇬','BJ':'🇧🇯',
+    'GN':'🇬🇳','TN':'🇹🇳','MA':'🇲🇦','DZ':'🇩🇿','FR':'🇫🇷'
+  };
+  if (country && countryFlags[country]) {
+    document.getElementById('user-country').textContent = countryFlags[country];
+    document.getElementById('profile-country').textContent = countryFlags[country];
+  }
+
+  // Stats
+  var stats = await getUserStats(currentUser.id);
+  document.getElementById('stat-completed').textContent = stats.coursesCompleted;
+  document.getElementById('stat-score').textContent = stats.avgScore + '%';
+
+  // QCM count
+  var { data: qcmData } = await supabase
+    .from('qcm_results').select('id').eq('user_id', currentUser.id);
+  document.getElementById('stat-qcm').textContent = (qcmData || []).length;
+
+  // Badges
+  var badges = [];
+  if (stats.coursesCompleted >= 1) badges.push('<span class="badge badge-green">🎓 Premier cours</span>');
+  if (stats.coursesCompleted >= 3) badges.push('<span class="badge badge-yellow">⭐ Triplé</span>');
+  if (stats.avgScore >= 90) badges.push('<span class="badge badge-blue">💎 Expert</span>');
+  document.getElementById('profile-badges').innerHTML = badges.join('') || '<span style="font-family:var(--mono);font-size:0.65rem;color:rgba(0,255,136,0.25)">Complete des cours pour gagner des badges</span>';
+
+  // Course progress
+  var completions = await getCompletedCourses(currentUser.id);
+  var courses = ['j1','j2','j3'];
+  courses.forEach(function(id) {
+    var comp = completions.find(function(c){ return c.course_id === id; });
+    if (comp) {
+      var pct = Math.round(comp.score_pct);
+      document.getElementById('prog-' + id).style.display = 'block';
+      document.getElementById('prog-' + id + '-fill').style.width = pct + '%';
+      document.getElementById('prog-' + id + '-label').textContent = comp.score_pct >= 70 ? '✅ Terminé' : '📚 À revoir';
+      document.getElementById('prog-' + id + '-score').textContent = pct + '%';
+      document.getElementById('cta-' + id).textContent = 'Revoir →';
+    }
+  });
+
+  // Leaderboard
+  loadLeaderboard();
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('page-content').style.display = 'block';
+}
+
+async function loadLeaderboard() {
+  const { data } = await supabase
+    .from('course_completions')
+    .select('user_id, score_pct, profiles(username, country)')
+    .order('score_pct', { ascending: false })
+    .limit(5);
+
+  if (!data || data.length === 0) {
+    document.getElementById('leaderboard-list').innerHTML =
+      '<div style="font-family:var(--mono);font-size:0.7rem;color:rgba(0,255,136,0.25);text-align:center;padding:1rem">Sois le premier ! 🚀</div>';
+    return;
+  }
+
+  var countryFlags = {'GA':'🇬🇦','SN':'🇸🇳','CI':'🇨🇮','CM':'🇨🇲','FR':'🇫🇷'};
+  var rankColors = ['#ffd700','#c0c0c0','#cd7f32'];
+  var rankEmojis = ['🥇','🥈','🥉'];
+
+  var html = data.map(function(row, i) {
+    var rank = i < 3 ? rankEmojis[i] : (i+1);
+    var flag = row.profiles && countryFlags[row.profiles.country] ? countryFlags[row.profiles.country] : '';
+    var username = row.profiles ? row.profiles.username : 'user';
+    return '<div class="lb-row">' +
+      '<span class="lb-rank" style="color:' + (rankColors[i]||'rgba(0,255,136,0.4)') + '">' + rank + '</span>' +
+      '<span class="lb-username">@' + username + '</span>' +
+      '<span class="lb-country">' + flag + '</span>' +
+      '<span class="lb-score">' + Math.round(row.score_pct) + '%</span>' +
+      '</div>';
+  }).join('');
+
+  document.getElementById('leaderboard-list').innerHTML = html;
+}
+
+init();
+</script>
+</body>
+</html>
