@@ -1099,8 +1099,8 @@ function closeQcmAndAdvance() {
 function showCompletion(pct) {
   var total=Object.keys(QCM).length, correct=Object.values(qcmScores).filter(function(v){return v===1;}).length;
   document.getElementById('comp-score').textContent=Math.round(pct)+'%';
-  if(pct>=70){ document.getElementById('comp-icon').textContent='🏆'; document.getElementById('comp-title').textContent='Excellent !'; document.getElementById('comp-sub').textContent=correct+' / '+total+' bonnes réponses. Tu maîtrises l'ingénierie sociale !'; }
-  else { document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='Formation terminée'; document.getElementById('comp-sub').textContent=correct+' / '+total+' bonnes réponses. Révise les slides pour progresser.'; }
+  if(pct>=70){ document.getElementById('comp-icon').textContent='🏆'; document.getElementById('comp-title').textContent="Excellent !"; document.getElementById('comp-sub').textContent=correct+' / '+total+" bonnes réponses. Tu maîtrises l'ingénierie sociale !"; }
+  else { document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent="Formation terminée"; document.getElementById('comp-sub').textContent=correct+' / '+total+' bonnes réponses. Révise les slides pour progresser.'; }
   document.getElementById('completion-modal').classList.add('show');
 }
 
