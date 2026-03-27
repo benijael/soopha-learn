@@ -343,6 +343,7 @@
         <div class="section-title" style="margin-bottom:1rem">LIENS RAPIDES</div>
         <div style="display:flex;flex-direction:column;gap:0.6rem">
           <a href="https://ctfd.soopha-network.com" target="_blank" class="btn btn-secondary btn-sm" style="justify-content:flex-start">⚔️ Plateforme CTF</a>
+          <button onclick="goToCTF()" class="btn btn-secondary btn-sm" style="justify-content:flex-start;width:100%;cursor:pointer">⚔️ Accéder au Cyber Training →</button>
           <a href="certifications.html" class="btn btn-secondary btn-sm" style="justify-content:flex-start">📄 Mes certifications</a>
           <a href="profile.html" class="btn btn-secondary btn-sm" style="justify-content:flex-start">👤 Mon profil</a>
         </div>
@@ -458,6 +459,17 @@ async function loadLeaderboard() {
 }
 
 init();
+  async function goToCTF() {
+  const { data: { session }, error } = await supabase.auth.getSession()
+
+  if (error || !session) {
+    window.location.href = '../index.html'
+    return
+  }
+
+  const token = session.access_token
+  window.location.href = 'https://ctfd.soopha-network.com/sso/supabase?token=' + token
+}
 </script>
 </body>
 </html>
