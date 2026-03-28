@@ -10,20 +10,8 @@
 <script src="../js/auth.js"></script>
 <style>
 html, body { overflow: hidden; height: 100%; }
-
-/* GABON TOP */
 body::before { height: 3px; }
-
-/* TOPBAR */
-#topbar {
-  position: fixed; top: 3px; left: 0; right: 0; z-index: 200;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: .5rem 1.5rem;
-  background: rgba(2,8,4,0.97);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-  font-size: .65rem; color: rgba(0,255,136,.4);
-}
+#topbar { position: fixed; top: 3px; left: 0; right: 0; z-index: 200; display: flex; justify-content: space-between; align-items: center; padding: .5rem 1.5rem; background: rgba(2,8,4,0.97); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); font-size: .65rem; color: rgba(0,255,136,.4); }
 .tb-left { display: flex; gap: 1.5rem; align-items: center; }
 .tb-right { display: flex; gap: 1.2rem; align-items: center; }
 .tb-back { color: rgba(0,255,136,.5); text-decoration: none; font-size: .65rem; letter-spacing: .08em; transition: color .2s; }
@@ -31,48 +19,26 @@ body::before { height: 3px; }
 .tb-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; display: inline-block; animation: blink 1.4s infinite; margin-right: .3rem; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 .tb-user { font-family: var(--mono); font-size: .62rem; color: rgba(0,255,136,.4); }
-
-/* PROGRESS TOP */
 #progress-top { position: fixed; top: 34px; left: 0; right: 0; z-index: 200; height: 2px; background: rgba(0,255,136,.06); }
 #progress-fill { height: 100%; background: linear-gradient(90deg,#009e60,var(--green)); box-shadow: 0 0 8px var(--green); transition: width .5s ease; }
-
-/* SCANLINES + VIGNETTE */
 #scanlines { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px); }
 #vignette  { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.65) 100%); }
 canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-events: none; }
-
-/* SLIDES CONTAINER */
 #slides { position: fixed; inset: 0; z-index: 10; padding-top: 36px; padding-bottom: 44px; overflow: hidden; }
-
-.slide {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  justify-content: center; align-items: center;
-  padding: 1.5rem 4rem;
-  opacity: 0; pointer-events: none;
-  transition: opacity .4s ease, transform .4s ease;
-  transform: translateX(40px);
-  overflow-y: auto;
-}
+.slide { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1.5rem 4rem; opacity: 0; pointer-events: none; transition: opacity .4s ease, transform .4s ease; transform: translateX(40px); overflow-y: auto; }
 .slide.active { opacity: 1; pointer-events: all; transform: translateX(0); }
 .slide.exit   { opacity: 0; transform: translateX(-40px); }
-
-/* SLIDE COMPONENTS */
 .gabon-bar { display: flex; height: 3px; width: 60px; border-radius: 2px; overflow: hidden; margin: .6rem 0; }
 .gabon-bar span:nth-child(1){flex:1;background:#009e60}
 .gabon-bar span:nth-child(2){flex:1;background:#fcd116}
 .gabon-bar span:nth-child(3){flex:1;background:#003189}
-
 .slide-tag { font-family: var(--mono); font-size: .6rem; letter-spacing: .3em; color: rgba(0,255,136,.35); text-transform: uppercase; margin-bottom: .5rem; }
-
 .slide h1 { font-family: var(--display) !important; font-weight: 900 !important; font-size: clamp(1.8rem,3.5vw,2.8rem) !important; color: #fff !important; text-align: center; letter-spacing: .1em; text-shadow: 0 0 40px var(--green),0 0 80px rgba(0,255,136,.2); line-height: 1.15; margin-bottom: .4rem !important; }
 .slide h2 { font-family: var(--display) !important; font-weight: 700 !important; font-size: clamp(1.1rem,2vw,1.7rem) !important; color: var(--green) !important; letter-spacing: .08em; margin-bottom: 1rem !important; }
 .slide h3 { font-family: var(--display) !important; font-weight: 400 !important; font-size: clamp(.8rem,1.2vw,1rem) !important; color: rgba(0,255,136,.55) !important; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 1.5rem !important; }
-
 .card { background: rgba(4,15,8,.88); border: 1px solid var(--border); border-radius: 2px; padding: 1.4rem 1.8rem; position: relative; backdrop-filter: blur(10px); max-width: 880px; width: 100%; }
 .card::before { content: ''; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px; border-top: 2px solid var(--green); border-left: 2px solid var(--green); }
 .card::after  { content: ''; position: absolute; bottom: -1px; right: -1px; width: 14px; height: 14px; border-bottom: 2px solid var(--green); border-right: 2px solid var(--green); }
-
 .bullets { list-style: none; display: flex; flex-direction: column; gap: .55rem; }
 .bullets li { display: flex; align-items: flex-start; gap: .7rem; font-family: var(--body); font-size: clamp(.8rem,1.3vw,.95rem); color: rgba(220,255,235,.85); line-height: 1.5; animation: fadeIn .4s ease both; }
 .bullets li::before { content: '▶'; color: var(--green); font-size: .55rem; margin-top: .35rem; flex-shrink: 0; }
@@ -82,23 +48,17 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
 .bullets li.ok::before     { content: '✅'; font-size: .7rem; }
 @keyframes fadeIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
 .bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}
-
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 880px; width: 100%; }
-
 .pill { display: inline-block; padding: .25rem .7rem; font-size: .65rem; letter-spacing: .06em; border-radius: 2px; font-family: var(--mono); }
 .pill-green  { background: rgba(0,255,136,.1);  border: 1px solid rgba(0,255,136,.3);  color: var(--green); }
 .pill-red    { background: rgba(255,68,102,.1);  border: 1px solid rgba(255,68,102,.3);  color: #ff4466; }
 .pill-yellow { background: rgba(255,215,0,.08);  border: 1px solid rgba(255,215,0,.3);   color: #ffd700; }
 .pill-blue   { background: rgba(0,170,255,.08);  border: 1px solid rgba(0,170,255,.3);   color: #00aaff; }
-
 .big-stat { font-family: var(--display); font-weight: 900; font-size: clamp(2rem,4vw,3.5rem); color: var(--green); text-shadow: 0 0 20px var(--green); line-height: 1; }
-
 .quote { border-left: 3px solid var(--green); padding: .7rem 1rem; background: rgba(0,255,136,.04); font-family: var(--body); font-style: italic; font-size: clamp(.9rem,1.5vw,1.15rem); color: #e0ffe8; line-height: 1.6; }
-
 .terminal { background: rgba(0,0,0,.5); border: 1px solid rgba(0,255,136,.15); border-left: 3px solid var(--green); padding: .8rem 1.1rem; font-family: var(--mono); font-size: .78rem; color: rgba(0,255,136,.8); line-height: 1.8; }
 .term-prompt { color: var(--green); }
 .term-out    { color: rgba(255,255,255,.5); }
-
 .cia-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .9rem; max-width: 860px; width: 100%; }
 .cia-card { padding: 1.3rem 1rem; text-align: center; border: 1px solid var(--border); background: rgba(0,255,136,.06); }
 .cia-letter { font-family: var(--display); font-weight: 900; font-size: 2.8rem; line-height: 1; margin-bottom: .3rem; }
@@ -107,10 +67,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
 .cia-card.c .cia-letter { color: #00ff88; text-shadow: 0 0 20px #00ff88; }
 .cia-card.i .cia-letter { color: #ffd700; text-shadow: 0 0 20px #ffd700; }
 .cia-card.a .cia-letter { color: #00aaff; text-shadow: 0 0 20px #00aaff; }
-
 .hdiv { display: flex; align-items: center; gap: 1rem; color: rgba(0,255,136,.2); font-size: .62rem; letter-spacing: .2em; margin: .8rem 0; }
 .hdiv::before,.hdiv::after { content: ''; flex: 1; height: 1px; background: rgba(0,255,136,.12); }
-
 @keyframes glitch {
   0%,90%,100%{text-shadow:0 0 40px var(--green),0 0 80px rgba(0,255,136,.2)}
   91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}
@@ -118,66 +76,32 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   95%{text-shadow:0 0 40px var(--green);transform:translate(0)}
 }
 .glitch { animation: glitch 7s infinite; }
-
-/* QCM OVERLAY */
-#qcm-overlay {
-  position: fixed; inset: 0; z-index: 300;
-  background: rgba(2,8,4,.97);
-  display: none; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 2rem;
-}
+#qcm-overlay { position: fixed; inset: 0; z-index: 300; background: rgba(2,8,4,.97); display: none; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
 #qcm-overlay.show { display: flex; animation: fadeInOv .3s ease; }
 @keyframes fadeInOv { from{opacity:0} to{opacity:1} }
-
-.qcm-box {
-  max-width: 680px; width: 100%;
-  background: rgba(4,15,8,.97);
-  border: 1px solid rgba(0,255,136,.25);
-  border-radius: 2px;
-  padding: 2.5rem;
-  position: relative;
-  box-shadow: 0 0 40px rgba(0,255,136,.1);
-}
+.qcm-box { max-width: 680px; width: 100%; background: rgba(4,15,8,.97); border: 1px solid rgba(0,255,136,.25); border-radius: 2px; padding: 2.5rem; position: relative; box-shadow: 0 0 40px rgba(0,255,136,.1); }
 .qcm-box::before { content: ''; position: absolute; top: -1px; left: -1px; width: 18px; height: 18px; border-top: 2px solid var(--green); border-left: 2px solid var(--green); }
 .qcm-box::after  { content: ''; position: absolute; bottom: -1px; right: -1px; width: 18px; height: 18px; border-bottom: 2px solid var(--green); border-right: 2px solid var(--green); }
-
 .qcm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
 .qcm-label { font-family: var(--mono); font-size: .6rem; letter-spacing: .3em; color: rgba(0,255,136,.4); text-transform: uppercase; }
 .qcm-prog  { font-family: var(--mono); font-size: .65rem; color: rgba(0,255,136,.35); }
-
 .qcm-saving { font-family: var(--mono); font-size: .62rem; color: rgba(0,255,136,.35); margin-bottom: .5rem; display: none; }
 .qcm-saving.show { display: block; }
-
 .qcm-question { font-family: var(--display); font-size: clamp(.9rem,1.8vw,1.1rem); font-weight: 700; color: #fff; line-height: 1.4; margin-bottom: 1.8rem; letter-spacing: .03em; }
-
 .qcm-options { display: flex; flex-direction: column; gap: .65rem; margin-bottom: 1.5rem; }
-.qcm-option {
-  display: flex; align-items: flex-start; gap: .9rem;
-  padding: .8rem 1.1rem;
-  background: rgba(0,0,0,.3);
-  border: 1px solid rgba(0,255,136,.1);
-  cursor: pointer; border-radius: 2px;
-  transition: all .15s;
-  font-family: var(--body); font-size: .88rem;
-  color: rgba(200,255,220,.75); line-height: 1.4;
-}
+.qcm-option { display: flex; align-items: flex-start; gap: .9rem; padding: .8rem 1.1rem; background: rgba(0,0,0,.3); border: 1px solid rgba(0,255,136,.1); cursor: pointer; border-radius: 2px; transition: all .15s; font-family: var(--body); font-size: .88rem; color: rgba(200,255,220,.75); line-height: 1.4; }
 .qcm-option:hover:not(.disabled) { border-color: rgba(0,255,136,.35); background: rgba(0,255,136,.06); color: rgba(200,255,220,.95); }
 .qcm-option.correct  { border-color: var(--green) !important; background: rgba(0,255,136,.12) !important; color: var(--green) !important; }
 .qcm-option.wrong    { border-color: #ff4466 !important; background: rgba(255,68,102,.08) !important; color: #ff4466 !important; }
 .qcm-option.disabled { cursor: default; pointer-events: none; }
 .option-letter { font-family: var(--display); font-size: .68rem; font-weight: 700; color: rgba(0,255,136,.4); min-width: 18px; flex-shrink: 0; margin-top: .1rem; }
 .qcm-option.correct .option-letter, .qcm-option.wrong .option-letter { color: inherit; }
-
 .qcm-feedback { padding: .8rem 1rem; border-radius: 2px; font-family: var(--mono); font-size: .8rem; line-height: 1.5; display: none; margin-bottom: 1.2rem; }
 .qcm-feedback.correct { background: rgba(0,255,136,.07); border: 1px solid rgba(0,255,136,.2); color: rgba(0,255,136,.9); }
 .qcm-feedback.wrong   { background: rgba(255,68,102,.06); border: 1px solid rgba(255,68,102,.2); color: rgba(255,100,130,.9); }
-
 .qcm-btn { font-family: var(--display); font-size: .75rem; font-weight: 700; letter-spacing: .12em; padding: .7rem 1.8rem; background: var(--green); color: var(--bg); border: none; cursor: pointer; clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition: all .2s; text-transform: uppercase; display: none; }
 .qcm-btn.show { display: inline-block; }
 .qcm-btn:hover { box-shadow: 0 0 20px rgba(0,255,136,.4); }
-
-/* COMPLETION MODAL */
 #completion-modal { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.9); display: none; align-items: center; justify-content: center; padding: 2rem; }
 #completion-modal.show { display: flex; animation: fadeInOv .3s ease; }
 .completion-box { max-width: 500px; width: 100%; background: rgba(4,15,8,.98); border: 1px solid rgba(0,255,136,.3); border-radius: 2px; padding: 3rem 2.5rem; text-align: center; box-shadow: 0 0 60px rgba(0,255,136,.15); position: relative; }
@@ -191,20 +115,13 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
 .completion-btn-primary   { background: var(--green); color: var(--bg); }
 .completion-btn-primary:hover { box-shadow: 0 0 20px rgba(0,255,136,.5); opacity: 1; }
 .completion-btn-secondary { background: transparent; color: var(--green); border: 1px solid rgba(0,255,136,.3) !important; clip-path: none; border-radius: 2px; }
-
-/* BOTTOMBAR */
 #bottombar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; display: flex; justify-content: space-between; align-items: center; padding: .5rem 1.5rem; background: rgba(2,8,4,.97); border-top: 1px solid var(--border); backdrop-filter: blur(12px); font-size: .65rem; color: rgba(0,255,136,.4); }
 .nav-btn { background: transparent; border: 1px solid rgba(0,255,136,.2); color: rgba(0,255,136,.55); padding: .32rem .9rem; font-family: var(--mono); font-size: .65rem; cursor: pointer; transition: all .2s; clip-path: polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%); }
 .nav-btn:hover { border-color: var(--green); color: var(--green); background: rgba(0,255,136,.05); }
 .nav-btn:disabled { opacity: .2; cursor: not-allowed; }
 #slide-counter { font-family: var(--display); font-size: .72rem; color: var(--green); }
 .qcm-indicator { font-family: var(--mono); font-size: .62rem; color: rgba(255,215,0,.5); letter-spacing: .08em; }
-
-@media (max-width: 768px) {
-  .slide { padding: 1rem 1.2rem; }
-  .grid2 { grid-template-columns: 1fr; }
-  .cia-grid { grid-template-columns: 1fr; }
-}
+@media (max-width: 768px) { .slide { padding: 1rem 1.2rem; } .grid2 { grid-template-columns: 1fr; } .cia-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -225,9 +142,9 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
 </div>
 <div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
 
-<!-- ═══════════ SLIDES ═══════════ -->
 <div id="slides">
 
+<!-- SLIDE 0 · COVER -->
 <div class="slide active" data-index="0">
   <div class="slide-tag">// Jour 1 — Session 01</div>
   <h1 class="glitch">BIENVENUE DANS<br>LA MATRICE</h1>
@@ -241,6 +158,7 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   <div style="margin-top:2rem;font-size:.68rem;color:rgba(0,255,136,.25);letter-spacing:.15em">← → POUR NAVIGUER &nbsp;|&nbsp; ESPACE POUR AVANCER</div>
 </div>
 
+<!-- SLIDE 1 · Stats attaques — QCM 1 -->
 <div class="slide" data-index="1" data-qcm="1">
   <div class="slide-tag">// 02 · Accroche</div>
   <h2 style="color:#ff4466 !important;text-shadow:0 0 20px #ff4466">Ça se passe EN CE MOMENT</h2>
@@ -268,7 +186,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   </div>
 </div>
 
-<div class="slide" data-index="1" data-qcm="1">
+<!-- SLIDE 2 · Définition — QCM 2 -->
+<div class="slide" data-index="2" data-qcm="2">
   <div class="slide-tag">// 03 · Définition</div>
   <h2>C'est quoi la Cybersécurité ?</h2>
   <div class="quote" style="max-width:700px;margin-bottom:1.2rem;font-size:.95rem">"L'ensemble des pratiques, technologies et processus conçus pour <strong style="color:var(--green)">protéger les systèmes, réseaux et données</strong> contre les attaques, dommages ou accès non autorisés."</div>
@@ -282,7 +201,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   </div>
 </div>
 
-<div class="slide" data-index="1" data-qcm="1">
+<!-- SLIDE 3 · CIA triangle — QCM 3 -->
+<div class="slide" data-index="3" data-qcm="3">
   <div class="slide-tag">// 04 · Les 3 Piliers</div>
   <h2>Le triangle fondamental — CIA</h2>
   <div class="cia-grid">
@@ -293,7 +213,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   <div style="margin-top:1rem;font-size:.68rem;color:rgba(0,255,136,.3);letter-spacing:.1em">// Toute décision en cybersécurité découle de ces 3 principes</div>
 </div>
 
-<div class="slide" data-index="1" data-qcm="1">
+<!-- SLIDE 4 · Confidentialité — QCM 4 -->
+<div class="slide" data-index="4" data-qcm="4">
   <div class="slide-tag">// 04a · Confidentialité</div>
   <h2 style="color:#00ff88 !important">C — Confidentialité</h2>
   <div class="grid2">
@@ -302,7 +223,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   </div>
 </div>
 
-<div class="slide" data-index="1" data-qcm="1">
+<!-- SLIDE 5 · Intégrité — QCM 5 -->
+<div class="slide" data-index="5" data-qcm="5">
   <div class="slide-tag">// 04b · Intégrité</div>
   <h2 style="color:#ffd700 !important;text-shadow:0 0 20px rgba(255,215,0,.4) !important">I — Intégrité</h2>
   <div class="grid2">
@@ -311,7 +233,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   </div>
 </div>
 
-<div class="slide" data-index="1" data-qcm="1">
+<!-- SLIDE 6 · Disponibilité — QCM 6 -->
+<div class="slide" data-index="6" data-qcm="6">
   <div class="slide-tag">// 04c · Disponibilité</div>
   <h2 style="color:#00aaff !important;text-shadow:0 0 20px rgba(0,170,255,.4) !important">A — Disponibilité</h2>
   <div class="grid2">
@@ -320,7 +243,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   </div>
 </div>
 
-<div class="slide" data-index="1" data-qcm="1">
+<!-- SLIDE 7 · Menaces Afrique — QCM 7 -->
+<div class="slide" data-index="7" data-qcm="7">
   <div class="slide-tag">// 05 · Contexte Afrique</div>
   <h2>Le paysage des menaces en Afrique</h2>
   <div class="card" style="max-width:800px">
@@ -331,7 +255,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   </div>
 </div>
 
-<div class="slide" data-index="1">
+<!-- SLIDE 8 · Gabon — pas de QCM -->
+<div class="slide" data-index="8">
   <div class="slide-tag">// 06 · Focus 🇬🇦</div>
   <h2>Et au Gabon spécifiquement ?</h2>
   <div class="card" style="max-width:780px">
@@ -347,7 +272,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   </div>
 </div>
 
-<div class="slide" data-index="1" data-qcm="1">
+<!-- SLIDE 9 · PCA/PRA — QCM 9 -->
+<div class="slide" data-index="9" data-qcm="9">
   <div class="slide-tag">// 07 · Résilience</div>
   <h2>PCA & PRA — Survivre à une cyberattaque</h2>
   <div class="grid2" style="max-width:840px">
@@ -356,16 +282,18 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   </div>
 </div>
 
-<div class="slide" data-index="1" data-qcm="1">
+<!-- SLIDE 10 · OIV — QCM 10 -->
+<div class="slide" data-index="10" data-qcm="10">
   <div class="slide-tag">// 08 · Infrastructures critiques</div>
   <h2>OIV — Opérateurs d'Importance Vitale</h2>
   <div class="grid2" style="max-width:840px">
-    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">🏛️ DÉFINITION</div><div style="font-family:var(--body);font-size:.8rem;color:rgba(220,255,235,.8);line-height:1.5;margin-bottom:.7rem">Organisations dont l'<strong>interruption mettrait en danger la nation entière</strong>. Cybersécurité = souveraineté.</div><div style="display:flex;gap:.4rem;flex-wrap:wrap"><span class="pill pill-red" style="font-size:.6rem">⚡ Énergie</span><span class="pill pill-blue" style="font-size:.6rem">💧 Eau</span><span class="pill pill-yellow" style="font-size:.6rem">📡 Télécoms</span><span class="pill pill-green" style="font-size:.6rem">🏥 Santé</span><span class="pill pill-green" style="font-size:.6rem">🏦 Finance</span><span class="pill pill-red" style="font-size:.6rem">✈️ Transport</span></div></div>
+    <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.6rem">🏛️ DÉFINITION</div><div style="font-family:var(--body);font-size:.8rem;color:rgba(220,255,235,.8);line-height:1.5;margin-bottom:.7rem">Organisations dont l'<strong>interruption mettrait en danger la nation entière</strong>.</div><div style="display:flex;gap:.4rem;flex-wrap:wrap"><span class="pill pill-red" style="font-size:.6rem">⚡ Énergie</span><span class="pill pill-blue" style="font-size:.6rem">💧 Eau</span><span class="pill pill-yellow" style="font-size:.6rem">📡 Télécoms</span><span class="pill pill-green" style="font-size:.6rem">🏥 Santé</span><span class="pill pill-green" style="font-size:.6rem">🏦 Finance</span><span class="pill pill-red" style="font-size:.6rem">✈️ Transport</span></div></div>
     <div class="card"><div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,170,255,.4);margin-bottom:.6rem">🇬🇦 AU GABON</div><ul class="bullets"><li><strong>SOGARA</strong> — raffinage pétrolier</li><li><strong>SEEG</strong> — eau et électricité</li><li><strong>Airtel / Moov</strong> — télécoms, Mobile Money</li><li><strong>BGFIBank / Trésor</strong> — système financier</li><li><strong>CHU de Libreville</strong> — santé publique</li></ul><div style="margin-top:.8rem;font-family:var(--body);font-size:.75rem;color:rgba(255,215,0,.55)">⚠️ Une attaque = crise nationale immédiate</div></div>
   </div>
 </div>
 
-<div class="slide" data-index="1" data-qcm="1">
+<!-- SLIDE 11 · Acteurs — QCM 11 -->
+<div class="slide" data-index="11" data-qcm="11">
   <div class="slide-tag">// 09 · Les Acteurs</div>
   <h2>Qui attaque, et pourquoi ?</h2>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;max-width:880px;width:100%">
@@ -378,7 +306,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   </div>
 </div>
 
-<div class="slide" data-index="1" data-qcm="1">
+<!-- SLIDE 12 · Métiers — QCM 12 -->
+<div class="slide" data-index="12" data-qcm="12">
   <div class="slide-tag">// 10 · Les Métiers</div>
   <h2>Les métiers de la cyber</h2>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;max-width:880px;width:100%">
@@ -391,7 +320,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   </div>
 </div>
 
-<div class="slide" data-index="1" data-qcm="1">
+<!-- SLIDE 13 · Red vs Blue — QCM 13 -->
+<div class="slide" data-index="13" data-qcm="13">
   <div class="slide-tag">// 11 · Red vs Blue</div>
   <h2>Les deux camps</h2>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:840px;width:100%">
@@ -409,7 +339,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   <div style="margin-top:.8rem;max-width:840px;width:100%;padding:.7rem 1rem;background:rgba(170,136,255,.04);border:1px solid rgba(170,136,255,.2);font-family:var(--body);font-size:.78rem;color:rgba(220,210,255,.75)">💜 <strong style="color:#aa88ff">Purple Team</strong> — fait collaborer Red et Blue en temps réel. Plus efficace que les deux séparément.</div>
 </div>
 
-<div class="slide" data-index="1">
+<!-- SLIDE 14 · Discussion — pas de QCM -->
+<div class="slide" data-index="14">
   <div class="slide-tag">// Discussion ouverte</div>
   <h2>À vous de jouer 🎤</h2>
   <div class="card" style="max-width:720px">
@@ -427,7 +358,8 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
   </div>
 </div>
 
-<div class="slide" data-index="1">
+<!-- SLIDE 15 · Récap — pas de QCM -->
+<div class="slide" data-index="15">
   <div class="slide-tag">// Récap J1 · Preview J2</div>
   <h2>J1 — Ce qu'on a vu</h2>
   <div class="grid2" style="max-width:820px">
@@ -483,21 +415,21 @@ canvas#matrix { position: fixed; inset: 0; z-index: 0; opacity: .05; pointer-eve
 
 <script>
 // ═══════════════════════════════════════════
-//  QCM DATA
+//  QCM DATA — clés uniques par slide
 // ═══════════════════════════════════════════
 var QCM = {
-  1: { question:"Selon les chiffres présentés, combien de cyberattaques se produisent approximativement par jour dans le monde ?", options:["500 attaques/jour","2 200 attaques/jour","10 000 attaques/jour","50 attaques/jour"], correct:1, explanation:"Avec 1 attaque toutes les 39 secondes, cela représente environ 2 200 attaques par jour." },
-  1: { question:"Quelle est la meilleure analogie pour décrire la cybersécurité ?", options:["Un antivirus sur votre ordinateur","Le système immunitaire numérique d'une organisation","Un pare-feu entre internet et votre réseau","Un mot de passe fort"], correct:1, explanation:"La cybersécurité est comparable au système immunitaire : elle protège l'ensemble de l'organisme contre les menaces." },
-  1: { question:"Que signifie le 'A' dans le triangle CIA de la cybersécurité ?", options:["Authentification","Autorisation","Disponibilité (Availability)","Anonymat"], correct:2, explanation:"CIA = Confidentialité, Intégrité, Disponibilité. La disponibilité garantit que les systèmes sont accessibles quand on en a besoin." },
-  1: { question:"Quel principe de sécurité est appliqué pour garantir la Confidentialité ?", options:["Le principe de redondance","Le principe du moindre privilège","Le principe de non-répudiation","Le principe de disponibilité maximale"], correct:1, explanation:"Le principe du moindre privilège : chaque utilisateur n'a accès qu'aux ressources strictement nécessaires." },
-  1: { question:"Un virement bancaire de 100 000 FCFA est intercepté et modifié à 10 000 000 FCFA. Quel pilier CIA est violé ?", options:["Confidentialité","Intégrité","Disponibilité","Authentification"], correct:1, explanation:"La modification non autorisée d'une donnée est une violation de l'Intégrité." },
-  1: { question:"Qu'est-ce qu'une attaque DDoS affecte principalement ?", options:["La Confidentialité des données","L'Intégrité des fichiers","La Disponibilité du service","L'Authentification des utilisateurs"], correct:2, explanation:"Une attaque DDoS sature un service jusqu'à le rendre inaccessible — attaque directe sur la Disponibilité." },
-  1: { question:"Quelle menace est la plus répandue en Afrique subsaharienne ?", options:["Les attaques d'États-nations","Les fraudes Mobile Money et SIM Swapping","Les APT","Le cyberespionnage industriel"], correct:1, explanation:"Les fraudes Mobile Money et le SIM Swapping profitent du fort taux de paiement mobile et d'une culture cybersécurité insuffisante." },
-  1: { question:"Quelle est la différence fondamentale entre un PCA et un PRA ?", options:["Le PCA est pour les grandes entreprises, le PRA pour les PME","Le PCA vise à ne jamais s'arrêter, le PRA vise à reprendre après une interruption","Le PCA gère les données, le PRA gère les serveurs","Ce sont des synonymes"], correct:1, explanation:"Le PCA maintient l'activité même sous attaque. Le PRA accepte l'interruption mais planifie une reprise rapide." },
-  1: { question:"Parmi ces organisations au Gabon, laquelle est considérée comme un OIV ?", options:["Un restaurant de Libreville","La SEEG (eau et électricité)","Une boutique de téléphonie","Une école privée"], correct:1, explanation:"La SEEG fournit eau et électricité à toute la population gabonaise. Une attaque constituerait une crise nationale." },
-  1: { question:"Quel type d'attaquant représente la menace la plus sous-estimée dans une organisation ?", options:["Les cybercriminels externes","Les États-nations","Les insiders (employés malveillants ou négligents)","Les script kiddies"], correct:2, explanation:"Les insiders sont déjà à l'intérieur du périmètre — le pare-feu ne sert à rien contre eux." },
-  1: { question:"Quel métier cyber surveille les systèmes 24h/24 et répond aux incidents en temps réel ?", options:["Pentesteur / Red Team","Analyste SOC / Blue Team","Expert IAM","Analyste Forensic"], correct:1, explanation:"L'analyste SOC surveille en permanence les alertes et coordonne la réponse aux incidents." },
-  1: { question:"Un pentesteur réalise une attaque contre une entreprise. Quelle condition est OBLIGATOIRE ?", options:["Être diplômé en cybersécurité","Avoir un contrat signé définissant le périmètre","Utiliser uniquement des outils open source","Informer les autorités avant chaque test"], correct:1, explanation:"Le pentest est légal UNIQUEMENT avec un contrat signé définissant le périmètre. Sans contrat = intrusion illégale." }
+  1:  { question:"Selon les chiffres présentés, combien de cyberattaques se produisent approximativement par jour dans le monde ?", options:["500 attaques/jour","2 200 attaques/jour","10 000 attaques/jour","50 attaques/jour"], correct:1, explanation:"Avec 1 attaque toutes les 39 secondes, cela représente environ 2 200 attaques par jour." },
+  2:  { question:"Quelle est la meilleure analogie pour décrire la cybersécurité ?", options:["Un antivirus sur votre ordinateur","Le système immunitaire numérique d'une organisation","Un pare-feu entre internet et votre réseau","Un mot de passe fort"], correct:1, explanation:"La cybersécurité est comparable au système immunitaire : elle protège l'ensemble de l'organisme contre les menaces." },
+  3:  { question:"Que signifie le 'A' dans le triangle CIA de la cybersécurité ?", options:["Authentification","Autorisation","Disponibilité (Availability)","Anonymat"], correct:2, explanation:"CIA = Confidentialité, Intégrité, Disponibilité. La disponibilité garantit que les systèmes sont accessibles quand on en a besoin." },
+  4:  { question:"Quel principe de sécurité est appliqué pour garantir la Confidentialité ?", options:["Le principe de redondance","Le principe du moindre privilège","Le principe de non-répudiation","Le principe de disponibilité maximale"], correct:1, explanation:"Le principe du moindre privilège : chaque utilisateur n'a accès qu'aux ressources strictement nécessaires à sa fonction." },
+  5:  { question:"Un virement de 100 000 FCFA est intercepté et modifié à 10 000 000 FCFA. Quel pilier CIA est violé ?", options:["Confidentialité","Intégrité","Disponibilité","Authentification"], correct:1, explanation:"La modification non autorisée d'une donnée est une violation de l'Intégrité." },
+  6:  { question:"Qu'est-ce qu'une attaque DDoS affecte principalement ?", options:["La Confidentialité des données","L'Intégrité des fichiers","La Disponibilité du service","L'Authentification des utilisateurs"], correct:2, explanation:"Une attaque DDoS sature un service jusqu'à le rendre inaccessible — attaque directe sur la Disponibilité." },
+  7:  { question:"Quelle menace est la plus répandue en Afrique subsaharienne ?", options:["Les attaques d'États-nations","Les fraudes Mobile Money et SIM Swapping","Les APT","Le cyberespionnage industriel"], correct:1, explanation:"Les fraudes Mobile Money et le SIM Swapping profitent du fort taux de paiement mobile et d'une culture cybersécurité insuffisante." },
+  9:  { question:"Quelle est la différence fondamentale entre un PCA et un PRA ?", options:["Le PCA est pour les grandes entreprises, le PRA pour les PME","Le PCA vise à ne jamais s'arrêter, le PRA vise à reprendre après une interruption","Le PCA gère les données, le PRA gère les serveurs","Ce sont des synonymes"], correct:1, explanation:"Le PCA maintient l'activité même sous attaque. Le PRA accepte l'interruption mais planifie une reprise rapide." },
+  10: { question:"Parmi ces organisations au Gabon, laquelle est considérée comme un OIV ?", options:["Un restaurant de Libreville","La SEEG (eau et électricité)","Une boutique de téléphonie","Une école privée"], correct:1, explanation:"La SEEG fournit eau et électricité à toute la population gabonaise. Une attaque constituerait une crise nationale." },
+  11: { question:"Quel type d'attaquant représente la menace la plus sous-estimée dans une organisation ?", options:["Les cybercriminels externes","Les États-nations","Les insiders (employés malveillants ou négligents)","Les script kiddies"], correct:2, explanation:"Les insiders sont déjà à l'intérieur du périmètre — le pare-feu ne sert à rien contre eux." },
+  12: { question:"Quel métier cyber surveille les systèmes 24h/24 et répond aux incidents en temps réel ?", options:["Pentesteur / Red Team","Analyste SOC / Blue Team","Expert IAM","Analyste Forensic"], correct:1, explanation:"L'analyste SOC surveille en permanence les alertes et coordonne la réponse aux incidents." },
+  13: { question:"Un pentesteur réalise une attaque contre une entreprise. Quelle condition est OBLIGATOIRE ?", options:["Être diplômé en cybersécurité","Avoir un contrat signé définissant le périmètre","Utiliser uniquement des outils open source","Informer les autorités avant chaque test"], correct:1, explanation:"Le pentest est légal UNIQUEMENT avec un contrat signé. Sans contrat = intrusion illégale." }
 };
 
 // ═══════════════════════════════════════════
@@ -507,47 +439,40 @@ var COURSE_ID = 'j1';
 var TOTAL = 16;
 var current = 0;
 var currentUser = null;
-var qcmAnswered = {};   // {slideIndex: true}
-var qcmScores = {};     // {slideIndex: 1|0}
+var qcmAnswered = {};
+var qcmScores = {};
 var currentQcmSlide = null;
 
 // ═══════════════════════════════════════════
-//  INIT — Auth + load progress
+//  INIT
 // ═══════════════════════════════════════════
 async function init() {
   currentUser = await requireAuth();
   if (!currentUser) return;
-
-  // Show username in topbar
   var profile = await getProfile(currentUser.id);
   var username = (profile && profile.username) || 'user';
   document.getElementById('tb-username').textContent = '@' + username;
-
-  // Load saved progress from Supabase
   var savedProgress = await getCourseProgress(currentUser.id, COURSE_ID);
   savedProgress.forEach(function(row) {
     qcmAnswered[row.slide_index] = true;
     qcmScores[row.slide_index] = row.is_correct ? 1 : 0;
   });
-
   updateUI();
 }
 
 // ═══════════════════════════════════════════
-//  NAVIGATION
+//  NAVIGATION — avec null check
 // ═══════════════════════════════════════════
 function navigate(dir) {
   var next = current + dir;
   if (next < 0 || next >= TOTAL) return;
-
-  // Block advance if QCM pending
   if (dir > 0 && QCM[current] && !qcmAnswered[current]) {
     showQcm(current);
     return;
   }
-
   var curEl  = document.querySelector('.slide.active');
   var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
   curEl.classList.remove('active');
   curEl.classList.add('exit');
   setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
@@ -562,7 +487,6 @@ function updateUI() {
   document.getElementById('prev-btn').disabled = current === 0;
   document.getElementById('next-btn').disabled = current === TOTAL - 1;
   document.getElementById('progress-fill').style.width = ((current + 1) / TOTAL * 100) + '%';
-
   var ind = document.getElementById('qcm-ind');
   if (QCM[current]) {
     ind.textContent = qcmAnswered[current]
@@ -580,7 +504,6 @@ function showQcm(slideIndex) {
   var qcm = QCM[slideIndex];
   if (!qcm) return;
   currentQcmSlide = slideIndex;
-
   var answered = Object.keys(qcmAnswered).length;
   var total = Object.keys(QCM).length;
   document.getElementById('qcm-prog').textContent = 'QCM ' + (answered + 1) + ' / ' + total;
@@ -589,7 +512,6 @@ function showQcm(slideIndex) {
   document.getElementById('qcm-feedback').className = 'qcm-feedback';
   document.getElementById('qcm-next-btn').classList.remove('show');
   document.getElementById('qcm-saving').classList.remove('show');
-
   var letters = ['A','B','C','D'];
   var html = '';
   qcm.options.forEach(function(opt, i) {
@@ -597,47 +519,33 @@ function showQcm(slideIndex) {
       '<span class="option-letter">' + letters[i] + '</span>' + opt + '</div>';
   });
   document.getElementById('qcm-options').innerHTML = html;
-
-  // Restore if already answered
   if (qcmAnswered[slideIndex]) {
     restoreQcmState(slideIndex);
     document.getElementById('qcm-next-btn').classList.add('show');
   }
-
   document.getElementById('qcm-overlay').classList.add('show');
 }
 
 async function selectOption(el, optionIndex) {
   if (qcmAnswered[currentQcmSlide]) return;
-
   var qcm = QCM[currentQcmSlide];
   var correct = optionIndex === qcm.correct;
-
-  // Disable all options
   document.querySelectorAll('.qcm-option').forEach(function(o, i) {
     o.classList.add('disabled');
     if (i === qcm.correct) o.classList.add('correct');
   });
   if (!correct) el.classList.add('wrong');
-
-  // Feedback
   var fb = document.getElementById('qcm-feedback');
   fb.style.display = 'block';
   fb.className = 'qcm-feedback ' + (correct ? 'correct' : 'wrong');
   fb.textContent = (correct ? '✅ Correct ! ' : '❌ Incorrect. ') + qcm.explanation;
-
-  // Save locally
   qcmAnswered[currentQcmSlide] = true;
   qcmScores[currentQcmSlide] = correct ? 1 : 0;
   updateUI();
-
-  // Save to Supabase
   if (currentUser) {
     document.getElementById('qcm-saving').classList.add('show');
     await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
     document.getElementById('qcm-saving').classList.remove('show');
-
-    // Check if all QCMs answered → complete course
     var total = Object.keys(QCM).length;
     if (Object.keys(qcmAnswered).length === total) {
       var correctCount = Object.values(qcmScores).filter(function(v){ return v === 1; }).length;
@@ -647,7 +555,6 @@ async function selectOption(el, optionIndex) {
       return;
     }
   }
-
   document.getElementById('qcm-next-btn').classList.add('show');
 }
 
@@ -670,6 +577,7 @@ function closeQcmAndAdvance() {
     var next = current + 1;
     var curEl  = document.querySelector('.slide.active');
     var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+    if (!curEl || !nextEl) return;
     curEl.classList.remove('active');
     curEl.classList.add('exit');
     setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
@@ -683,7 +591,6 @@ function showCompletion(scorePct) {
   var total = Object.keys(QCM).length;
   var correct = Object.values(qcmScores).filter(function(v){ return v === 1; }).length;
   var pct = Math.round(scorePct);
-
   document.getElementById('comp-score').textContent = pct + '%';
   if (pct >= 70) {
     document.getElementById('comp-icon').textContent = '🏆';
