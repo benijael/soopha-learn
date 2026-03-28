@@ -1,1 +1,1173 @@
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Les Métiers de la Cybersécurité — SooPHA Learn</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Space+Grotesk:wght@300;400;600;700&display=swap');
+
+:root {
+  --bg: #020c06;
+  --green: #00ff88;
+  --green-dim: rgba(0,255,136,0.15);
+  --green-border: rgba(0,255,136,0.12);
+  --mono: 'Share Tech Mono', monospace;
+  --display: 'Rajdhani', sans-serif;
+  --body: 'Space Grotesk', sans-serif;
+  --red: #ff4466;
+  --yellow: #ffd700;
+  --blue: #4488ff;
+  --orange: #ff8800;
+  --purple: #aa44ff;
+  --cyan: #00ddff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: #fff;
+  font-family: var(--body);
+  overflow: hidden;
+}
+
+/* ── SLIDE CONTAINER ── */
+.slides-wrapper {
+  width: 100%; height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  transform: translateX(60px);
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateX(0);
+}
+.slide.prev {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+/* ── NAV ── */
+.nav-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 48px;
+  background: rgba(2,12,6,0.95);
+  border-bottom: 1px solid var(--green-border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 2rem;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+.nav-brand {
+  font-family: var(--display);
+  font-size: 0.95rem; font-weight: 700;
+  color: #fff; letter-spacing: 0.1em;
+}
+.nav-brand span { color: var(--green); text-shadow: 0 0 10px var(--green); }
+.nav-controls { display: flex; align-items: center; gap: 1rem; }
+.nav-counter {
+  font-family: var(--mono); font-size: 0.65rem;
+  color: rgba(0,255,136,0.4); letter-spacing: 0.2em;
+}
+.nav-btn {
+  background: transparent;
+  border: 1px solid var(--green-border);
+  color: rgba(0,255,136,0.6);
+  width: 32px; height: 32px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.nav-btn:hover {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-dim);
+}
+.nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+
+/* ── PROGRESS BAR ── */
+.progress-bar {
+  position: fixed;
+  bottom: 0; left: 0;
+  height: 2px;
+  background: var(--green);
+  transition: width 0.5s ease;
+  box-shadow: 0 0 8px var(--green);
+  z-index: 100;
+}
+
+/* ── SLIDE DOTS ── */
+.slide-dots {
+  position: fixed;
+  bottom: 12px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 6px;
+  z-index: 100;
+}
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(0,255,136,0.2);
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 1px solid var(--green-border);
+}
+.dot.active {
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  width: 18px; border-radius: 3px;
+}
+
+/* ── CANVAS MATRIX ── */
+canvas.matrix-bg {
+  position: absolute;
+  inset: 0; z-index: 0;
+  pointer-events: none;
+}
+
+/* ── SLIDE CONTENT ── */
+.slide-inner {
+  position: relative; z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 4.5rem 4rem 2.5rem;
+  overflow: hidden;
+}
+
+/* ── COVER SLIDE ── */
+.cover {
+  background: radial-gradient(ellipse at 50% 40%, rgba(0,80,40,0.25) 0%, transparent 70%);
+}
+.cover .slide-inner {
+  align-items: center; justify-content: center; text-align: center;
+}
+.cover-tag {
+  font-family: var(--mono); font-size: 0.65rem;
+  letter-spacing: 0.5em; color: rgba(0,255,136,0.35);
+  text-transform: uppercase; margin-bottom: 1.5rem;
+}
+.cover-title {
+  font-family: var(--display);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 700; line-height: 1;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+.cover-title .line1 { color: #fff; }
+.cover-title .line2 { color: var(--green); text-shadow: 0 0 30px var(--green); }
+.cover-sub {
+  font-family: var(--mono); font-size: 0.8rem;
+  color: rgba(0,255,136,0.35); letter-spacing: 0.25em;
+  margin: 1rem 0 2rem;
+}
+.gabon-bar {
+  display: flex; height: 3px; width: 60px;
+  border-radius: 2px; overflow: hidden;
+  margin: 0.8rem auto 1.5rem;
+}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}
+.gabon-bar span:nth-child(2){flex:1;background:#fcd116}
+.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.cover-desc {
+  max-width: 600px;
+  font-size: 1rem; color: rgba(200,255,220,0.55);
+  line-height: 1.7; margin-bottom: 2.5rem;
+}
+.careers-grid-mini {
+  display: flex; gap: 0.8rem; flex-wrap: wrap; justify-content: center;
+  max-width: 700px;
+}
+.career-pill {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--green-border);
+  background: rgba(0,255,136,0.04);
+  font-family: var(--mono); font-size: 0.65rem;
+  color: rgba(0,255,136,0.5); letter-spacing: 0.08em;
+  cursor: pointer; transition: all 0.2s;
+}
+.career-pill:hover {
+  border-color: rgba(0,255,136,0.4);
+  color: var(--green);
+  background: var(--green-dim);
+}
+
+/* ── CAREER SLIDE ── */
+.career-slide .slide-inner {
+  padding-top: 4rem;
+}
+.slide-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--green-border);
+}
+.slide-num {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: rgba(0,255,136,0.25); letter-spacing: 0.3em;
+}
+.career-tag-badge {
+  font-family: var(--mono); font-size: 0.6rem;
+  letter-spacing: 0.15em; padding: 0.2rem 0.7rem;
+  border: 1px solid; text-transform: uppercase;
+}
+.slide-title-row {
+  display: flex; align-items: center; gap: 1.2rem;
+  margin-bottom: 1.2rem;
+}
+.slide-icon {
+  font-size: 2.2rem;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--green-border);
+  background: rgba(0,255,136,0.04);
+  flex-shrink: 0;
+}
+.slide-title {
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-weight: 700; line-height: 1;
+  letter-spacing: 0.05em;
+}
+.slide-mission {
+  font-size: 0.88rem;
+  color: rgba(200,255,220,0.6);
+  line-height: 1.65;
+  margin-bottom: 1.5rem;
+  max-width: 85%;
+  padding-left: 1rem;
+  border-left: 2px solid var(--green-border);
+}
+
+.career-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  flex: 1;
+}
+
+.career-block {
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--green-border);
+  background: rgba(0,255,136,0.02);
+}
+.career-block.wide {
+  grid-column: span 2;
+}
+.block-label {
+  font-family: var(--mono); font-size: 0.58rem;
+  letter-spacing: 0.3em; text-transform: uppercase;
+  color: rgba(0,255,136,0.35);
+  margin-bottom: 0.7rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.block-label::before {
+  content: '//';
+  color: rgba(0,255,136,0.2);
+}
+.tag-list {
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+}
+.tag {
+  font-family: var(--mono); font-size: 0.62rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid rgba(0,255,136,0.15);
+  background: rgba(0,255,136,0.04);
+  color: rgba(0,255,136,0.7);
+  letter-spacing: 0.05em;
+}
+.tag.cert {
+  border-color: rgba(255,215,0,0.2);
+  background: rgba(255,215,0,0.04);
+  color: rgba(255,215,0,0.7);
+}
+.tag.tool {
+  border-color: rgba(68,136,255,0.2);
+  background: rgba(68,136,255,0.04);
+  color: rgba(68,136,255,0.7);
+}
+.salary-val {
+  font-family: var(--display);
+  font-size: 1.4rem; font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+.salary-sub {
+  font-family: var(--mono); font-size: 0.58rem;
+  color: rgba(0,255,136,0.3); line-height: 1.5;
+}
+.africa-badge {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+}
+.africa-badge .emoji { font-size: 1.2rem; flex-shrink: 0; }
+.africa-badge p {
+  font-family: var(--mono); font-size: 0.62rem;
+  color: rgba(200,255,220,0.5); line-height: 1.6;
+}
+
+/* ── OVERVIEW SLIDE ── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+  flex: 1;
+}
+.overview-card {
+  padding: 1.2rem 1rem;
+  border: 1px solid var(--green-border);
+  background: rgba(0,255,136,0.02);
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.overview-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+}
+.overview-card:hover {
+  background: rgba(0,255,136,0.05);
+  transform: translateY(-2px);
+}
+.ov-icon { font-size: 1.8rem; margin-bottom: 0.7rem; }
+.ov-title {
+  font-family: var(--display);
+  font-size: 0.95rem; font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+.ov-desc {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: rgba(200,255,220,0.4); line-height: 1.5;
+}
+.ov-salary {
+  margin-top: 0.7rem;
+  font-family: var(--mono); font-size: 0.62rem;
+  color: rgba(0,255,136,0.5);
+}
+
+/* ── SECTION TITLE ── */
+.section-lbl {
+  font-family: var(--mono); font-size: 0.62rem;
+  letter-spacing: 0.4em; color: rgba(0,255,136,0.3);
+  text-transform: uppercase; margin-bottom: 0.5rem;
+}
+.section-h2 {
+  font-family: var(--display);
+  font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+  font-weight: 700; letter-spacing: 0.05em;
+  margin-bottom: 1.5rem;
+  color: #fff;
+}
+.section-h2 span { color: var(--green); }
+
+/* ── FOOTER SLIDE ── */
+.footer-slide .slide-inner {
+  align-items: center; justify-content: center; text-align: center;
+}
+
+/* accent colors */
+.accent-red   { color: var(--red); }
+.accent-blue  { color: var(--blue); }
+.accent-green { color: var(--green); }
+.accent-yellow{ color: var(--yellow); }
+.accent-orange{ color: var(--orange); }
+.accent-purple{ color: var(--purple); }
+.accent-cyan  { color: var(--cyan); }
+
+.border-red    { border-color: rgba(255,68,102,0.3) !important; }
+.border-blue   { border-color: rgba(68,136,255,0.3) !important; }
+.border-green  { border-color: rgba(0,255,136,0.3) !important; }
+.border-yellow { border-color: rgba(255,215,0,0.3) !important; }
+.border-orange { border-color: rgba(255,136,0,0.3) !important; }
+.border-purple { border-color: rgba(170,68,255,0.3) !important; }
+.border-cyan   { border-color: rgba(0,221,255,0.3) !important; }
+
+.bg-red    { background: rgba(255,68,102,0.06) !important; }
+.bg-blue   { background: rgba(68,136,255,0.06) !important; }
+.bg-yellow { background: rgba(255,215,0,0.06) !important; }
+.bg-orange { background: rgba(255,136,0,0.06) !important; }
+.bg-purple { background: rgba(170,68,255,0.06) !important; }
+.bg-cyan   { background: rgba(0,221,255,0.06) !important; }
+
+.bar-red    { background: var(--red) !important; }
+.bar-blue   { background: var(--blue) !important; }
+.bar-yellow { background: var(--yellow) !important; }
+.bar-orange { background: var(--orange) !important; }
+.bar-purple { background: var(--purple) !important; }
+.bar-cyan   { background: var(--cyan) !important; }
+
+/* keyboard hint */
+.kb-hint {
+  position: fixed;
+  bottom: 28px; right: 2rem;
+  font-family: var(--mono); font-size: 0.55rem;
+  color: rgba(0,255,136,0.2); letter-spacing: 0.1em;
+  z-index: 100;
+}
+
+/* scrollable inner content when needed */
+.career-scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+</style>
+</head>
+<body>
+
+<!-- NAV BAR -->
+<nav class="nav-bar">
+  <div class="nav-brand">SooPHA <span>LEARN</span> <span style="color:rgba(255,255,255,0.2);margin:0 0.5rem">|</span> <span style="font-family:var(--mono);font-size:0.65rem;color:rgba(0,255,136,0.4);font-weight:400">MÉTIERS DE LA CYBER</span></div>
+  <div class="nav-controls">
+    <span class="nav-counter" id="nav-counter">01 / 11</span>
+    <button class="nav-btn" id="btn-prev" onclick="prevSlide()">←</button>
+    <button class="nav-btn" id="btn-next" onclick="nextSlide()">→</button>
+  </div>
+</nav>
+
+<div class="progress-bar" id="progress-bar"></div>
+<div class="kb-hint">← → FLÈCHES · ESPACE</div>
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 1 — COVER
+════════════════════════════════════════════ -->
+<div class="slides-wrapper">
+
+<div class="slide cover active" id="slide-0">
+  <canvas class="matrix-bg" id="matrix-0"></canvas>
+  <div class="slide-inner">
+    <div class="cover-tag">// SooPHA Learn · Formation · 2026</div>
+    <div class="cover-title">
+      <div class="line1">LES MÉTIERS DE</div>
+      <div class="line2">LA CYBERSÉCURITÉ</div>
+    </div>
+    <div class="gabon-bar"><span></span><span></span><span></span></div>
+    <div class="cover-sub">// Compétences · Outils · Certifications · Salaires · Contexte Afrique</div>
+    <p class="cover-desc">
+      La cybersécurité est l'un des secteurs les plus dynamiques du monde tech.
+      Découvre les métiers, ce qu'ils demandent, et comment y accéder depuis l'Afrique francophone.
+    </p>
+    <div class="careers-grid-mini">
+      <div class="career-pill">⚔️ Pentester</div>
+      <div class="career-pill">🔍 Analyste SOC</div>
+      <div class="career-pill">🪪 Consultant IAM</div>
+      <div class="career-pill">⚖️ DPO</div>
+      <div class="career-pill">🛡️ RSSI / CISO</div>
+      <div class="career-pill">🔬 Analyste DFIR</div>
+      <div class="career-pill">🕵️ Threat Intel</div>
+      <div class="career-pill">☁️ Cloud Security</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 2 — VUE D'ENSEMBLE
+════════════════════════════════════════════ -->
+<div class="slide" id="slide-1">
+  <canvas class="matrix-bg" id="matrix-1"></canvas>
+  <div class="slide-inner">
+    <div class="section-lbl">// Vue d'ensemble</div>
+    <div class="section-h2">8 métiers, <span>une passion commune</span></div>
+    <div class="overview-grid">
+
+      <div class="overview-card border-red bg-red" onclick="goToSlide(2)">
+        <div class="overview-card" style="border:none;padding:0;background:none">
+        <div class="ov-icon">⚔️</div>
+        <div class="ov-title accent-red">Pentester</div>
+        <div class="ov-desc">Hacker éthique. Teste les défenses avant les vrais attaquants.</div>
+        <div class="ov-salary">💰 45–120K€ / an</div>
+        </div>
+      </div>
+
+      <div class="overview-card border-blue" onclick="goToSlide(3)">
+        <div class="ov-icon">🔍</div>
+        <div class="ov-title accent-blue">Analyste SOC</div>
+        <div class="ov-desc">Surveille en temps réel. Détecte et répond aux incidents.</div>
+        <div class="ov-salary">💰 35–80K€ / an</div>
+      </div>
+
+      <div class="overview-card border-green" onclick="goToSlide(4)">
+        <div class="ov-icon">🪪</div>
+        <div class="ov-title accent-green">Consultant IAM</div>
+        <div class="ov-desc">Gère les identités, les accès et les droits dans le SI.</div>
+        <div class="ov-salary">💰 50–120K€ / an</div>
+      </div>
+
+      <div class="overview-card border-yellow" onclick="goToSlide(5)">
+        <div class="ov-icon">⚖️</div>
+        <div class="ov-title accent-yellow">DPO</div>
+        <div class="ov-desc">Garant de la conformité RGPD et protection des données.</div>
+        <div class="ov-salary">💰 50–100K€ / an</div>
+      </div>
+
+      <div class="overview-card border-orange" onclick="goToSlide(6)">
+        <div class="ov-icon">🛡️</div>
+        <div class="ov-title accent-orange">RSSI / CISO</div>
+        <div class="ov-desc">Pilote la stratégie sécurité globale de l'organisation.</div>
+        <div class="ov-salary">💰 80–200K€ / an</div>
+      </div>
+
+      <div class="overview-card border-purple" onclick="goToSlide(7)">
+        <div class="ov-icon">🔬</div>
+        <div class="ov-title accent-purple">Analyste DFIR</div>
+        <div class="ov-desc">Enquête après les incidents. Forensics & réponse aux crises.</div>
+        <div class="ov-salary">💰 50–110K€ / an</div>
+      </div>
+
+      <div class="overview-card border-cyan" onclick="goToSlide(8)">
+        <div class="ov-icon">🕵️</div>
+        <div class="ov-title accent-cyan">Threat Intel</div>
+        <div class="ov-desc">Anticipe les menaces. Analyse TTPs et groupes APT.</div>
+        <div class="ov-salary">💰 55–110K€ / an</div>
+      </div>
+
+      <div class="overview-card" style="border-color:rgba(100,180,255,0.3)" onclick="goToSlide(9)">
+        <div class="ov-icon">☁️</div>
+        <div class="ov-title" style="color:#64b4ff">Cloud Security</div>
+        <div class="ov-desc">Sécurise les infras cloud AWS, Azure, GCP.</div>
+        <div class="ov-salary">💰 60–140K€ / an</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 3 — PENTESTER
+════════════════════════════════════════════ -->
+<div class="slide career-slide" id="slide-2">
+  <canvas class="matrix-bg" id="matrix-2"></canvas>
+  <div class="slide-inner">
+    <div class="slide-header">
+      <span class="slide-num">// 01 · OFFENSIF</span>
+      <span class="career-tag-badge accent-red border-red" style="border:1px solid rgba(255,68,102,0.4)">RED TEAM</span>
+    </div>
+    <div class="slide-title-row">
+      <div class="slide-icon border-red bg-red">⚔️</div>
+      <div>
+        <div class="slide-title accent-red">PENTESTER</div>
+        <div style="font-family:var(--mono);font-size:0.62rem;color:rgba(255,68,102,0.5);letter-spacing:0.2em">HACKER ÉTHIQUE · RED TEAMER</div>
+      </div>
+    </div>
+    <div class="slide-mission">
+      Simuler des attaques réelles pour identifier les vulnérabilités avant les cybercriminels. Tester applications web, réseaux, systèmes, et rédiger des rapports techniques pour aider à corriger les failles.
+    </div>
+    <div class="career-grid">
+      <div class="career-block wide border-red bg-red">
+        <div class="block-label">Compétences clés</div>
+        <div class="tag-list">
+          <span class="tag">Web Hacking</span><span class="tag">Exploitation binaire</span><span class="tag">OSINT</span>
+          <span class="tag">Scripting Python/Bash</span><span class="tag">Active Directory</span><span class="tag">Réseau TCP/IP</span>
+          <span class="tag">Cryptographie</span><span class="tag">Social Engineering</span><span class="tag">Rédaction rapports</span>
+        </div>
+      </div>
+      <div class="career-block border-blue">
+        <div class="block-label">Outils</div>
+        <div class="tag-list">
+          <span class="tag tool">Burp Suite</span><span class="tag tool">Metasploit</span><span class="tag tool">Nmap</span>
+          <span class="tag tool">Cobalt Strike</span><span class="tag tool">BloodHound</span><span class="tag tool">Kali Linux</span>
+        </div>
+      </div>
+      <div class="career-block border-yellow">
+        <div class="block-label">Certifications</div>
+        <div class="tag-list">
+          <span class="tag cert">OSCP</span><span class="tag cert">CEH</span><span class="tag cert">eJPT</span>
+          <span class="tag cert">PNPT</span><span class="tag cert">HTB CPTS</span>
+        </div>
+      </div>
+      <div class="career-block border-green">
+        <div class="block-label">Salaire Europe</div>
+        <div class="salary-val accent-red">45K – 120K€</div>
+        <div class="salary-sub">Junior : 45–60K€<br>Senior : 80–120K€<br>Freelance : 700–1200€/j</div>
+      </div>
+      <div class="career-block wide">
+        <div class="block-label">Contexte Afrique</div>
+        <div class="africa-badge">
+          <span class="emoji">🌍</span>
+          <p>Forte demande dans les banques et télécom. Plateformes bug bounty accessibles (HackerOne, Intigriti). Les certifications OSCP et eJPT sont reconnues mondialement et accessibles depuis l'Afrique. CTF = meilleur tremplin.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 4 — ANALYSTE SOC
+════════════════════════════════════════════ -->
+<div class="slide career-slide" id="slide-3">
+  <canvas class="matrix-bg" id="matrix-3"></canvas>
+  <div class="slide-inner">
+    <div class="slide-header">
+      <span class="slide-num">// 02 · DÉFENSIF</span>
+      <span class="career-tag-badge accent-blue" style="border:1px solid rgba(68,136,255,0.4)">BLUE TEAM</span>
+    </div>
+    <div class="slide-title-row">
+      <div class="slide-icon border-blue bg-blue" style="background:rgba(68,136,255,0.06)">🔍</div>
+      <div>
+        <div class="slide-title accent-blue">ANALYSTE SOC</div>
+        <div style="font-family:var(--mono);font-size:0.62rem;color:rgba(68,136,255,0.5);letter-spacing:0.2em">SECURITY OPERATIONS CENTER · NIVEAUX 1/2/3</div>
+      </div>
+    </div>
+    <div class="slide-mission">
+      Surveiller en temps réel les systèmes d'information, détecter les comportements anormaux, analyser les alertes de sécurité et coordonner la réponse aux incidents. Le SOC est le centre névralgique de la sécurité opérationnelle.
+    </div>
+    <div class="career-grid">
+      <div class="career-block wide border-blue" style="background:rgba(68,136,255,0.04)">
+        <div class="block-label">Compétences clés</div>
+        <div class="tag-list">
+          <span class="tag">Analyse de logs</span><span class="tag">Threat Hunting</span><span class="tag">SIEM</span>
+          <span class="tag">Réseau & protocoles</span><span class="tag">Malware Analysis</span><span class="tag">Règles YARA/Sigma</span>
+          <span class="tag">Windows/Linux</span><span class="tag">MITRE ATT&CK</span><span class="tag">Gestion incidents</span>
+        </div>
+      </div>
+      <div class="career-block border-blue">
+        <div class="block-label">Outils</div>
+        <div class="tag-list">
+          <span class="tag tool">Splunk</span><span class="tag tool">Elastic SIEM</span><span class="tag tool">Microsoft Sentinel</span>
+          <span class="tag tool">CrowdStrike</span><span class="tag tool">Wireshark</span><span class="tag tool">TheHive</span>
+        </div>
+      </div>
+      <div class="career-block border-yellow">
+        <div class="block-label">Certifications</div>
+        <div class="tag-list">
+          <span class="tag cert">CompTIA Security+</span><span class="tag cert">CySA+</span>
+          <span class="tag cert">GCIH</span><span class="tag cert">SC-200</span><span class="tag cert">BTL1</span>
+        </div>
+      </div>
+      <div class="career-block border-green">
+        <div class="block-label">Salaire Europe</div>
+        <div class="salary-val accent-blue">35K – 80K€</div>
+        <div class="salary-sub">N1 : 35–45K€<br>N2 : 50–65K€<br>N3/Lead : 70–80K€</div>
+      </div>
+      <div class="career-block wide">
+        <div class="block-label">Contexte Afrique</div>
+        <div class="africa-badge">
+          <span class="emoji">🌍</span>
+          <p>SOC émergents dans les grandes banques (Ecobank, BGFI, Société Générale Afrique). Portail Microsoft Sentinel accessible via Azure. Forte demande en Côte d'Ivoire, Sénégal, Maroc. CompTIA Security+ = porte d'entrée idéale.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 5 — CONSULTANT IAM
+════════════════════════════════════════════ -->
+<div class="slide career-slide" id="slide-4">
+  <canvas class="matrix-bg" id="matrix-4"></canvas>
+  <div class="slide-inner">
+    <div class="slide-header">
+      <span class="slide-num">// 03 · IDENTITÉS & ACCÈS</span>
+      <span class="career-tag-badge accent-green" style="border:1px solid rgba(0,255,136,0.4)">IAM / PAM</span>
+    </div>
+    <div class="slide-title-row">
+      <div class="slide-icon border-green" style="background:rgba(0,255,136,0.04)">🪪</div>
+      <div>
+        <div class="slide-title accent-green">CONSULTANT IAM</div>
+        <div style="font-family:var(--mono);font-size:0.62rem;color:rgba(0,255,136,0.4);letter-spacing:0.2em">IDENTITY & ACCESS MANAGEMENT · GOUVERNANCE</div>
+      </div>
+    </div>
+    <div class="slide-mission">
+      Concevoir, implémenter et maintenir les systèmes de gestion des identités et des accès. Garantir que chaque utilisateur — interne, externe, prestataire — a exactement les droits dont il a besoin, ni plus, ni moins.
+    </div>
+    <div class="career-grid">
+      <div class="career-block wide border-green" style="background:rgba(0,255,136,0.03)">
+        <div class="block-label">Compétences clés</div>
+        <div class="tag-list">
+          <span class="tag">Directory Services (AD/LDAP)</span><span class="tag">SSO / SAML / OAuth</span>
+          <span class="tag">Provisioning / RBAC</span><span class="tag">PAM</span><span class="tag">IGA</span>
+          <span class="tag">VB.NET / SQL</span><span class="tag">Intégrations API</span><span class="tag">ITIL</span>
+          <span class="tag">Audit & conformité</span>
+        </div>
+      </div>
+      <div class="career-block border-blue">
+        <div class="block-label">Solutions IAM</div>
+        <div class="tag-list">
+          <span class="tag tool">One Identity Manager</span><span class="tag tool">SailPoint</span><span class="tag tool">Saviynt</span>
+          <span class="tag tool">CyberArk</span><span class="tag tool">Entra ID</span><span class="tag tool">Okta</span>
+        </div>
+      </div>
+      <div class="career-block border-yellow">
+        <div class="block-label">Certifications</div>
+        <div class="tag-list">
+          <span class="tag cert">SC-300</span><span class="tag cert">SailPoint IdentityNow</span>
+          <span class="tag cert">CISSP</span><span class="tag cert">CISM</span>
+        </div>
+      </div>
+      <div class="career-block border-green">
+        <div class="block-label">Salaire Europe</div>
+        <div class="salary-val accent-green">50K – 120K€</div>
+        <div class="salary-sub">Consultant : 50–80K€<br>Expert/Lead : 90–120K€<br>Freelance TJM : 600–950€/j</div>
+      </div>
+      <div class="career-block wide">
+        <div class="block-label">Contexte Afrique</div>
+        <div class="africa-badge">
+          <span class="emoji">🌍</span>
+          <p>Spécialité rare et très valorisée. Grandes entreprises africaines (télécoms, banques, multinationales) cherchent des experts locaux. Microsoft Entra ID disponible partout. Excellente opportunité pour les profils tech qui aiment la gouvernance.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 6 — DPO
+════════════════════════════════════════════ -->
+<div class="slide career-slide" id="slide-5">
+  <canvas class="matrix-bg" id="matrix-5"></canvas>
+  <div class="slide-inner">
+    <div class="slide-header">
+      <span class="slide-num">// 04 · JURIDIQUE & CONFORMITÉ</span>
+      <span class="career-tag-badge accent-yellow" style="border:1px solid rgba(255,215,0,0.4)">COMPLIANCE</span>
+    </div>
+    <div class="slide-title-row">
+      <div class="slide-icon border-yellow bg-yellow" style="background:rgba(255,215,0,0.05)">⚖️</div>
+      <div>
+        <div class="slide-title accent-yellow">DPO</div>
+        <div style="font-family:var(--mono);font-size:0.62rem;color:rgba(255,215,0,0.4);letter-spacing:0.2em">DATA PROTECTION OFFICER · RGPD</div>
+      </div>
+    </div>
+    <div class="slide-mission">
+      Délégué à la Protection des Données. Garantir la conformité de l'organisation avec le RGPD et les lois locales sur les données personnelles. Interface entre la direction, les équipes tech et les autorités de régulation (CNIL, etc.).
+    </div>
+    <div class="career-grid">
+      <div class="career-block wide border-yellow bg-yellow">
+        <div class="block-label">Compétences clés</div>
+        <div class="tag-list">
+          <span class="tag">RGPD / lois données</span><span class="tag">Audit de conformité</span><span class="tag">Registre des traitements</span>
+          <span class="tag">PIA / AIPD</span><span class="tag">Gestion des risques</span><span class="tag">Droit numérique</span>
+          <span class="tag">Communication</span><span class="tag">Formation interne</span><span class="tag">Gestion incidents données</span>
+        </div>
+      </div>
+      <div class="career-block border-blue">
+        <div class="block-label">Outils</div>
+        <div class="tag-list">
+          <span class="tag tool">OneTrust</span><span class="tag tool">Didomi</span><span class="tag tool">CNIL PIA</span>
+          <span class="tag tool">Privacera</span><span class="tag tool">TrustArc</span>
+        </div>
+      </div>
+      <div class="career-block border-yellow">
+        <div class="block-label">Certifications</div>
+        <div class="tag-list">
+          <span class="tag cert">CIPP/E (IAPP)</span><span class="tag cert">CIPM</span>
+          <span class="tag cert">DPO certifié CNIL</span><span class="tag cert">ISO 27701</span>
+        </div>
+      </div>
+      <div class="career-block border-green">
+        <div class="block-label">Salaire Europe</div>
+        <div class="salary-val accent-yellow">50K – 100K€</div>
+        <div class="salary-sub">DPO junior : 50–65K€<br>DPO confirmé : 75–100K€<br>DPO externalisé : 400–700€/j</div>
+      </div>
+      <div class="career-block wide">
+        <div class="block-label">Contexte Afrique</div>
+        <div class="africa-badge">
+          <span class="emoji">🌍</span>
+          <p>L'Afrique se dote progressivement de lois sur les données (Gabon : loi 2011, Sénégal : CDP, CI : ARTCI). Le DPO devient obligatoire dans de nombreuses structures. Profil hybride tech + juridique très recherché. CIPP/E reconnu internationalement.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 7 — RSSI / CISO
+════════════════════════════════════════════ -->
+<div class="slide career-slide" id="slide-6">
+  <canvas class="matrix-bg" id="matrix-6"></canvas>
+  <div class="slide-inner">
+    <div class="slide-header">
+      <span class="slide-num">// 05 · MANAGEMENT</span>
+      <span class="career-tag-badge accent-orange" style="border:1px solid rgba(255,136,0,0.4)">STRATÉGIE</span>
+    </div>
+    <div class="slide-title-row">
+      <div class="slide-icon border-orange bg-orange" style="background:rgba(255,136,0,0.05)">🛡️</div>
+      <div>
+        <div class="slide-title accent-orange">RSSI / CISO</div>
+        <div style="font-family:var(--mono);font-size:0.62rem;color:rgba(255,136,0,0.4);letter-spacing:0.2em">RESPONSABLE SÉCURITÉ SI · CHIEF INFORMATION SECURITY OFFICER</div>
+      </div>
+    </div>
+    <div class="slide-mission">
+      Définir et piloter la stratégie de sécurité de l'organisation. Gérer les risques, les budgets, les équipes et la relation avec la direction. Le RSSI traduit les enjeux techniques en langage business pour arbitrer les décisions sécurité.
+    </div>
+    <div class="career-grid">
+      <div class="career-block wide border-orange bg-orange">
+        <div class="block-label">Compétences clés</div>
+        <div class="tag-list">
+          <span class="tag">Gestion des risques (ISO 27005)</span><span class="tag">PSSI</span><span class="tag">Leadership</span>
+          <span class="tag">Budget & ROI sécu</span><span class="tag">Communication C-level</span><span class="tag">Architecture sécu</span>
+          <span class="tag">Gestion de crise</span><span class="tag">Conformité (NIS2, ISO 27001)</span><span class="tag">GRC</span>
+        </div>
+      </div>
+      <div class="career-block border-blue">
+        <div class="block-label">Frameworks</div>
+        <div class="tag-list">
+          <span class="tag tool">ISO 27001</span><span class="tag tool">NIST CSF</span><span class="tag tool">EBIOS RM</span>
+          <span class="tag tool">COBIT</span><span class="tag tool">NIS2</span>
+        </div>
+      </div>
+      <div class="career-block border-yellow">
+        <div class="block-label">Certifications</div>
+        <div class="tag-list">
+          <span class="tag cert">CISSP</span><span class="tag cert">CISM</span>
+          <span class="tag cert">ISO 27001 LA</span><span class="tag cert">CRISC</span>
+        </div>
+      </div>
+      <div class="career-block border-green">
+        <div class="block-label">Salaire Europe</div>
+        <div class="salary-val accent-orange">80K – 200K€</div>
+        <div class="salary-sub">PME : 80–100K€<br>Grand groupe : 130–200K€<br>+bonus variable</div>
+      </div>
+      <div class="career-block wide">
+        <div class="block-label">Contexte Afrique</div>
+        <div class="africa-badge">
+          <span class="emoji">🌍</span>
+          <p>Poste encore rare mais en forte croissance dans les banques, télécoms et grandes administrations africaines. Souvent 10+ ans d'expérience requis. CISSP = certification de référence. Profil transversal : technique + managérial + politique.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 8 — DFIR
+════════════════════════════════════════════ -->
+<div class="slide career-slide" id="slide-7">
+  <canvas class="matrix-bg" id="matrix-7"></canvas>
+  <div class="slide-inner">
+    <div class="slide-header">
+      <span class="slide-num">// 06 · INVESTIGATION</span>
+      <span class="career-tag-badge accent-purple" style="border:1px solid rgba(170,68,255,0.4)">FORENSICS</span>
+    </div>
+    <div class="slide-title-row">
+      <div class="slide-icon border-purple bg-purple" style="background:rgba(170,68,255,0.05)">🔬</div>
+      <div>
+        <div class="slide-title accent-purple">ANALYSTE DFIR</div>
+        <div style="font-family:var(--mono);font-size:0.62rem;color:rgba(170,68,255,0.4);letter-spacing:0.2em">DIGITAL FORENSICS & INCIDENT RESPONSE</div>
+      </div>
+    </div>
+    <div class="slide-mission">
+      Analyser les preuves numériques après une attaque, reconstituer la chronologie des événements, identifier les attaquants et leurs méthodes. Intervenir en urgence sur les incidents pour les contenir et restaurer les systèmes.
+    </div>
+    <div class="career-grid">
+      <div class="career-block wide border-purple bg-purple">
+        <div class="block-label">Compétences clés</div>
+        <div class="tag-list">
+          <span class="tag">Analyse mémoire RAM</span><span class="tag">Forensics disque</span><span class="tag">Analyse réseau (PCAP)</span>
+          <span class="tag">Malware Analysis</span><span class="tag">Reverse Engineering</span><span class="tag">Timeline analysis</span>
+          <span class="tag">Windows Artifacts</span><span class="tag">Log analysis</span><span class="tag">Rédaction rapports légaux</span>
+        </div>
+      </div>
+      <div class="career-block border-blue">
+        <div class="block-label">Outils</div>
+        <div class="tag-list">
+          <span class="tag tool">Volatility</span><span class="tag tool">Autopsy</span><span class="tag tool">FTK</span>
+          <span class="tag tool">Velociraptor</span><span class="tag tool">Ghidra</span><span class="tag tool">Wireshark</span>
+        </div>
+      </div>
+      <div class="career-block border-yellow">
+        <div class="block-label">Certifications</div>
+        <div class="tag-list">
+          <span class="tag cert">GCFE</span><span class="tag cert">GCFA</span>
+          <span class="tag cert">GCIH</span><span class="tag cert">eCDFP</span><span class="tag cert">CHFI</span>
+        </div>
+      </div>
+      <div class="career-block border-green">
+        <div class="block-label">Salaire Europe</div>
+        <div class="salary-val accent-purple">50K – 110K€</div>
+        <div class="salary-sub">Analyste : 50–70K€<br>Expert IR : 80–110K€<br>Freelance : 700–1100€/j</div>
+      </div>
+      <div class="career-block wide">
+        <div class="block-label">Contexte Afrique</div>
+        <div class="africa-badge">
+          <span class="emoji">🌍</span>
+          <p>Métier de niche très valorisé dans les CSIRT nationaux (CIR-CERT, ANSI, etc.). Forte demande lors des cyberattaques contre les banques et les administrations. Volatility et Autopsy sont gratuits — accessibles pour se former depuis l'Afrique.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 9 — THREAT INTELLIGENCE
+════════════════════════════════════════════ -->
+<div class="slide career-slide" id="slide-8">
+  <canvas class="matrix-bg" id="matrix-8"></canvas>
+  <div class="slide-inner">
+    <div class="slide-header">
+      <span class="slide-num">// 07 · ANTICIPATION</span>
+      <span class="career-tag-badge accent-cyan" style="border:1px solid rgba(0,221,255,0.4)">THREAT INTEL</span>
+    </div>
+    <div class="slide-title-row">
+      <div class="slide-icon border-cyan bg-cyan" style="background:rgba(0,221,255,0.05)">🕵️</div>
+      <div>
+        <div class="slide-title accent-cyan">THREAT INTELLIGENCE</div>
+        <div style="font-family:var(--mono);font-size:0.62rem;color:rgba(0,221,255,0.4);letter-spacing:0.2em">CTI ANALYST · MENACES & ACTEURS</div>
+      </div>
+    </div>
+    <div class="slide-mission">
+      Collecter, analyser et contextualiser les informations sur les menaces cyber. Identifier les groupes APT, leurs TTPs (Tactiques, Techniques et Procédures) et produire des renseignements actionnables pour anticiper les attaques.
+    </div>
+    <div class="career-grid">
+      <div class="career-block wide border-cyan bg-cyan">
+        <div class="block-label">Compétences clés</div>
+        <div class="tag-list">
+          <span class="tag">OSINT avancé</span><span class="tag">Dark Web monitoring</span><span class="tag">MITRE ATT&CK</span>
+          <span class="tag">Analyse de malwares</span><span class="tag">Geopolitique cyber</span><span class="tag">IoC / IoA</span>
+          <span class="tag">Rédaction bulletins CTI</span><span class="tag">Python scripting</span><span class="tag">Threat modeling</span>
+        </div>
+      </div>
+      <div class="career-block border-blue">
+        <div class="block-label">Outils</div>
+        <div class="tag-list">
+          <span class="tag tool">MISP</span><span class="tag tool">OpenCTI</span><span class="tag tool">Maltego</span>
+          <span class="tag tool">VirusTotal</span><span class="tag tool">Shodan</span><span class="tag tool">Recorded Future</span>
+        </div>
+      </div>
+      <div class="career-block border-yellow">
+        <div class="block-label">Certifications</div>
+        <div class="tag-list">
+          <span class="tag cert">GCTI</span><span class="tag cert">eCTHP</span>
+          <span class="tag cert">CRTIA</span><span class="tag cert">MITRE ATT&CK</span>
+        </div>
+      </div>
+      <div class="career-block border-green">
+        <div class="block-label">Salaire Europe</div>
+        <div class="salary-val accent-cyan">55K – 110K€</div>
+        <div class="salary-sub">Analyste CTI : 55–75K€<br>Lead CTI : 85–110K€<br>Contexte agences : +prime</div>
+      </div>
+      <div class="career-block wide">
+        <div class="block-label">Contexte Afrique</div>
+        <div class="africa-badge">
+          <span class="emoji">🌍</span>
+          <p>Profil émergent dans les CERT africains et les grandes banques. MISP et OpenCTI sont open source. L'Afrique est ciblée par des groupes APT spécifiques (Lazarus, etc.) — les analystes locaux ont une valeur ajoutée unique. OSINT = compétence clé.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 10 — CLOUD SECURITY
+════════════════════════════════════════════ -->
+<div class="slide career-slide" id="slide-9">
+  <canvas class="matrix-bg" id="matrix-9"></canvas>
+  <div class="slide-inner">
+    <div class="slide-header">
+      <span class="slide-num">// 08 · CLOUD</span>
+      <span class="career-tag-badge" style="color:#64b4ff;border:1px solid rgba(100,180,255,0.4)">CLOUD NATIVE</span>
+    </div>
+    <div class="slide-title-row">
+      <div class="slide-icon" style="border-color:rgba(100,180,255,0.3);background:rgba(100,180,255,0.05)">☁️</div>
+      <div>
+        <div class="slide-title" style="color:#64b4ff">CLOUD SECURITY ENGINEER</div>
+        <div style="font-family:var(--mono);font-size:0.62rem;color:rgba(100,180,255,0.4);letter-spacing:0.2em">AWS · AZURE · GCP · DEVSECOPS</div>
+      </div>
+    </div>
+    <div class="slide-mission">
+      Sécuriser les infrastructures cloud et les pipelines DevOps. Implémenter les bonnes pratiques de sécurité dans AWS, Azure ou GCP, gérer les identités cloud (IAM), surveiller les configurations et intégrer la sécurité dès le code (DevSecOps).
+    </div>
+    <div class="career-grid">
+      <div class="career-block wide" style="border-color:rgba(100,180,255,0.2);background:rgba(100,180,255,0.04)">
+        <div class="block-label">Compétences clés</div>
+        <div class="tag-list">
+          <span class="tag">AWS/Azure/GCP Security</span><span class="tag">IAM Cloud</span><span class="tag">Kubernetes Security</span>
+          <span class="tag">Terraform / IaC</span><span class="tag">CI/CD Security</span><span class="tag">CSPM</span>
+          <span class="tag">Zero Trust</span><span class="tag">Secrets Management</span><span class="tag">Cloud Forensics</span>
+        </div>
+      </div>
+      <div class="career-block border-blue">
+        <div class="block-label">Outils</div>
+        <div class="tag-list">
+          <span class="tag tool">AWS Security Hub</span><span class="tag tool">Defender for Cloud</span>
+          <span class="tag tool">Prisma Cloud</span><span class="tag tool">Vault (HashiCorp)</span><span class="tag tool">Snyk</span>
+        </div>
+      </div>
+      <div class="career-block border-yellow">
+        <div class="block-label">Certifications</div>
+        <div class="tag-list">
+          <span class="tag cert">AWS Security Specialty</span><span class="tag cert">AZ-500</span>
+          <span class="tag cert">CCSP</span><span class="tag cert">GCP Security</span>
+        </div>
+      </div>
+      <div class="career-block border-green">
+        <div class="block-label">Salaire Europe</div>
+        <div class="salary-val" style="color:#64b4ff">60K – 140K€</div>
+        <div class="salary-sub">Ingénieur : 60–90K€<br>Senior/Architecte : 110–140K€<br>Freelance : 750–1200€/j</div>
+      </div>
+      <div class="career-block wide">
+        <div class="block-label">Contexte Afrique</div>
+        <div class="africa-badge">
+          <span class="emoji">🌍</span>
+          <p>Migration cloud massive en Afrique (Azure, AWS présents au Maroc, Afrique du Sud, Nigeria). Free tier AWS et Azure permettent de se former gratuitement. AZ-500 et AWS Security Specialty sont accessibles via exam en ligne. Profil très demandé dans les startups et scale-ups africaines.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 11 — CONCLUSION
+════════════════════════════════════════════ -->
+<div class="slide footer-slide" id="slide-10">
+  <canvas class="matrix-bg" id="matrix-10"></canvas>
+  <div class="slide-inner">
+    <div class="cover-tag">// Et maintenant ?</div>
+    <div class="cover-title">
+      <div class="line1">TON CHEMIN</div>
+      <div class="line2">COMMENCE ICI</div>
+    </div>
+    <div class="gabon-bar"><span></span><span></span><span></span></div>
+    <div class="cover-sub">// SooPHA Learn · Gratuit · Accessible · Africain</div>
+    <p class="cover-desc" style="margin-bottom:1.5rem">
+      Peu importe le métier qui t'attire, le chemin commence par les mêmes bases :
+      réseaux, systèmes, programmation et curiosité.
+      <strong style="color:rgba(200,255,220,0.9)">SooPHA Learn te donne les fondations.</strong>
+    </p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;max-width:700px;margin-bottom:2rem">
+      <div style="padding:1.2rem;border:1px solid var(--green-border);background:rgba(0,255,136,0.03);text-align:center">
+        <div style="font-size:1.5rem;margin-bottom:0.5rem">📚</div>
+        <div style="font-family:var(--display);font-size:0.85rem;font-weight:700;color:#fff;margin-bottom:0.3rem">APPRENDS</div>
+        <div style="font-family:var(--mono);font-size:0.6rem;color:rgba(0,255,136,0.4)">Formations structurées sur SooPHA Learn</div>
+      </div>
+      <div style="padding:1.2rem;border:1px solid var(--green-border);background:rgba(0,255,136,0.03);text-align:center">
+        <div style="font-size:1.5rem;margin-bottom:0.5rem">⚔️</div>
+        <div style="font-family:var(--display);font-size:0.85rem;font-weight:700;color:#fff;margin-bottom:0.3rem">PRATIQUE</div>
+        <div style="font-family:var(--mono);font-size:0.6rem;color:rgba(0,255,136,0.4)">Challenges CTF sur SooPHA Network</div>
+      </div>
+      <div style="padding:1.2rem;border:1px solid var(--green-border);background:rgba(0,255,136,0.03);text-align:center">
+        <div style="font-size:1.5rem;margin-bottom:0.5rem">🏆</div>
+        <div style="font-family:var(--display);font-size:0.85rem;font-weight:700;color:#fff;margin-bottom:0.3rem">CERTIFIE-TOI</div>
+        <div style="font-family:var(--mono);font-size:0.6rem;color:rgba(0,255,136,0.4)">Certifications reconnues mondialement</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center">
+      <a href="../index.html" style="padding:0.8rem 2rem;border:1px solid var(--green);background:var(--green);color:#020c06;font-family:var(--display);font-size:0.9rem;font-weight:700;letter-spacing:0.1em;text-decoration:none;transition:all 0.2s">VOIR LES FORMATIONS →</a>
+      <a href="https://ctfd.soopha-network.com" target="_blank" style="padding:0.8rem 2rem;border:1px solid var(--green-border);color:rgba(0,255,136,0.6);font-family:var(--display);font-size:0.9rem;font-weight:700;letter-spacing:0.1em;text-decoration:none;transition:all 0.2s">ACCÉDER AU CTF ↗</a>
+    </div>
+  </div>
+</div>
+
+</div><!-- /slides-wrapper -->
+
+<!-- DOTS -->
+<div class="slide-dots" id="slide-dots"></div>
+
+<script>
+// ── STATE ──
+var current = 0;
+var total = 11;
+var prev = -1;
+
+// ── INIT DOTS ──
+var dotsEl = document.getElementById('slide-dots');
+for (var i = 0; i < total; i++) {
+  var d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.setAttribute('data-i', i);
+  d.onclick = (function(idx){ return function(){ goToSlide(idx); }; })(i);
+  dotsEl.appendChild(d);
+}
+
+function goToSlide(idx) {
+  if (idx < 0 || idx >= total) return;
+  var slides = document.querySelectorAll('.slide');
+  slides[current].classList.remove('active');
+  slides[current].classList.add('prev');
+  setTimeout((function(c){ return function(){ slides[c].classList.remove('prev'); }; })(current), 500);
+
+  prev = current;
+  current = idx;
+  slides[current].classList.add('active');
+
+  // dots
+  var dots = document.querySelectorAll('.dot');
+  dots.forEach(function(d, i){ d.classList.toggle('active', i === current); });
+
+  // counter
+  document.getElementById('nav-counter').textContent =
+    (current + 1 < 10 ? '0' : '') + (current + 1) + ' / ' + (total < 10 ? '0' : '') + total;
+
+  // progress
+  document.getElementById('progress-bar').style.width = ((current + 1) / total * 100) + '%';
+
+  // buttons
+  document.getElementById('btn-prev').disabled = current === 0;
+  document.getElementById('btn-next').disabled = current === total - 1;
+
+  // init matrix for this slide
+  initMatrix(current);
+}
+
+function nextSlide() { goToSlide(current + 1); }
+function prevSlide() { goToSlide(current - 1); }
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+  if (e.key === 'Home') goToSlide(0);
+  if (e.key === 'End') goToSlide(total - 1);
+});
+
+// ── SWIPE ──
+var touchStartX = 0;
+document.addEventListener('touchstart', function(e){ touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', function(e){
+  var dx = e.changedTouches[0].clientX - touchStartX;
+  if (dx < -50) nextSlide();
+  if (dx > 50) prevSlide();
+});
+
+// ── MATRIX ──
+var matrices = {};
+function initMatrix(idx) {
+  if (matrices[idx]) return;
+  var c = document.getElementById('matrix-' + idx);
+  if (!c) return;
+  var ctx = c.getContext('2d');
+  function resize(){ c.width = window.innerWidth; c.height = window.innerHeight; }
+  resize();
+  var chars = 'アイウエオ01ABCDEF{}CTFFlag//==><';
+  var fs = 13, drops;
+  function init(){ drops = Array(Math.floor(c.width/fs)).fill(1); }
+  init();
+  var interval = setInterval(function(){
+    ctx.fillStyle = 'rgba(2,12,6,0.05)';
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#00ff88';
+    ctx.font = fs + 'px monospace';
+    drops.forEach(function(y, i){
+      ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fs, y * fs);
+      if (y * fs > c.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    });
+  }, 60);
+  matrices[idx] = interval;
+}
+
+// ── BOOT ──
+goToSlide(0);
+document.getElementById('btn-prev').disabled = true;
+</script>
+</body>
+</html>
