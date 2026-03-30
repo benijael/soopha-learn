@@ -66,7 +66,7 @@
     <div class="container">
 
       <div class="stats-bar">
-        <div class="stats-bar-item"><div class="stat-val" id="stat-total">8</div><div class="stat-label">Cours disponibles</div></div>
+        <div class="stats-bar-item"><div class="stat-val" id="stat-total">9</div><div class="stat-label">Cours disponibles</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-completed">0</div><div class="stat-label">Terminés</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-avg">0%</div><div class="stat-label">Score moyen</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-qcm">0</div><div class="stat-label">QCM répondus</div></div>
@@ -113,7 +113,7 @@
           <div class="course-day"><span>// Module 03</span><span id="badge-j3"></span></div>
           <div class="course-title">Réseaux & Outils</div>
           <div class="course-desc">Modèle OSI, TCP/IP, ports, Wireshark, Nmap. Les outils essentiels du hacker et la défense réseau.</div>
-          <div class="course-tags"><span class="badge badge-blue">🌐 Réseaux</span><span class="badge badge-blue">16 slides</span><span class="badge badge-yellow">8 QCM</span><span class="badge badge-gray">~40 min</span></div>
+          <div class="course-tags"><span class="badge badge-blue">🌐 Réseaux</span><span class="badge badge-blue">17 slides</span><span class="badge badge-yellow">8 QCM</span><span class="badge badge-gray">~40 min</span></div>
           <div class="course-progress-wrap" id="prog-j3" style="display:none">
             <div class="course-progress-label"><span id="prog-j3-label">En cours</span><span id="prog-j3-score"></span></div>
             <div class="progress-bar"><div class="progress-fill" id="prog-j3-fill" style="width:0%"></div></div>
@@ -124,7 +124,7 @@
         <a href="attacks.html" class="course-card" data-status="disponible" id="card-attacks">
           <div class="course-number">04</div>
           <div class="course-day"><span>// Types d'Attaques</span><span id="badge-attacks"></span></div>
-          <div class="course-title">Types d'Attaques Cyber</div>
+          <div class="course-title">Anatomie des Cyberattaques</div>
           <div class="course-desc">Malware, Ransomware, DDoS, APT, MitM, Zero-Day, Supply Chain. Exemples réels africains et Kill Chain.</div>
           <div class="course-tags"><span class="badge badge-red">💀 Attaques</span><span class="badge badge-blue">13 slides</span><span class="badge badge-yellow">10 QCM</span><span class="badge badge-gray">~55 min</span></div>
           <div class="course-progress-wrap" id="prog-attacks" style="display:none">
@@ -173,7 +173,6 @@
           <span class="course-cta" id="cta-osint">Commencer →</span>
         </a>
 
-        <!-- ✅ NOUVEAU -->
         <a href="metiers-cyber.html" class="course-card" data-status="disponible" id="card-metiers-cyber">
           <div class="course-number">08</div>
           <div class="course-day"><span>// Orientation · Carrières</span><span id="badge-metiers-cyber"></span></div>
@@ -187,6 +186,20 @@
           <span class="course-cta" id="cta-metiers-cyber">Commencer →</span>
         </a>
 
+        <!-- MODULE 09 — NOUVEAU : Linux -->
+        <a href="linux.html" class="course-card" data-status="disponible" id="card-linux">
+          <div class="course-number">09</div>
+          <div class="course-day"><span>// Linux · Sécurité</span><span id="badge-linux"></span></div>
+          <div class="course-title">Linux pour la Cybersécurité</div>
+          <div class="course-desc">Architecture, permissions, SUID, logs, réseau, hardening et Bash scripting. La fondation de tout expert cyber.</div>
+          <div class="course-tags"><span class="badge badge-green">🐧 Linux</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">9 QCM</span><span class="badge badge-gray">~55 min</span></div>
+          <div class="course-progress-wrap" id="prog-linux" style="display:none">
+            <div class="course-progress-label"><span id="prog-linux-label">En cours</span><span id="prog-linux-score"></span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-linux-fill" style="width:0%"></div></div>
+          </div>
+          <span class="course-cta" id="cta-linux">Commencer →</span>
+        </a>
+
       </div>
     </div>
   </div>
@@ -194,7 +207,7 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','j2','j3','attacks','web','crypto','osint','metiers-cyber'];
+var COURSES = ['j1','j2','j3','attacks','web','crypto','osint','metiers-cyber','linux'];
 
 async function init() {
   currentUser = await requireAuth();
@@ -215,7 +228,6 @@ async function init() {
       var pct = Math.round(comp.score_pct);
       var card = document.getElementById('card-' + id);
       if (card) { card.dataset.status = 'termine'; card.classList.add('completed'); }
-
       var progEl = document.getElementById('prog-' + id);
       if (progEl) {
         progEl.style.display = 'block';
