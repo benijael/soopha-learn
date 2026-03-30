@@ -33,7 +33,14 @@
 .theme-defense     .theme-label { color: rgba(0,170,255,0.7); }
 .theme-defense     .theme-header { border-color: rgba(0,170,255,0.12); }
 .theme-orientation .theme-label { color: rgba(170,68,255,0.7); }
+
 .theme-orientation .theme-header { border-color: rgba(170,68,255,0.12); }
+/* CHEVRON COLLAPSIBLE */
+.theme-header { cursor: pointer; user-select: none; }
+.theme-header:hover { opacity: 0.85; }
+.theme-chevron { margin-left: 0.5rem; font-size: 0.75rem; color: rgba(0,255,136,0.3); transition: transform 0.25s ease; display: inline-block; line-height: 1; }
+.theme-section.collapsed .theme-chevron { transform: rotate(-90deg); }
+.theme-section.collapsed .catalogue-grid { display: none; }
 /* CARDS */
 .catalogue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 1.2rem; }
 .course-card { background: rgba(4,15,8,0.9); border: 1px solid var(--green-border); border-radius: 2px; padding: 1.8rem; text-decoration: none; color: inherit; display: block; position: relative; transition: all 0.2s; }
@@ -106,10 +113,11 @@
 
       <!-- ═══ 🧱 FONDATIONS ═══ -->
       <div class="theme-section theme-fondations" id="section-fondations">
-        <div class="theme-header">
+        <div class="theme-header" onclick="toggleSection('fondations')">
           <span class="theme-icon">🧱</span>
           <span class="theme-label">Fondations</span>
           <span class="theme-desc">3 cours · Obligatoire avant tout le reste</span>
+          <span class="theme-chevron">▼</span>
         </div>
         <div class="catalogue-grid">
 
@@ -157,10 +165,11 @@
 
       <!-- ═══ ⚔️ OFFENSIF ═══ -->
       <div class="theme-section theme-offensif" id="section-offensif">
-        <div class="theme-header">
+        <div class="theme-header" onclick="toggleSection('offensif')">
           <span class="theme-icon">⚔️</span>
           <span class="theme-label">Offensif</span>
           <span class="theme-desc">4 cours · Attaques & Reconnaissance</span>
+          <span class="theme-chevron">▼</span>
         </div>
         <div class="catalogue-grid">
 
@@ -221,10 +230,11 @@
 
       <!-- ═══ 🛡️ DÉFENSE ═══ -->
       <div class="theme-section theme-defense" id="section-defense">
-        <div class="theme-header">
+        <div class="theme-header" onclick="toggleSection('defense')">
           <span class="theme-icon">🛡️</span>
           <span class="theme-label">Défense</span>
           <span class="theme-desc">1 cours · Forensics & Active Directory à venir</span>
+          <span class="theme-chevron">▼</span>
         </div>
         <div class="catalogue-grid">
 
@@ -255,10 +265,11 @@
 
       <!-- ═══ 🧭 ORIENTATION ═══ -->
       <div class="theme-section theme-orientation" id="section-orientation">
-        <div class="theme-header">
+        <div class="theme-header" onclick="toggleSection('orientation')">
           <span class="theme-icon">🧭</span>
           <span class="theme-label">Orientation</span>
           <span class="theme-desc">1 cours · Carrières & Métiers</span>
+          <span class="theme-chevron">▼</span>
         </div>
         <div class="catalogue-grid">
 
@@ -323,6 +334,12 @@ async function init() {
   document.getElementById('page-content').style.display = 'block';
 }
 
+
+function toggleSection(id) {
+  var sec = document.getElementById('section-' + id);
+  if (sec) sec.classList.toggle('collapsed');
+}
+
 function filterBy(filter, btn) {
   document.querySelectorAll('.filter-tab').forEach(function(t){ t.classList.remove('active'); });
   btn.classList.add('active');
@@ -356,10 +373,12 @@ function filterBy(filter, btn) {
     });
     return;
   } else {
-    // Tous
+    // Tous — tout afficher et déplier
     sections.forEach(function(s) {
       var sec = document.getElementById('section-' + s);
-      if (sec) sec.style.display = 'block';
+      if (!sec) return;
+      sec.style.display = 'block';
+      sec.classList.remove('collapsed');
     });
   }
   // Réafficher toutes les cards de la/des sections visibles
