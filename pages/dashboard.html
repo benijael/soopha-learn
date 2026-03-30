@@ -103,7 +103,7 @@
         <!-- MODULE 02 -->
         <a href="j2.html" class="card course-card" id="course-j2">
           <div class="course-number">02</div>
-          <div class="course-day">// Ingénierie Sociale</div>
+          <div class="course-day">// Ingénierie Sociale & Phishing</div>
           <div class="course-title">Ingénierie Sociale & Phishing</div>
           <div class="course-desc">L'art de la manipulation. Phishing, vishing, smishing, deepfakes.</div>
           <div class="course-tags"><span class="badge badge-red">⚠️ Attaques</span><span class="badge badge-blue">18 slides</span><span class="badge badge-yellow">9 QCM</span></div>
@@ -197,6 +197,19 @@
           </div>
           <div id="cta-attacks" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
         </a>
+        <!-- MODULE 09 — Linux -->
+        <a href="linux.html" class="card course-card" id="course-linux">
+          <div class="course-number">09</div>
+          <div class="course-day">// Linux · Sécurité</div>
+          <div class="course-title">Linux pour la Cybersécurité</div>
+          <div class="course-desc">Architecture, permissions, SUID, logs, réseau, hardening et Bash scripting. La fondation de tout expert cyber.</div>
+          <div class="course-tags"><span class="badge badge-green">🐧 Linux</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">9 QCM</span></div>
+          <div class="course-progress" id="prog-linux" style="display:none">
+            <div class="course-progress-label"><span id="prog-linux-label">En cours</span><span id="prog-linux-score"></span></div>
+            <div class="progress-bar"><div class="progress-fill" id="prog-linux-fill" style="width:0%"></div></div>
+          </div>
+          <div id="cta-linux" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+        </a>
 
       </div>
     </div>
@@ -236,7 +249,7 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','j2','j3','web','crypto','osint','metiers-cyber','attacks'];
+var COURSES = ['j1','j2','j3','web','crypto','osint','metiers-cyber','attacks','linux'];
 var countryFlags = {'GA':'🇬🇦','SN':'🇸🇳','CI':'🇨🇮','CM':'🇨🇲','CD':'🇨🇩','CG':'🇨🇬','MG':'🇲🇬','ML':'🇲🇱','BF':'🇧🇫','NE':'🇳🇪','TG':'🇹🇬','BJ':'🇧🇯','GN':'🇬🇳','TN':'🇹🇳','MA':'🇲🇦','DZ':'🇩🇿','FR':'🇫🇷'};
 
 async function init() {
