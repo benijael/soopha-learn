@@ -17,7 +17,7 @@
 .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 2.5rem; }
 .stat-card { padding: 1.2rem 1rem; text-align: center; border: 1px solid var(--green-border); background: rgba(0,255,136,0.03); position: relative; overflow: hidden; }
 .stat-card::before { content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px; border-top: 2px solid var(--green); border-left: 2px solid var(--green); }
-.courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 1.2rem; margin-bottom: 2.5rem; }
+.courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 1.2rem; margin-bottom: 1.5rem; }
 .course-card { padding: 1.5rem; cursor: pointer; text-decoration: none; color: inherit; display: block; transition: all var(--transition); position: relative; }
 .course-card:hover { border-color: rgba(0,255,136,0.4); box-shadow: 0 0 20px rgba(0,255,136,0.08); transform: translateY(-2px); opacity: 1; }
 .course-number { font-family: var(--display); font-size: 3rem; font-weight: 900; color: rgba(0,255,136,0.06); position: absolute; top: 0.8rem; right: 1rem; line-height: 1; }
@@ -27,6 +27,21 @@
 .course-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
 .course-progress { margin-top: 0.8rem; }
 .course-progress-label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.6rem; color: rgba(0,255,136,0.35); margin-bottom: 0.3rem; }
+/* SECTION HEADERS */
+.theme-section { margin-bottom: 0.5rem; margin-top: 2rem; }
+.theme-section:first-child { margin-top: 0; }
+.theme-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid rgba(0,255,136,0.1); }
+.theme-icon { font-size: 1rem; }
+.theme-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; }
+.theme-count { font-family: var(--mono); font-size: 0.6rem; color: rgba(0,255,136,0.25); letter-spacing: 0.1em; margin-left: auto; }
+.theme-fondations .theme-label { color: rgba(0,255,136,0.7); }
+.theme-offensif   .theme-label { color: rgba(255,68,102,0.7); }
+.theme-offensif   .theme-header { border-color: rgba(255,68,102,0.12); }
+.theme-defense    .theme-label { color: rgba(0,170,255,0.7); }
+.theme-defense    .theme-header { border-color: rgba(0,170,255,0.12); }
+.theme-orientation .theme-label { color: rgba(170,68,255,0.7); }
+.theme-orientation .theme-header { border-color: rgba(170,68,255,0.12); }
+/* SIDEBAR */
 .dashboard-layout { display: grid; grid-template-columns: 1fr 320px; gap: 2rem; align-items: start; }
 .profile-card { padding: 1.5rem; text-align: center; margin-bottom: 1.2rem; }
 .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: rgba(0,255,136,0.1); border: 2px solid var(--green-border); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 0.8rem; font-family: var(--display); font-weight: 900; color: var(--green); }
@@ -83,137 +98,175 @@
 
   <div class="dashboard-layout">
     <div>
-      <div class="section-title">MES FORMATIONS</div>
-      <div class="courses-grid" id="courses-grid">
 
-        <!-- MODULE 01 -->
-        <a href="j1.html" class="card course-card" id="course-j1">
-          <div class="course-number">01</div>
-          <div class="course-day">// Introduction</div>
-          <div class="course-title">Introduction à la Cybersécurité</div>
-          <div class="course-desc">CIA, menaces africaines, acteurs, métiers, Red vs Blue Team.</div>
-          <div class="course-tags"><span class="badge badge-green">🛡️ Bases</span><span class="badge badge-blue">16 slides</span><span class="badge badge-yellow">12 QCM</span></div>
-          <div class="course-progress" id="prog-j1" style="display:none">
-            <div class="course-progress-label"><span id="prog-j1-label">En cours</span><span id="prog-j1-score"></span></div>
-            <div class="progress-bar"><div class="progress-fill" id="prog-j1-fill" style="width:0%"></div></div>
-          </div>
-          <div id="cta-j1" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
-        </a>
+      <!-- ═══ 🧱 FONDATIONS ═══ -->
+      <div class="theme-section theme-fondations">
+        <div class="theme-header">
+          <span class="theme-icon">🧱</span>
+          <span class="theme-label">Fondations</span>
+          <span class="theme-count">3 cours · Obligatoire avant tout le reste</span>
+        </div>
+        <div class="courses-grid">
 
-        <!-- MODULE 02 -->
-        <a href="j2.html" class="card course-card" id="course-j2">
-          <div class="course-number">02</div>
-          <div class="course-day">// Ingénierie Sociale & Phishing</div>
-          <div class="course-title">Ingénierie Sociale & Phishing</div>
-          <div class="course-desc">L'art de la manipulation. Phishing, vishing, smishing, deepfakes.</div>
-          <div class="course-tags"><span class="badge badge-red">⚠️ Attaques</span><span class="badge badge-blue">18 slides</span><span class="badge badge-yellow">9 QCM</span></div>
-          <div class="course-progress" id="prog-j2" style="display:none">
-            <div class="course-progress-label"><span id="prog-j2-label">En cours</span><span id="prog-j2-score"></span></div>
-            <div class="progress-bar"><div class="progress-fill" id="prog-j2-fill" style="width:0%"></div></div>
-          </div>
-          <div id="cta-j2" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
-        </a>
+          <a href="j1.html" class="card course-card" id="course-j1">
+            <div class="course-number">01</div>
+            <div class="course-day">// Introduction</div>
+            <div class="course-title">Introduction à la Cybersécurité</div>
+            <div class="course-desc">CIA, menaces africaines, acteurs, métiers, Red vs Blue Team.</div>
+            <div class="course-tags"><span class="badge badge-green">🛡️ Bases</span><span class="badge badge-blue">16 slides</span><span class="badge badge-yellow">12 QCM</span></div>
+            <div class="course-progress" id="prog-j1" style="display:none">
+              <div class="course-progress-label"><span id="prog-j1-label">En cours</span><span id="prog-j1-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-j1-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-j1" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
 
-        <!-- MODULE 03 -->
-        <a href="j3.html" class="card course-card" id="course-j3">
-          <div class="course-number">03</div>
-          <div class="course-day">// Réseaux & Outils</div>
-          <div class="course-title">Réseaux & Outils</div>
-          <div class="course-desc">Modèle OSI, TCP/UDP, Wireshark, Nmap. Les fondations techniques.</div>
-          <div class="course-tags"><span class="badge badge-green">💻 Pratique</span><span class="badge badge-blue">17 slides</span><span class="badge badge-yellow">8 QCM</span></div>
-          <div class="course-progress" id="prog-j3" style="display:none">
-            <div class="course-progress-label"><span id="prog-j3-label">En cours</span><span id="prog-j3-score"></span></div>
-            <div class="progress-bar"><div class="progress-fill" id="prog-j3-fill" style="width:0%"></div></div>
-          </div>
-          <div id="cta-j3" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
-        </a>
+          <a href="linux.html" class="card course-card" id="course-linux">
+            <div class="course-number">02</div>
+            <div class="course-day">// Linux · Sécurité</div>
+            <div class="course-title">Linux pour la Cybersécurité</div>
+            <div class="course-desc">Architecture, permissions, SUID, logs, réseau, hardening et Bash scripting.</div>
+            <div class="course-tags"><span class="badge badge-green">🐧 Linux</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">9 QCM</span></div>
+            <div class="course-progress" id="prog-linux" style="display:none">
+              <div class="course-progress-label"><span id="prog-linux-label">En cours</span><span id="prog-linux-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-linux-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-linux" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
 
-        <!-- MODULE 04 -->
-        <a href="web.html" class="card course-card" id="course-web">
-          <div class="course-number">04</div>
-          <div class="course-day">// Web Hacking</div>
-          <div class="course-title">Web Hacking</div>
-          <div class="course-desc">SQLi, XSS, OWASP Top 10, Burp Suite. Les vulnérabilités web les plus critiques.</div>
-          <div class="course-tags"><span class="badge badge-red">🌐 Web</span><span class="badge badge-blue">11 slides</span><span class="badge badge-yellow">7 QCM</span></div>
-          <div class="course-progress" id="prog-web" style="display:none">
-            <div class="course-progress-label"><span id="prog-web-label">En cours</span><span id="prog-web-score"></span></div>
-            <div class="progress-bar"><div class="progress-fill" id="prog-web-fill" style="width:0%"></div></div>
-          </div>
-          <div id="cta-web" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
-        </a>
+          <a href="j3.html" class="card course-card" id="course-j3">
+            <div class="course-number">03</div>
+            <div class="course-day">// Réseaux & Outils</div>
+            <div class="course-title">Réseaux & Outils</div>
+            <div class="course-desc">Modèle OSI, TCP/UDP, Wireshark, Nmap. Les fondations techniques.</div>
+            <div class="course-tags"><span class="badge badge-blue">🌐 Réseaux</span><span class="badge badge-blue">17 slides</span><span class="badge badge-yellow">8 QCM</span></div>
+            <div class="course-progress" id="prog-j3" style="display:none">
+              <div class="course-progress-label"><span id="prog-j3-label">En cours</span><span id="prog-j3-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-j3-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-j3" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
 
-        <!-- MODULE 05 -->
-        <a href="crypto.html" class="card course-card" id="course-crypto">
-          <div class="course-number">05</div>
-          <div class="course-day">// Cryptographie</div>
-          <div class="course-title">Cryptographie Appliquée</div>
-          <div class="course-desc">AES, RSA, hachage, PKI, TLS. La science qui protège toutes vos données.</div>
-          <div class="course-tags"><span class="badge badge-yellow">🔐 Crypto</span><span class="badge badge-blue">10 slides</span><span class="badge badge-yellow">8 QCM</span></div>
-          <div class="course-progress" id="prog-crypto" style="display:none">
-            <div class="course-progress-label"><span id="prog-crypto-label">En cours</span><span id="prog-crypto-score"></span></div>
-            <div class="progress-bar"><div class="progress-fill" id="prog-crypto-fill" style="width:0%"></div></div>
-          </div>
-          <div id="cta-crypto" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
-        </a>
-
-        <!-- MODULE 06 -->
-        <a href="osint.html" class="card course-card" id="course-osint">
-          <div class="course-number">06</div>
-          <div class="course-day">// OSINT</div>
-          <div class="course-title">OSINT & Reconnaissance</div>
-          <div class="course-desc">Google Dorks, WHOIS, Shodan, réseaux sociaux. Collecter les infos publiques comme un pro.</div>
-          <div class="course-tags"><span class="badge badge-green">🕵️ OSINT</span><span class="badge badge-blue">10 slides</span><span class="badge badge-yellow">8 QCM</span></div>
-          <div class="course-progress" id="prog-osint" style="display:none">
-            <div class="course-progress-label"><span id="prog-osint-label">En cours</span><span id="prog-osint-score"></span></div>
-            <div class="progress-bar"><div class="progress-fill" id="prog-osint-fill" style="width:0%"></div></div>
-          </div>
-          <div id="cta-osint" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
-        </a>
-
-        <!-- MODULE 07 -->
-        <a href="metiers-cyber.html" class="card course-card" id="course-metiers-cyber">
-          <div class="course-number">07</div>
-          <div class="course-day">// Orientation · Carrières</div>
-          <div class="course-title">Métiers de la Cybersécurité</div>
-          <div class="course-desc">Pentester, SOC, IAM, DPO, RSSI, DFIR, Threat Intel, Cloud Security. Compétences, outils, salaires et contexte Afrique.</div>
-          <div class="course-tags"><span class="badge badge-green">🧭 Orientation</span><span class="badge badge-blue">11 slides</span><span class="badge badge-yellow">8 QCM</span></div>
-          <div class="course-progress" id="prog-metiers-cyber" style="display:none">
-            <div class="course-progress-label"><span id="prog-metiers-cyber-label">En cours</span><span id="prog-metiers-cyber-score"></span></div>
-            <div class="progress-bar"><div class="progress-fill" id="prog-metiers-cyber-fill" style="width:0%"></div></div>
-          </div>
-          <div id="cta-metiers-cyber" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
-        </a>
-
-        <!-- MODULE 08 — NOUVEAU -->
-        <a href="attacks.html" class="card course-card" id="course-attacks">
-          <div class="course-number">08</div>
-          <div class="course-day">// Types d'Attaques</div>
-          <div class="course-title">Anatomie des Cyberattaques</div>
-          <div class="course-desc">Ransomware, APT, DDoS, Supply Chain, Zero-Day. Comprendre les attaques pour mieux les anticiper.</div>
-          <div class="course-tags"><span class="badge badge-red">💀 Attaques</span><span class="badge badge-blue">13 slides</span><span class="badge badge-yellow">10 QCM</span></div>
-          <div class="course-progress" id="prog-attacks" style="display:none">
-            <div class="course-progress-label"><span id="prog-attacks-label">En cours</span><span id="prog-attacks-score"></span></div>
-            <div class="progress-bar"><div class="progress-fill" id="prog-attacks-fill" style="width:0%"></div></div>
-          </div>
-          <div id="cta-attacks" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
-        </a>
-        <!-- MODULE 09 — Linux -->
-        <a href="linux.html" class="card course-card" id="course-linux">
-          <div class="course-number">09</div>
-          <div class="course-day">// Linux · Sécurité</div>
-          <div class="course-title">Linux pour la Cybersécurité</div>
-          <div class="course-desc">Architecture, permissions, SUID, logs, réseau, hardening et Bash scripting. La fondation de tout expert cyber.</div>
-          <div class="course-tags"><span class="badge badge-green">🐧 Linux</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">9 QCM</span></div>
-          <div class="course-progress" id="prog-linux" style="display:none">
-            <div class="course-progress-label"><span id="prog-linux-label">En cours</span><span id="prog-linux-score"></span></div>
-            <div class="progress-bar"><div class="progress-fill" id="prog-linux-fill" style="width:0%"></div></div>
-          </div>
-          <div id="cta-linux" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
-        </a>
-
+        </div>
       </div>
+
+      <!-- ═══ ⚔️ OFFENSIF ═══ -->
+      <div class="theme-section theme-offensif">
+        <div class="theme-header">
+          <span class="theme-icon">⚔️</span>
+          <span class="theme-label">Offensif</span>
+          <span class="theme-count">4 cours · Attaques & Reconnaissance</span>
+        </div>
+        <div class="courses-grid">
+
+          <a href="j2.html" class="card course-card" id="course-j2">
+            <div class="course-number">04</div>
+            <div class="course-day">// Ingénierie Sociale</div>
+            <div class="course-title">Ingénierie Sociale & Phishing</div>
+            <div class="course-desc">L'art de la manipulation. Phishing, vishing, smishing, deepfakes.</div>
+            <div class="course-tags"><span class="badge badge-red">⚠️ Attaques</span><span class="badge badge-blue">18 slides</span><span class="badge badge-yellow">9 QCM</span></div>
+            <div class="course-progress" id="prog-j2" style="display:none">
+              <div class="course-progress-label"><span id="prog-j2-label">En cours</span><span id="prog-j2-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-j2-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-j2" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+          <a href="attacks.html" class="card course-card" id="course-attacks">
+            <div class="course-number">05</div>
+            <div class="course-day">// Types d'Attaques</div>
+            <div class="course-title">Anatomie des Cyberattaques</div>
+            <div class="course-desc">Ransomware, APT, DDoS, Supply Chain, Zero-Day. Comprendre les attaques pour mieux les anticiper.</div>
+            <div class="course-tags"><span class="badge badge-red">💀 Attaques</span><span class="badge badge-blue">13 slides</span><span class="badge badge-yellow">10 QCM</span></div>
+            <div class="course-progress" id="prog-attacks" style="display:none">
+              <div class="course-progress-label"><span id="prog-attacks-label">En cours</span><span id="prog-attacks-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-attacks-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-attacks" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+          <a href="web.html" class="card course-card" id="course-web">
+            <div class="course-number">06</div>
+            <div class="course-day">// Web Hacking</div>
+            <div class="course-title">Web Hacking</div>
+            <div class="course-desc">SQLi, XSS, OWASP Top 10, Burp Suite. Les vulnérabilités web les plus critiques.</div>
+            <div class="course-tags"><span class="badge badge-red">🌐 Web</span><span class="badge badge-blue">11 slides</span><span class="badge badge-yellow">7 QCM</span></div>
+            <div class="course-progress" id="prog-web" style="display:none">
+              <div class="course-progress-label"><span id="prog-web-label">En cours</span><span id="prog-web-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-web-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-web" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+          <a href="osint.html" class="card course-card" id="course-osint">
+            <div class="course-number">07</div>
+            <div class="course-day">// OSINT</div>
+            <div class="course-title">OSINT & Reconnaissance</div>
+            <div class="course-desc">Google Dorks, WHOIS, Shodan, réseaux sociaux. Collecter les infos publiques comme un pro.</div>
+            <div class="course-tags"><span class="badge badge-green">🕵️ OSINT</span><span class="badge badge-blue">10 slides</span><span class="badge badge-yellow">8 QCM</span></div>
+            <div class="course-progress" id="prog-osint" style="display:none">
+              <div class="course-progress-label"><span id="prog-osint-label">En cours</span><span id="prog-osint-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-osint-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-osint" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+        </div>
+      </div>
+
+      <!-- ═══ 🛡️ DÉFENSE ═══ -->
+      <div class="theme-section theme-defense">
+        <div class="theme-header">
+          <span class="theme-icon">🛡️</span>
+          <span class="theme-label">Défense</span>
+          <span class="theme-count">1 cours · Forensics & Active Directory à venir</span>
+        </div>
+        <div class="courses-grid">
+
+          <a href="crypto.html" class="card course-card" id="course-crypto">
+            <div class="course-number">08</div>
+            <div class="course-day">// Cryptographie</div>
+            <div class="course-title">Cryptographie Appliquée</div>
+            <div class="course-desc">AES, RSA, hachage, PKI, TLS. La science qui protège toutes vos données.</div>
+            <div class="course-tags"><span class="badge badge-yellow">🔐 Crypto</span><span class="badge badge-blue">10 slides</span><span class="badge badge-yellow">8 QCM</span></div>
+            <div class="course-progress" id="prog-crypto" style="display:none">
+              <div class="course-progress-label"><span id="prog-crypto-label">En cours</span><span id="prog-crypto-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-crypto-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-crypto" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+        </div>
+      </div>
+
+      <!-- ═══ 🧭 ORIENTATION ═══ -->
+      <div class="theme-section theme-orientation">
+        <div class="theme-header">
+          <span class="theme-icon">🧭</span>
+          <span class="theme-label">Orientation</span>
+          <span class="theme-count">1 cours · Carrières & Métiers</span>
+        </div>
+        <div class="courses-grid">
+
+          <a href="metiers-cyber.html" class="card course-card" id="course-metiers-cyber">
+            <div class="course-number">09</div>
+            <div class="course-day">// Orientation · Carrières</div>
+            <div class="course-title">Métiers de la Cybersécurité</div>
+            <div class="course-desc">Pentester, SOC, IAM, DPO, RSSI, DFIR, Threat Intel, Cloud Security. Compétences, outils, salaires et contexte Afrique.</div>
+            <div class="course-tags"><span class="badge badge-green">🧭 Orientation</span><span class="badge badge-blue">11 slides</span><span class="badge badge-yellow">8 QCM</span></div>
+            <div class="course-progress" id="prog-metiers-cyber" style="display:none">
+              <div class="course-progress-label"><span id="prog-metiers-cyber-label">En cours</span><span id="prog-metiers-cyber-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-metiers-cyber-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-metiers-cyber" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+        </div>
+      </div>
+
     </div>
 
+    <!-- SIDEBAR -->
     <div>
       <div class="card profile-card">
         <div class="profile-avatar" id="avatar-initials">?</div>
@@ -249,7 +302,7 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','j2','j3','web','crypto','osint','metiers-cyber','attacks','linux'];
+var COURSES = ['j1','linux','j3','j2','attacks','web','osint','crypto','metiers-cyber'];
 var countryFlags = {'GA':'🇬🇦','SN':'🇸🇳','CI':'🇨🇮','CM':'🇨🇲','CD':'🇨🇩','CG':'🇨🇬','MG':'🇲🇬','ML':'🇲🇱','BF':'🇧🇫','NE':'🇳🇪','TG':'🇹🇬','BJ':'🇧🇯','GN':'🇬🇳','TN':'🇹🇳','MA':'🇲🇦','DZ':'🇩🇿','FR':'🇫🇷'};
 
 async function init() {
@@ -259,8 +312,8 @@ async function init() {
   var profile = await getProfile(currentUser.id);
   var meta = currentUser.user_metadata || {};
   var firstname = (profile && profile.display_name) || meta.display_name || meta.given_name || 'Apprenant';
-  var username = (profile && profile.username) || meta.username || 'user';
-  var country = (profile && profile.country) || meta.country || '';
+  var username  = (profile && profile.username) || meta.username || 'user';
+  var country   = (profile && profile.country)  || meta.country  || '';
 
   document.getElementById('user-firstname').textContent = firstname;
   document.getElementById('user-tag').textContent = '// @' + username + ' · SooPHA Learn';
@@ -280,7 +333,6 @@ async function init() {
   var { data: qcmData } = await supabase.from('qcm_results').select('id').eq('user_id', currentUser.id);
   document.getElementById('stat-qcm').textContent = (qcmData || []).length;
 
-  // Classement
   var { data: allComp } = await supabase.from('course_completions').select('user_id, score_pct');
   if (allComp && allComp.length > 0) {
     var userMap = {};
@@ -289,8 +341,8 @@ async function init() {
       userMap[row.user_id].push(row.score_pct);
     });
     var sorted = Object.keys(userMap).map(function(uid) {
-      var scores = userMap[uid];
-      return { uid: uid, avg: scores.reduce(function(a,b){return a+b;},0) / scores.length };
+      var s = userMap[uid];
+      return { uid: uid, avg: s.reduce(function(a,b){return a+b;},0) / s.length };
     }).sort(function(a,b){ return b.avg - a.avg; });
     var myRank = sorted.findIndex(function(r){ return r.uid === currentUser.id; });
     document.getElementById('stat-rank').textContent = myRank >= 0 ? '#' + (myRank + 1) : '—';
