@@ -1,1 +1,893 @@
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forensics & Investigation · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html, body { overflow: hidden; height: 100%; }
+body::before { height: 3px; }
+#topbar { position:fixed; top:3px; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(4,2,12,0.97); border-bottom:1px solid rgba(170,68,255,.15); backdrop-filter:blur(12px); font-size:.65rem; color:rgba(170,68,255,.4); }
+.tb-left { display:flex; gap:1.5rem; align-items:center; }
+.tb-right { display:flex; gap:1.2rem; align-items:center; }
+.tb-back { color:rgba(170,68,255,.5); text-decoration:none; font-size:.65rem; letter-spacing:.08em; transition:color .2s; }
+.tb-back:hover { color:#aa44ff; }
+.tb-dot { width:6px; height:6px; background:#aa44ff; border-radius:50%; display:inline-block; animation:blink 1.4s infinite; margin-right:.3rem; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.tb-user { font-family:var(--mono); font-size:.62rem; color:rgba(170,68,255,.4); }
+#progress-top { position:fixed; top:34px; left:0; right:0; z-index:200; height:2px; background:rgba(170,68,255,.06); }
+#progress-fill { height:100%; background:linear-gradient(90deg,#6622cc,#aa44ff); box-shadow:0 0 8px #aa44ff; transition:width .5s ease; }
+#scanlines { position:fixed; inset:0; z-index:1; pointer-events:none; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px); }
+#vignette  { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%); }
+canvas#matrix { position:fixed; inset:0; z-index:0; opacity:.04; pointer-events:none; }
+#slides { position:fixed; inset:0; z-index:10; padding-top:36px; padding-bottom:44px; overflow:hidden; }
+.slide { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:1.5rem 4rem; opacity:0; pointer-events:none; transition:opacity .4s ease,transform .4s ease; transform:translateX(40px); overflow-y:auto; }
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.exit   { opacity:0; transform:translateX(-40px); }
+:root { --acc:#aa44ff; --acc-dim:rgba(170,68,255,.15); --acc-faint:rgba(170,68,255,.06); --acc-border:rgba(170,68,255,.2); }
+.gabon-bar { display:flex; height:3px; width:60px; border-radius:2px; overflow:hidden; margin:.6rem 0; }
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(170,68,255,.35); text-transform:uppercase; margin-bottom:.5rem; }
+.slide h1 { font-family:var(--display)!important; font-weight:900!important; font-size:clamp(1.8rem,3.5vw,2.8rem)!important; color:#fff!important; text-align:center; letter-spacing:.1em; line-height:1.15; margin-bottom:.4rem!important; }
+.slide h2 { font-family:var(--display)!important; font-weight:700!important; font-size:clamp(1.1rem,2vw,1.7rem)!important; color:#aa44ff!important; letter-spacing:.08em; margin-bottom:1rem!important; }
+.slide h3 { font-family:var(--display)!important; font-weight:400!important; font-size:clamp(.8rem,1.2vw,1rem)!important; color:rgba(170,68,255,.55)!important; letter-spacing:.2em; text-transform:uppercase; margin-bottom:1.5rem!important; }
+.card { background:rgba(8,4,20,.88); border:1px solid var(--acc-border); border-radius:2px; padding:1.4rem 1.8rem; position:relative; backdrop-filter:blur(10px); max-width:880px; width:100%; }
+.card::before { content:''; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:2px solid #aa44ff; border-left:2px solid #aa44ff; }
+.card::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:2px solid #aa44ff; border-right:2px solid #aa44ff; }
+.bullets { list-style:none; display:flex; flex-direction:column; gap:.55rem; }
+.bullets li { display:flex; align-items:flex-start; gap:.7rem; font-family:var(--body); font-size:clamp(.8rem,1.3vw,.95rem); color:rgba(220,200,255,.85); line-height:1.5; animation:fadeIn .4s ease both; }
+.bullets li::before { content:'▶'; color:#aa44ff; font-size:.55rem; margin-top:.35rem; flex-shrink:0; }
+.bullets li strong { color:#fff; }
+.bullets li.warn::before   { content:'⚠'; color:#ffd700; font-size:.7rem; }
+.bullets li.danger::before { content:'🔴'; font-size:.7rem; }
+.bullets li.ok::before     { content:'✅'; font-size:.7rem; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; max-width:880px; width:100%; }
+.pill { display:inline-block; padding:.25rem .7rem; font-size:.65rem; letter-spacing:.06em; border-radius:2px; font-family:var(--mono); }
+.pill-purple { background:rgba(170,68,255,.1); border:1px solid rgba(170,68,255,.3); color:#aa44ff; }
+.pill-green  { background:rgba(0,255,136,.1);  border:1px solid rgba(0,255,136,.3);  color:#00ff88; }
+.pill-red    { background:rgba(255,68,102,.1); border:1px solid rgba(255,68,102,.3); color:#ff4466; }
+.pill-yellow { background:rgba(255,215,0,.08); border:1px solid rgba(255,215,0,.3);  color:#ffd700; }
+.pill-blue   { background:rgba(0,170,255,.08); border:1px solid rgba(0,170,255,.3);  color:#00aaff; }
+.pill-orange { background:rgba(255,136,0,.1);  border:1px solid rgba(255,136,0,.3);  color:#ff8800; }
+.terminal { background:rgba(4,0,12,.85); border:1px solid rgba(170,68,255,.12); border-left:3px solid #aa44ff; padding:.9rem 1.2rem; font-family:var(--mono); font-size:.75rem; color:rgba(200,170,255,.8); line-height:2; max-width:880px; width:100%; }
+.terminal.sm { font-size:.7rem; line-height:1.9; }
+.term-prompt { color:#aa44ff; }
+.term-out    { color:rgba(200,170,255,.45); }
+.term-comment { color:rgba(170,68,255,.4); font-style:italic; }
+.term-red    { color:#ff4466; }
+.term-yellow { color:#ffd700; }
+.term-green  { color:#00ff88; }
+.hdiv { display:flex; align-items:center; gap:1rem; color:rgba(170,68,255,.2); font-size:.62rem; letter-spacing:.2em; margin:.8rem 0; }
+.hdiv::before,.hdiv::after { content:''; flex:1; height:1px; background:rgba(170,68,255,.1); }
+.quote { border-left:3px solid #aa44ff; padding:.7rem 1rem; background:var(--acc-faint); font-family:var(--body); font-style:italic; font-size:clamp(.85rem,1.4vw,1rem); color:#e8d0ff; line-height:1.6; }
+@keyframes glitch {
+  0%,90%,100%{text-shadow:0 0 40px #aa44ff,0 0 80px rgba(170,68,255,.2)}
+  91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}
+  93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}
+  95%{text-shadow:0 0 40px #aa44ff;transform:translate(0)}
+}
+.glitch { animation:glitch 7s infinite; }
+/* PHASE TIMELINE */
+.phases { display:flex; gap:0; max-width:880px; width:100%; }
+.phase { flex:1; padding:.9rem .7rem; text-align:center; border:1px solid rgba(170,68,255,.15); background:rgba(170,68,255,.04); position:relative; }
+.phase::after { content:'→'; position:absolute; right:-1px; top:50%; transform:translateY(-50%); color:rgba(170,68,255,.3); font-size:.9rem; z-index:1; background:rgba(8,4,20,1); padding:0 3px; }
+.phase:last-child::after { display:none; }
+.phase-num { font-family:var(--display); font-size:1.3rem; font-weight:900; color:#aa44ff; text-shadow:0 0 12px #aa44ff; line-height:1; margin-bottom:.3rem; }
+.phase-name { font-family:var(--display); font-size:.72rem; font-weight:700; color:#fff; margin-bottom:.3rem; }
+.phase-desc { font-family:var(--body); font-size:.68rem; color:rgba(200,170,255,.55); line-height:1.4; }
+/* CMD CARDS */
+.cmd-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:.5rem; max-width:880px; width:100%; }
+.cmd-card { padding:.7rem .9rem; border:1px solid rgba(170,68,255,.12); background:var(--acc-faint); }
+.cmd-name { font-family:var(--mono); font-size:.78rem; color:#aa44ff; margin-bottom:.25rem; }
+.cmd-desc { font-family:var(--body); font-size:.72rem; color:rgba(200,170,255,.6); line-height:1.4; }
+.cmd-ex   { font-family:var(--mono); font-size:.65rem; color:rgba(170,68,255,.4); margin-top:.3rem; }
+/* STEP */
+.step { display:flex; align-items:flex-start; gap:.8rem; padding:.7rem 1rem; border:1px solid rgba(170,68,255,.12); background:var(--acc-faint); }
+.step-num { font-family:var(--display); font-size:1rem; font-weight:900; color:#aa44ff; text-shadow:0 0 8px #aa44ff; min-width:24px; }
+.step-content { font-family:var(--body); font-size:.83rem; color:rgba(220,200,255,.85); line-height:1.5; }
+/* ARTEFACT ROW */
+.art-row { display:flex; align-items:flex-start; gap:.7rem; padding:.5rem .8rem; border:1px solid rgba(170,68,255,.1); background:rgba(170,68,255,.03); margin-bottom:.3rem; }
+.art-path { font-family:var(--mono); font-size:.68rem; color:#aa44ff; min-width:220px; flex-shrink:0; }
+.art-desc { font-family:var(--body); font-size:.72rem; color:rgba(200,170,255,.65); line-height:1.4; }
+/* QCM */
+#qcm-overlay { position:fixed; inset:0; z-index:300; background:rgba(4,2,12,.97); display:none; flex-direction:column; align-items:center; justify-content:center; padding:2rem; }
+#qcm-overlay.show { display:flex; animation:fadeInOv .3s ease; }
+@keyframes fadeInOv { from{opacity:0} to{opacity:1} }
+.qcm-box { max-width:680px; width:100%; background:rgba(8,4,20,.97); border:1px solid rgba(170,68,255,.25); border-radius:2px; padding:2.5rem; position:relative; box-shadow:0 0 40px rgba(170,68,255,.1); }
+.qcm-box::before { content:''; position:absolute; top:-1px; left:-1px; width:18px; height:18px; border-top:2px solid #aa44ff; border-left:2px solid #aa44ff; }
+.qcm-box::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:18px; height:18px; border-bottom:2px solid #aa44ff; border-right:2px solid #aa44ff; }
+.qcm-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid rgba(170,68,255,.15); }
+.qcm-label { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(170,68,255,.4); text-transform:uppercase; }
+.qcm-prog  { font-family:var(--mono); font-size:.65rem; color:rgba(170,68,255,.35); }
+.qcm-saving { font-family:var(--mono); font-size:.62rem; color:rgba(170,68,255,.35); margin-bottom:.5rem; display:none; }
+.qcm-saving.show { display:block; }
+.qcm-question { font-family:var(--display); font-size:clamp(.9rem,1.8vw,1.1rem); font-weight:700; color:#fff; line-height:1.4; margin-bottom:1.8rem; }
+.qcm-options { display:flex; flex-direction:column; gap:.65rem; margin-bottom:1.5rem; }
+.qcm-option { display:flex; align-items:flex-start; gap:.9rem; padding:.8rem 1.1rem; background:rgba(4,0,16,.3); border:1px solid rgba(170,68,255,.1); cursor:pointer; border-radius:2px; transition:all .15s; font-family:var(--body); font-size:.88rem; color:rgba(210,190,255,.75); line-height:1.4; }
+.qcm-option:hover:not(.disabled) { border-color:rgba(170,68,255,.35); background:rgba(170,68,255,.06); color:rgba(220,200,255,.95); }
+.qcm-option.correct  { border-color:#aa44ff!important; background:rgba(170,68,255,.12)!important; color:#aa44ff!important; }
+.qcm-option.wrong    { border-color:#ff4466!important; background:rgba(255,68,102,.08)!important; color:#ff4466!important; }
+.qcm-option.disabled { cursor:default; pointer-events:none; }
+.option-letter { font-family:var(--display); font-size:.68rem; font-weight:700; color:rgba(170,68,255,.4); min-width:18px; flex-shrink:0; margin-top:.1rem; }
+.qcm-option.correct .option-letter,.qcm-option.wrong .option-letter { color:inherit; }
+.qcm-feedback { padding:.8rem 1rem; border-radius:2px; font-family:var(--mono); font-size:.8rem; line-height:1.5; display:none; margin-bottom:1.2rem; }
+.qcm-feedback.correct { background:rgba(170,68,255,.07); border:1px solid rgba(170,68,255,.2); color:rgba(170,68,255,.9); }
+.qcm-feedback.wrong   { background:rgba(255,68,102,.06); border:1px solid rgba(255,68,102,.2); color:rgba(255,100,130,.9); }
+.qcm-btn { font-family:var(--display); font-size:.75rem; font-weight:700; letter-spacing:.12em; padding:.7rem 1.8rem; background:#aa44ff; color:#04020c; border:none; cursor:pointer; clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition:all .2s; text-transform:uppercase; display:none; }
+.qcm-btn.show { display:inline-block; }
+#completion-modal { position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; padding:2rem; }
+#completion-modal.show { display:flex; animation:fadeInOv .3s ease; }
+.completion-box { max-width:500px; width:100%; background:rgba(8,4,20,.98); border:1px solid rgba(170,68,255,.3); border-radius:2px; padding:3rem 2.5rem; text-align:center; box-shadow:0 0 60px rgba(170,68,255,.15); position:relative; }
+.completion-box::before { content:''; position:absolute; top:-1px; left:-1px; width:20px; height:20px; border-top:2px solid #aa44ff; border-left:2px solid #aa44ff; }
+.completion-icon  { font-size:4rem; margin-bottom:1rem; }
+.completion-title { font-family:var(--display); font-size:1.5rem; font-weight:900; color:#fff; margin-bottom:.5rem; }
+.completion-score { font-family:var(--display); font-size:3.5rem; font-weight:900; color:#aa44ff; text-shadow:0 0 30px #aa44ff; margin:1rem 0; }
+.completion-sub   { font-family:var(--mono); font-size:.78rem; color:rgba(170,68,255,.5); margin-bottom:.5rem; line-height:1.6; }
+.completion-saved { font-family:var(--mono); font-size:.68rem; color:rgba(170,68,255,.35); margin-bottom:1.5rem; }
+.completion-btn { font-family:var(--display); font-size:.78rem; font-weight:700; letter-spacing:.12em; padding:.8rem 1.8rem; text-decoration:none; display:inline-block; clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); cursor:pointer; border:none; margin:.3rem; text-transform:uppercase; transition:all .2s; }
+.completion-btn-primary   { background:#aa44ff; color:#04020c; }
+.completion-btn-secondary { background:transparent; color:#aa44ff; border:1px solid rgba(170,68,255,.3)!important; clip-path:none; border-radius:2px; }
+#bottombar { position:fixed; bottom:0; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(4,2,12,.97); border-top:1px solid rgba(170,68,255,.12); backdrop-filter:blur(12px); }
+.nav-btn { background:transparent; border:1px solid rgba(170,68,255,.2); color:rgba(170,68,255,.55); padding:.32rem .9rem; font-family:var(--mono); font-size:.65rem; cursor:pointer; transition:all .2s; clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%); }
+.nav-btn:hover { border-color:#aa44ff; color:#aa44ff; background:rgba(170,68,255,.05); }
+.nav-btn:disabled { opacity:.2; cursor:not-allowed; }
+#slide-counter { font-family:var(--display); font-size:.72rem; color:#aa44ff; }
+.qcm-indicator { font-family:var(--mono); font-size:.62rem; color:rgba(255,215,0,.5); letter-spacing:.08em; }
+@media (max-width:768px) { .slide{padding:1rem 1.2rem;} .grid2{grid-template-columns:1fr;} .cmd-grid{grid-template-columns:1fr;} .phases{flex-direction:column;} .phase::after{content:'↓';right:50%;top:auto;bottom:-12px;transform:translateX(50%);} }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>Forensics & Investigation Numérique</span>
+  </div>
+  <div class="tb-right">
+    <span class="tb-user" id="tb-username"></span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+
+<div id="slides">
+
+<!-- SLIDE 0 · COVER -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// Forensics · DFIR · Afrique Francophone</div>
+  <h1 class="glitch">FORENSICS &<br>INVESTIGATION</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Disque · Mémoire · Réseau · Artefacts · Outils</h3>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin-top:.8rem">
+    <span class="pill pill-purple">🔬 Forensics disque</span>
+    <span class="pill pill-blue">🧠 Forensics RAM</span>
+    <span class="pill pill-green">📡 Forensics réseau</span>
+    <span class="pill pill-yellow">🗂️ Artefacts Windows</span>
+    <span class="pill pill-orange">📋 Analyse de logs</span>
+    <span class="pill pill-red">🚨 Incident Response</span>
+  </div>
+  <div style="margin-top:1.5rem" class="terminal">
+    <span class="term-prompt">investigator@dfir:~$ </span>
+    <span class="term-out">// "Les traces numériques ne mentent jamais. Il faut juste savoir les lire."</span>
+  </div>
+  <div style="margin-top:1.5rem;font-size:.68rem;color:rgba(170,68,255,.2);letter-spacing:.15em">← → POUR NAVIGUER &nbsp;|&nbsp; ESPACE POUR AVANCER</div>
+</div>
+
+<!-- SLIDE 1 · C'EST QUOI LA FORENSICS -->
+<div class="slide" data-index="1">
+  <div class="slide-tag">// 00 · Définition</div>
+  <h2>La Forensics numérique — c'est quoi ?</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">🔬 DÉFINITION</div>
+      <div class="quote" style="margin-bottom:.9rem">"L'art de <strong style="color:#aa44ff">collecter, préserver et analyser</strong> des preuves numériques pour reconstituer ce qui s'est passé sur un système informatique — avant, pendant et après une intrusion."</div>
+      <ul class="bullets">
+        <li>On analyse <strong>l'ordinateur de la victime</strong>, pas de l'attaquant</li>
+        <li>Tout doit être <strong>légalement recevable</strong> — chaîne de custody obligatoire</li>
+        <li>La première règle : <strong>ne jamais modifier les preuves</strong></li>
+        <li>Discipline à la croisée du droit, de l'informatique et de l'investigation</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.7rem">🌍 POURQUOI C'EST CRUCIAL EN AFRIQUE</div>
+      <ul class="bullets">
+        <li class="danger">Fraudes Mobile Money — <strong>millions FCFA détournés</strong>, preuves numériques essentielles pour les poursuites</li>
+        <li class="danger">Ransomware sur PME africaines — comprendre l'attaque pour ne plus être victime</li>
+        <li class="danger">Cyberespionnage institutionnel — administrations et banques ciblées</li>
+        <li class="ok">Les tribunaux africains reconnaissent de plus en plus les preuves numériques</li>
+        <li class="ok">CSIRT nationaux en création — Gabon, Sénégal, CI, Cameroun</li>
+      </ul>
+      <div style="margin-top:.8rem;padding:.5rem .8rem;border:1px solid rgba(170,68,255,.15);background:var(--acc-faint);font-family:var(--body);font-size:.73rem;color:rgba(200,170,255,.65)">💡 Un expert DFIR local a une <strong style="color:#fff">valeur ajoutée unique</strong> — il connaît le contexte africain.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2 · LES 4 PHASES — QCM 2 -->
+<div class="slide" data-index="2" data-qcm="2">
+  <div class="slide-tag">// 01 · Méthodologie</div>
+  <h2>Les 4 phases du DFIR</h2>
+  <div class="phases" style="margin-bottom:1.2rem">
+    <div class="phase">
+      <div class="phase-num">01</div>
+      <div class="phase-name">Identification</div>
+      <div class="phase-desc">Déterminer qu'un incident a eu lieu. Périmètre, systèmes touchés, timeline.</div>
+    </div>
+    <div class="phase">
+      <div class="phase-num">02</div>
+      <div class="phase-name">Préservation</div>
+      <div class="phase-desc">Acquérir les preuves sans les altérer. Write-blockers, hash MD5/SHA256, chaîne de custody.</div>
+    </div>
+    <div class="phase">
+      <div class="phase-num">03</div>
+      <div class="phase-name">Analyse</div>
+      <div class="phase-desc">Examiner les artefacts : fichiers, logs, mémoire, réseau. Reconstituer l'attaque.</div>
+    </div>
+    <div class="phase">
+      <div class="phase-num">04</div>
+      <div class="phase-name">Rapport</div>
+      <div class="phase-desc">Documenter les trouvailles. Rapport technique + résumé exécutif. Recevable en justice.</div>
+    </div>
+  </div>
+  <div class="card" style="max-width:880px">
+    <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.7rem">⚠️ LA RÈGLE D'OR — ORDER OF VOLATILITY</div>
+    <div style="font-family:var(--body);font-size:.8rem;color:rgba(220,200,255,.8);margin-bottom:.7rem">Acquérir les preuves <strong style="color:#fff">du plus volatile au moins volatile</strong> — les données RAM disparaissent à l'extinction, le disque dur survit.</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <span class="pill pill-red" style="font-size:.6rem">1. RAM (volatile)</span>
+      <span style="color:rgba(170,68,255,.3);align-self:center">→</span>
+      <span class="pill pill-orange" style="font-size:.6rem">2. Processus / réseau</span>
+      <span style="color:rgba(170,68,255,.3);align-self:center">→</span>
+      <span class="pill pill-yellow" style="font-size:.6rem">3. Disque dur</span>
+      <span style="color:rgba(170,68,255,.3);align-self:center">→</span>
+      <span class="pill pill-blue" style="font-size:.6rem">4. Logs système</span>
+      <span style="color:rgba(170,68,255,.3);align-self:center">→</span>
+      <span class="pill pill-green" style="font-size:.6rem">5. Archives / backups</span>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3 · FORENSICS DISQUE — QCM 3 -->
+<div class="slide" data-index="3" data-qcm="3">
+  <div class="slide-tag">// 02 · Forensics Disque</div>
+  <h2>🗂️ Forensics disque — Acquérir & Analyser</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">ACQUISITION — COPIE FORENSIQUE</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(220,200,255,.8);margin-bottom:.7rem">On ne travaille <strong style="color:#fff">jamais sur l'original</strong>. On crée une image bit-à-bit et on vérifie l'intégrité avec un hash.</div>
+      <div class="terminal sm">
+        <span class="term-comment"># Créer une image forensique avec dd</span><br>
+        <span class="term-prompt">$ </span>dd if=/dev/sda of=disque.img bs=4M status=progress<br><br>
+        <span class="term-comment"># Mieux : dcfldd (avec hachage automatique)</span><br>
+        <span class="term-prompt">$ </span>dcfldd if=/dev/sda of=disque.img hash=sha256 hashlog=hash.txt<br><br>
+        <span class="term-comment"># Vérifier l'intégrité</span><br>
+        <span class="term-prompt">$ </span>sha256sum disque.img<br>
+        <span class="term-comment"># → doit correspondre au hash d'origine</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">ANALYSE — CE QU'ON CHERCHE</div>
+      <ul class="bullets">
+        <li><strong>Fichiers supprimés</strong> — récupérables car seul l'index est effacé, pas les données</li>
+        <li><strong>Timeline des accès</strong> — timestamps MAC (Modified, Accessed, Created)</li>
+        <li><strong>Métadonnées</strong> — auteur d'un document Word, coordonnées GPS d'une photo</li>
+        <li><strong>Données cachées</strong> — steganographie, ADS (Alternate Data Streams Windows)</li>
+        <li><strong>Artefacts navigateur</strong> — historique, cookies, mots de passe en cache</li>
+      </ul>
+      <div style="margin-top:.8rem;display:flex;gap:.4rem;flex-wrap:wrap">
+        <span class="pill pill-purple" style="font-size:.6rem">Autopsy</span>
+        <span class="pill pill-purple" style="font-size:.6rem">FTK Imager</span>
+        <span class="pill pill-purple" style="font-size:.6rem">Sleuth Kit</span>
+        <span class="pill pill-purple" style="font-size:.6rem">Foremost</span>
+        <span class="pill pill-purple" style="font-size:.6rem">Binwalk</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4 · FORENSICS RAM — QCM 4 -->
+<div class="slide" data-index="4" data-qcm="4">
+  <div class="slide-tag">// 03 · Forensics Mémoire</div>
+  <h2>🧠 Forensics RAM — La mémoire ne ment pas</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">POURQUOI LA RAM EST PRÉCIEUSE</div>
+      <ul class="bullets">
+        <li>Contient les <strong>processus en cours</strong> — y compris les malwares</li>
+        <li><strong>Clés de chiffrement</strong> en clair en mémoire</li>
+        <li><strong>Connexions réseau actives</strong> au moment de l'incident</li>
+        <li><strong>Mots de passe</strong> et tokens d'authentification non chiffrés</li>
+        <li>Les malwares <strong>fileless</strong> n'existent qu'en RAM — invisibles sur le disque</li>
+      </ul>
+      <div class="hdiv">CAPTURE</div>
+      <div class="terminal sm">
+        <span class="term-comment"># Capturer la RAM (Windows — WinPmem)</span><br>
+        <span class="term-prompt">C:\&gt; </span>winpmem.exe memdump.raw<br><br>
+        <span class="term-comment"># Capturer la RAM (Linux — LiME)</span><br>
+        <span class="term-prompt">$ </span>insmod lime.ko "path=/tmp/ram.lime format=lime"
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">VOLATILITY — L'OUTIL DE RÉFÉRENCE</div>
+      <div class="terminal sm">
+        <span class="term-comment"># Identifier le profil OS</span><br>
+        <span class="term-prompt">$ </span>vol.py -f memdump.raw imageinfo<br><br>
+        <span class="term-comment"># Lister les processus</span><br>
+        <span class="term-prompt">$ </span>vol.py -f memdump.raw --profile=Win10x64 pslist<br><br>
+        <span class="term-comment"># Processus cachés (rootkit)</span><br>
+        <span class="term-prompt">$ </span>vol.py -f memdump.raw psscan<br><br>
+        <span class="term-comment"># Connexions réseau actives</span><br>
+        <span class="term-prompt">$ </span>vol.py -f memdump.raw netscan<br><br>
+        <span class="term-comment"># Extraire un fichier de la mémoire</span><br>
+        <span class="term-prompt">$ </span>vol.py -f memdump.raw dumpfiles -Q 0x3e8<br><br>
+        <span class="term-comment"># Hashes des mots de passe Windows (SAM)</span><br>
+        <span class="term-prompt">$ </span>vol.py -f memdump.raw hashdump
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5 · FORENSICS RÉSEAU — QCM 5 -->
+<div class="slide" data-index="5" data-qcm="5">
+  <div class="slide-tag">// 04 · Forensics Réseau</div>
+  <h2>📡 Forensics réseau — Lire les captures PCAP</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">C'EST QUOI UN FICHIER .PCAP ?</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(220,200,255,.8);margin-bottom:.7rem">Un fichier <strong style="color:#fff">.pcap</strong> (Packet Capture) enregistre tout le trafic réseau. En forensics, c'est l'équivalent d'une vidéosurveillance du réseau.</div>
+      <ul class="bullets">
+        <li>Capturer avec <strong>Wireshark, tcpdump, tshark</strong></li>
+        <li>Peut contenir des <strong>fichiers transférés</strong> reconstituables</li>
+        <li>Révèle les <strong>commandes C2</strong> (Command & Control) d'un malware</li>
+        <li>Permet de voir l'<strong>exfiltration de données</strong></li>
+      </ul>
+      <div class="terminal sm" style="margin-top:.7rem">
+        <span class="term-comment"># Capturer le trafic en live</span><br>
+        <span class="term-prompt">$ </span>tcpdump -i eth0 -w capture.pcap<br><br>
+        <span class="term-comment"># Filtrer par IP suspecte</span><br>
+        <span class="term-prompt">$ </span>tshark -r capture.pcap -Y "ip.addr==185.220.101.47"
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">ANALYSE WIRESHARK — FILTRES FORENSICS</div>
+      <div class="terminal sm">
+        <span class="term-comment"># Trafic HTTP (données en clair)</span><br>
+        <span style="color:#aa44ff">http</span><br><br>
+        <span class="term-comment"># DNS — domaines contactés</span><br>
+        <span style="color:#aa44ff">dns</span><br><br>
+        <span class="term-comment"># Connexions vers IP externe suspecte</span><br>
+        <span style="color:#aa44ff">ip.dst == 185.220.101.47</span><br><br>
+        <span class="term-comment"># Fichiers transférés (FTP, HTTP)</span><br>
+        <span style="color:#aa44ff">ftp-data || http.content_type contains "application"</span><br><br>
+        <span class="term-comment"># Reconstituer un fichier transféré</span><br>
+        <span style="color:#ffd700">File → Export Objects → HTTP</span><br><br>
+        <span class="term-comment"># Suivre une session complète</span><br>
+        <span style="color:#ffd700">Clic droit → Follow → TCP Stream</span>
+      </div>
+      <div style="margin-top:.7rem;font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.6)">💡 Outil complémentaire : <strong style="color:#fff">NetworkMiner</strong> — reconstruit automatiquement les fichiers transférés depuis un .pcap</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6 · ARTEFACTS WINDOWS — QCM 6 -->
+<div class="slide" data-index="6" data-qcm="6">
+  <div class="slide-tag">// 05 · Artefacts Windows</div>
+  <h2>🗂️ Artefacts Windows — Les traces laissées</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.3rem">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.2rem">📁 FICHIERS & REGISTRE</div>
+      <div class="art-row"><span class="art-path">C:\Windows\Prefetch\</span><span class="art-desc">Programmes exécutés — nom + date dernière exécution + nombre de lancements</span></div>
+      <div class="art-row"><span class="art-path">HKCU\...\RecentDocs</span><span class="art-desc">Registre — derniers fichiers ouverts par l'utilisateur</span></div>
+      <div class="art-row"><span class="art-path">C:\Users\*\AppData\Roaming\<br>Microsoft\Windows\Recent\</span><span class="art-desc">Fichiers LNK (raccourcis) — traces des fichiers ouverts même si supprimés</span></div>
+      <div class="art-row" style="border-color:rgba(255,68,102,.2);background:rgba(255,68,102,.04)"><span class="art-path" style="color:#ff4466">HKLM\...\Run<br>HKCU\...\Run</span><span class="art-desc" style="color:rgba(255,180,180,.65)">Démarrage automatique — persistance des malwares</span></div>
+      <div class="art-row"><span class="art-path">C:\$Recycle.Bin\</span><span class="art-desc">Corbeille — fichiers supprimés avec date de suppression et chemin d'origine</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.3rem">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.2rem">📋 LOGS & ÉVÉNEMENTS</div>
+      <div class="art-row" style="border-color:rgba(255,68,102,.2);background:rgba(255,68,102,.04)"><span class="art-path" style="color:#ff4466">Event ID 4624</span><span class="art-desc" style="color:rgba(255,180,180,.65)">Connexion réussie — qui s'est connecté, depuis quelle IP</span></div>
+      <div class="art-row" style="border-color:rgba(255,68,102,.2);background:rgba(255,68,102,.04)"><span class="art-path" style="color:#ff4466">Event ID 4625</span><span class="art-desc" style="color:rgba(255,180,180,.65)">Connexion échouée — tentatives de brute-force</span></div>
+      <div class="art-row" style="border-color:rgba(255,136,0,.2);background:rgba(255,136,0,.04)"><span class="art-path" style="color:#ff8800">Event ID 4688</span><span class="art-desc" style="color:rgba(255,210,170,.65)">Processus créé — quel programme a lancé quel autre programme</span></div>
+      <div class="art-row"><span class="art-path">Event ID 7045</span><span class="art-desc">Service installé — malwares installés comme services Windows</span></div>
+      <div class="art-row"><span class="art-path">C:\Windows\System32\<br>winevt\Logs\Security.evtx</span><span class="art-desc">Fichier de logs de sécurité Windows — analysable avec Event Viewer ou Chainsaw</span></div>
+      <div style="margin-top:.5rem;font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.6)">Outils : <strong style="color:#fff">Chainsaw</strong>, <strong style="color:#fff">Hayabusa</strong>, <strong style="color:#fff">EvtxECmd</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7 · ARTEFACTS LINUX — QCM 7 -->
+<div class="slide" data-index="7" data-qcm="7">
+  <div class="slide-tag">// 06 · Artefacts Linux</div>
+  <h2>🐧 Artefacts Linux — Traces et investigation</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">📋 FICHIERS CLÉS À ANALYSER</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem">
+        <div class="art-row"><span class="art-path" style="font-size:.65rem">/var/log/auth.log</span><span class="art-desc">Connexions SSH, sudo, su — qui a fait quoi</span></div>
+        <div class="art-row" style="border-color:rgba(255,68,102,.2);background:rgba(255,68,102,.04)"><span class="art-path" style="color:#ff4466;font-size:.65rem">~/.bash_history</span><span class="art-desc" style="color:rgba(255,180,180,.65)">Commandes exécutées — souvent effacé par l'attaquant</span></div>
+        <div class="art-row"><span class="art-path" style="font-size:.65rem">/etc/crontab + /etc/cron.d/</span><span class="art-desc">Persistance via tâches planifiées</span></div>
+        <div class="art-row" style="border-color:rgba(255,68,102,.2);background:rgba(255,68,102,.04)"><span class="art-path" style="color:#ff4466;font-size:.65rem">/tmp/ et /dev/shm/</span><span class="art-desc" style="color:rgba(255,180,180,.65)">Dossiers favoris des malwares — écriture sans privilèges</span></div>
+        <div class="art-row"><span class="art-path" style="font-size:.65rem">/etc/passwd + /etc/shadow</span><span class="art-desc">Comptes créés par l'attaquant (UID 0 suspect)</span></div>
+        <div class="art-row"><span class="art-path" style="font-size:.65rem">~/.ssh/authorized_keys</span><span class="art-desc">Backdoor SSH — clé publique ajoutée pour persistance</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">⚙️ COMMANDES D'INVESTIGATION</div>
+      <div class="terminal sm">
+        <span class="term-comment"># Qui s'est connecté et quand ?</span><br>
+        <span class="term-prompt">$ </span>last -F | head -30<br><br>
+        <span class="term-comment"># Connexions SSH échouées</span><br>
+        <span class="term-prompt">$ </span>grep "Failed" /var/log/auth.log | awk '{print $11}' | sort | uniq -c | sort -rn<br><br>
+        <span class="term-comment"># Fichiers modifiés dans les 24h</span><br>
+        <span class="term-prompt">$ </span>find / -mtime -1 -type f 2>/dev/null | grep -v proc<br><br>
+        <span class="term-comment"># Processus suspects avec connexions réseau</span><br>
+        <span class="term-prompt">$ </span>ss -tulnp | grep -v "127.0.0.1"<br><br>
+        <span class="term-comment"># Fichiers SUID (escalade privilèges)</span><br>
+        <span class="term-prompt">$ </span>find / -perm -4000 -ls 2>/dev/null<br><br>
+        <span class="term-comment"># Historique même si effacé</span><br>
+        <span class="term-prompt">$ </span>strings /proc/*/environ 2>/dev/null | grep HIST
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8 · TIMELINE — QCM 8 -->
+<div class="slide" data-index="8" data-qcm="8">
+  <div class="slide-tag">// 07 · Timeline Analysis</div>
+  <h2>📅 Reconstruire la timeline d'une attaque</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">POURQUOI LA TIMELINE EST ESSENTIELLE</div>
+      <div class="quote" style="margin-bottom:.8rem;font-size:.82rem">"Sans timeline, on a des preuves isolées. Avec elle, on a une <strong style="color:#aa44ff">histoire cohérente</strong> qui prouve comment l'attaque s'est déroulée."</div>
+      <ul class="bullets">
+        <li>Corréler les <strong>timestamps de plusieurs sources</strong> — logs, fichiers, réseau, RAM</li>
+        <li>Identifier le <strong>patient zéro</strong> — premier système compromis</li>
+        <li>Comprendre le <strong>vecteur d'entrée</strong> — phishing, exploit, insider</li>
+        <li>Mesurer le <strong>dwell time</strong> — combien de temps l'attaquant est resté</li>
+      </ul>
+      <div class="hdiv">ATTENTION AUX TIMESTAMPS</div>
+      <div style="font-family:var(--body);font-size:.75rem;color:rgba(200,170,255,.65);line-height:1.5">Un attaquant peut <strong style="color:#fff">falsifier les timestamps</strong> (timestomping). Croiser les sources valide l'authenticité.</div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">⚙️ CONSTRUIRE LA TIMELINE</div>
+      <div class="terminal sm" style="margin-bottom:.8rem">
+        <span class="term-comment"># Plaso — agrège toutes les sources en une timeline</span><br>
+        <span class="term-prompt">$ </span>log2timeline.py -z UTC output.plaso /chemin/evidence/<br>
+        <span class="term-prompt">$ </span>psort.py -z UTC output.plaso > timeline.csv<br><br>
+        <span class="term-comment"># Mactime (Sleuth Kit) — timeline depuis un disque</span><br>
+        <span class="term-prompt">$ </span>fls -r -m / disque.img | mactime -d > timeline.txt<br><br>
+        <span class="term-comment"># Filtrer les événements d'une fenêtre temporelle</span><br>
+        <span class="term-prompt">$ </span>grep "2024-03-15" timeline.csv | grep -v "normal"
+      </div>
+      <div style="font-family:var(--body);font-size:.73rem;color:rgba(200,170,255,.65);line-height:1.4">Sources à corréler : <strong style="color:#fff">logs système</strong> + <strong style="color:#fff">événements Windows</strong> + <strong style="color:#fff">timestamps fichiers</strong> + <strong style="color:#fff">logs réseau</strong> + <strong style="color:#fff">captures PCAP</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9 · OUTILS ESSENTIELS -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// 08 · Arsenal DFIR</div>
+  <h2>🛠️ L'arsenal du DFIR analyst</h2>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;max-width:900px;width:100%">
+    <div style="border:1px solid rgba(170,68,255,.2);background:var(--acc-faint);padding:.9rem">
+      <div style="font-family:var(--display);font-size:.7rem;color:#aa44ff;margin-bottom:.5rem">🔬 FORENSICS DISQUE</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem;font-family:var(--body);font-size:.74rem;color:rgba(200,170,255,.75)">
+        <div><strong style="color:#fff">Autopsy</strong> — GUI forensics complète, gratuit</div>
+        <div><strong style="color:#fff">FTK Imager</strong> — acquisition d'images, gratuit</div>
+        <div><strong style="color:#fff">Sleuth Kit</strong> — CLI forensics, analyse de partitions</div>
+        <div><strong style="color:#fff">Foremost / Scalpel</strong> — récupération de fichiers</div>
+        <div><strong style="color:#fff">ExifTool</strong> — métadonnées de tout type de fichier</div>
+      </div>
+    </div>
+    <div style="border:1px solid rgba(0,170,255,.2);background:rgba(0,170,255,.04);padding:.9rem">
+      <div style="font-family:var(--display);font-size:.7rem;color:#00aaff;margin-bottom:.5rem">🧠 FORENSICS MÉMOIRE</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem;font-family:var(--body);font-size:.74rem;color:rgba(190,220,255,.75)">
+        <div><strong style="color:#fff">Volatility 2/3</strong> — standard industrie, gratuit</div>
+        <div><strong style="color:#fff">Rekall</strong> — fork de Volatility, live forensics</div>
+        <div><strong style="color:#fff">WinPmem</strong> — capture RAM Windows</div>
+        <div><strong style="color:#fff">LiME</strong> — capture RAM Linux (module kernel)</div>
+        <div><strong style="color:#fff">MemProcFS</strong> — monte la RAM comme un système de fichiers</div>
+      </div>
+    </div>
+    <div style="border:1px solid rgba(0,255,136,.15);background:rgba(0,255,136,.03);padding:.9rem">
+      <div style="font-family:var(--display);font-size:.7rem;color:#00ff88;margin-bottom:.5rem">📡 FORENSICS RÉSEAU</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem;font-family:var(--body);font-size:.74rem;color:rgba(190,255,215,.75)">
+        <div><strong style="color:#fff">Wireshark</strong> — analyse PCAP, gratuit</div>
+        <div><strong style="color:#fff">NetworkMiner</strong> — reconstruction de fichiers depuis PCAP</div>
+        <div><strong style="color:#fff">Zeek / Bro</strong> — analyse réseau haute performance</div>
+        <div><strong style="color:#fff">tcpdump / tshark</strong> — capture et filtre CLI</div>
+        <div><strong style="color:#fff">Suricata</strong> — IDS + analyse de trafic</div>
+      </div>
+    </div>
+    <div style="border:1px solid rgba(255,136,0,.2);background:rgba(255,136,0,.04);padding:.9rem">
+      <div style="font-family:var(--display);font-size:.7rem;color:#ff8800;margin-bottom:.5rem">🪟 ARTEFACTS WINDOWS</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem;font-family:var(--body);font-size:.74rem;color:rgba(255,220,185,.75)">
+        <div><strong style="color:#fff">Chainsaw / Hayabusa</strong> — analyse rapide des Event Logs</div>
+        <div><strong style="color:#fff">EvtxECmd</strong> — parsing des .evtx</div>
+        <div><strong style="color:#fff">RegRipper</strong> — extraction d'artefacts registre</div>
+        <div><strong style="color:#fff">Velociraptor</strong> — DFIR live sur parc de machines</div>
+        <div><strong style="color:#fff">KAPE</strong> — collecte d'artefacts Windows automatisée</div>
+      </div>
+    </div>
+    <div style="border:1px solid rgba(255,215,0,.15);background:rgba(255,215,0,.03);padding:.9rem">
+      <div style="font-family:var(--display);font-size:.7rem;color:#ffd700;margin-bottom:.5rem">📅 TIMELINE & CORRÉLATION</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem;font-family:var(--body);font-size:.74rem;color:rgba(255,245,185,.75)">
+        <div><strong style="color:#fff">Plaso / log2timeline</strong> — super-timeline multi-sources</div>
+        <div><strong style="color:#fff">Timesketch</strong> — visualisation collaborative de timeline</div>
+        <div><strong style="color:#fff">Mactime (TSK)</strong> — timeline depuis image disque</div>
+        <div><strong style="color:#fff">Kibana / Elastic</strong> — visualisation des logs</div>
+      </div>
+    </div>
+    <div style="border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.04);padding:.9rem">
+      <div style="font-family:var(--display);font-size:.7rem;color:#ff4466;margin-bottom:.5rem">🦠 MALWARE ANALYSIS</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem;font-family:var(--body);font-size:.74rem;color:rgba(255,200,200,.75)">
+        <div><strong style="color:#fff">Ghidra / IDA Free</strong> — reverse engineering</div>
+        <div><strong style="color:#fff">Cuckoo Sandbox</strong> — analyse dynamique gratuite</div>
+        <div><strong style="color:#fff">VirusTotal</strong> — scan multi-antivirus en ligne</div>
+        <div><strong style="color:#fff">YARA</strong> — détection de patterns malwares</div>
+        <div><strong style="color:#fff">ANY.RUN</strong> — sandbox interactif en ligne</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10 · LABO PCAP — QCM 10 -->
+<div class="slide" data-index="10" data-qcm="10">
+  <div class="slide-tag">// 09 · Labo PCAP</div>
+  <h2 style="color:#ffd700!important;text-shadow:0 0 20px rgba(255,215,0,.4)!important">⚡ Labo — Analyser un .pcap d'attaque</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.7rem">MISSION — 30 MINUTES</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(220,200,255,.8);margin-bottom:.8rem">Tu reçois un fichier <strong style="color:#fff">capture.pcap</strong> d'un réseau suspect. Trouve ce qui s'est passé.</div>
+      <div style="display:flex;flex-direction:column;gap:.4rem">
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.82rem;min-width:20px">01</div><div class="step-content" style="font-size:.75rem">Ouvrir dans Wireshark → <strong>Statistics → Conversations</strong> — quelles IPs communiquent le plus ?</div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.82rem;min-width:20px">02</div><div class="step-content" style="font-size:.75rem">Filtrer le DNS : <code style="color:#aa44ff">dns</code> → quels domaines suspects sont résolus ?</div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.82rem;min-width:20px">03</div><div class="step-content" style="font-size:.75rem">Chercher du HTTP : <code style="color:#aa44ff">http</code> → <strong>File → Export Objects → HTTP</strong> — des fichiers ont-ils été transférés ?</div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.82rem;min-width:20px">04</div><div class="step-content" style="font-size:.75rem">Identifier l'IP attaquante : gros volume de paquets vers une cible ? Port scan → <code style="color:#aa44ff">tcp.flags.syn == 1 && tcp.flags.ack == 0</code></div></div>
+        <div class="step" style="padding:.5rem .7rem;border-color:rgba(255,68,102,.3);background:rgba(255,68,102,.04)"><div class="step-num" style="font-size:.82rem;min-width:20px;color:#ff4466">05</div><div class="step-content" style="font-size:.75rem">Reconstruire la session suspecte : <strong>Clic droit sur un paquet → Follow → TCP Stream</strong></div></div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.35);margin-bottom:.5rem">// OÙ TROUVER DES .PCAP D'ENTRAÎNEMENT</div>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <div style="padding:.8rem 1rem;border:1px solid rgba(170,68,255,.15);background:var(--acc-faint)">
+          <div style="font-family:var(--display);font-size:.72rem;color:#aa44ff;margin-bottom:.3rem">🟣 Malware-Traffic-Analysis.net</div>
+          <div style="font-family:var(--body);font-size:.73rem;color:rgba(200,170,255,.65);line-height:1.4">Centaines de captures d'attaques réelles avec exercices guidés. Gratuit.</div>
+        </div>
+        <div style="padding:.8rem 1rem;border:1px solid rgba(0,170,255,.15);background:rgba(0,170,255,.03)">
+          <div style="font-family:var(--display);font-size:.72rem;color:#00aaff;margin-bottom:.3rem">🔵 PicoCTF / CyberDefenders</div>
+          <div style="font-family:var(--body);font-size:.73rem;color:rgba(190,220,255,.65);line-height:1.4">Challenges forensics avec .pcap fournis. Niveaux débutant à expert.</div>
+        </div>
+        <div style="padding:.8rem 1rem;border:1px solid rgba(0,255,136,.12);background:rgba(0,255,136,.03)">
+          <div style="font-family:var(--display);font-size:.72rem;color:#00ff88;margin-bottom:.3rem">🟢 TryHackMe — SOC Level 1</div>
+          <div style="font-family:var(--body);font-size:.73rem;color:rgba(190,255,215,.65);line-height:1.4">Parcours complet DFIR avec environnements virtuels. Accessible depuis l'Afrique.</div>
+        </div>
+        <div style="padding:.8rem 1rem;border:1px solid rgba(170,68,255,.15);background:var(--acc-faint)">
+          <div style="font-family:var(--display);font-size:.72rem;color:#aa44ff;margin-bottom:.3rem">⚔️ SooPHA CTF</div>
+          <div style="font-family:var(--body);font-size:.73rem;color:rgba(200,170,255,.65);line-height:1.4">Challenge Forensics inclus dans notre CTFd. Contexte africain.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 11 · LABO VOLATILITY -->
+<div class="slide" data-index="11">
+  <div class="slide-tag">// 10 · Labo Volatility</div>
+  <h2 style="color:#00aaff!important;text-shadow:0 0 20px rgba(0,170,255,.4)!important">🧠 Labo — Analyser un dump mémoire</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,170,255,.4);margin-bottom:.7rem">MISSION — 30 MINUTES</div>
+      <div style="font-family:var(--body);font-size:.8rem;color:rgba(220,200,255,.8);margin-bottom:.8rem">Tu reçois un <strong style="color:#fff">memdump.raw</strong> d'une machine Windows compromise. Trouve le malware.</div>
+      <div style="display:flex;flex-direction:column;gap:.4rem">
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.82rem;min-width:20px">01</div><div class="step-content" style="font-size:.75rem">Identifier le profil : <code style="color:#aa44ff">vol.py -f memdump.raw imageinfo</code></div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.82rem;min-width:20px">02</div><div class="step-content" style="font-size:.75rem">Lister les processus : <code style="color:#aa44ff">pslist</code> puis <code style="color:#aa44ff">pstree</code> — y a-t-il un processus avec un nom bizarre ?</div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.82rem;min-width:20px">03</div><div class="step-content" style="font-size:.75rem">Comparer <code style="color:#aa44ff">pslist</code> et <code style="color:#aa44ff">psscan</code> — les processus cachés par un rootkit n'apparaissent que dans psscan</div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.82rem;min-width:20px">04</div><div class="step-content" style="font-size:.75rem">Connexions réseau du malware : <code style="color:#aa44ff">netscan</code> — vers quelle IP contacte-t-il ?</div></div>
+        <div class="step" style="padding:.5rem .7rem;border-color:rgba(0,255,136,.2);background:rgba(0,255,136,.03)"><div class="step-num" style="font-size:.82rem;min-width:20px;color:#00ff88">05</div><div class="step-content" style="font-size:.75rem">Extraire le binaire suspect : <code style="color:#aa44ff">procdump -p [PID] -D ./output/</code> puis analyser sur VirusTotal</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">// CHECKLIST — INDICES D'INFECTION</div>
+      <ul class="bullets" style="font-size:.82rem">
+        <li class="danger">Processus avec <strong>nom ressemblant à un processus légitime</strong> : svchost32.exe, explorer32.exe</li>
+        <li class="danger"><strong>Processus parent anormal</strong> : cmd.exe lancé par un navigateur web</li>
+        <li class="danger">Connexion réseau vers une <strong>IP géolocalisée dans un pays suspect</strong></li>
+        <li class="danger">Processus <strong>caché dans psscan mais absent de pslist</strong> → rootkit</li>
+        <li class="warn"><strong>Grande quantité de handles</strong> sur des fichiers système → injection de code</li>
+        <li class="ok">Utiliser <code style="color:#00ff88">malfind</code> — détecte automatiquement le code injecté en mémoire</li>
+      </ul>
+      <div class="terminal sm" style="margin-top:.8rem">
+        <span class="term-comment"># malfind — détection code malveillant injecté</span><br>
+        <span class="term-prompt">$ </span>vol.py -f memdump.raw malfind --dump-dir ./malware_dump/
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12 · RAPPORT & CONTEXTE AFRIQUE -->
+<div class="slide" data-index="12">
+  <div class="slide-tag">// 11 · Rapport & Afrique</div>
+  <h2>📄 Le rapport DFIR & contexte Afrique</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">STRUCTURE D'UN RAPPORT DFIR</div>
+      <ul class="bullets" style="font-size:.82rem">
+        <li><strong>Résumé exécutif</strong> — 1 page, pour la direction et les juristes. Non technique.</li>
+        <li><strong>Périmètre de l'analyse</strong> — quels systèmes, quelle période, quelles limitations</li>
+        <li><strong>Chronologie de l'incident</strong> — timeline horodatée en UTC</li>
+        <li><strong>Vecteur d'attaque initial</strong> — comment l'attaquant est entré</li>
+        <li><strong>Preuves techniques</strong> — screenshots, hash des fichiers, commandes exécutées</li>
+        <li><strong>Indicateurs de compromission (IoC)</strong> — IPs, domaines, hash de malwares</li>
+        <li><strong>Recommandations</strong> — actions correctives prioritaires</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">🌍 FORENSICS EN AFRIQUE — OPPORTUNITÉS</div>
+      <ul class="bullets" style="font-size:.82rem">
+        <li class="ok"><strong>CSIRT nationaux</strong> en création — Gabon (CERT-Gabon), Sénégal (CERT-SN), CI (CERT-CI), Cameroun</li>
+        <li class="ok">Les <strong>banques africaines</strong> (Ecobank, BGFI, Coris) recrutent des analystes DFIR locaux</li>
+        <li class="ok">Fraudes Mobile Money → <strong>besoin urgent d'experts</strong> pour les enquêtes judiciaires</li>
+        <li class="warn">Manque de <strong>cadre légal harmonisé</strong> — preuve numérique reconnue au cas par cas</li>
+        <li class="ok">Outils DFIR majeurs sont <strong>gratuits et open source</strong> — accessibles depuis l'Afrique</li>
+      </ul>
+      <div class="hdiv">CERTIFICATIONS RECONNUES</div>
+      <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+        <span class="pill pill-yellow" style="font-size:.6rem">GCFE</span>
+        <span class="pill pill-yellow" style="font-size:.6rem">GCFA</span>
+        <span class="pill pill-yellow" style="font-size:.6rem">GCIH</span>
+        <span class="pill pill-yellow" style="font-size:.6rem">eCDFP</span>
+        <span class="pill pill-yellow" style="font-size:.6rem">CHFI (EC-Council)</span>
+        <span class="pill pill-green" style="font-size:.6rem">BTL1 (Blue Team)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 13 · RÉCAP -->
+<div class="slide" data-index="13">
+  <div class="slide-tag">// Récap · Plan d'action</div>
+  <h2>Forensics — Ce qu'on a vu</h2>
+  <div class="grid2" style="max-width:880px">
+    <div class="card">
+      <div style="font-size:.67rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.8rem">✅ ACQUIS AUJOURD'HUI</div>
+      <ul class="bullets">
+        <li class="ok">Les 4 phases DFIR + Order of Volatility</li>
+        <li class="ok">Forensics disque — acquisition, hash, Autopsy</li>
+        <li class="ok">Forensics RAM — Volatility, pslist, netscan, malfind</li>
+        <li class="ok">Forensics réseau — analyse .pcap avec Wireshark</li>
+        <li class="ok">Artefacts Windows — Event IDs, Prefetch, registre</li>
+        <li class="ok">Artefacts Linux — auth.log, bash_history, cron</li>
+        <li class="ok">Timeline analysis — Plaso, Mactime</li>
+        <li class="ok">Arsenal DFIR complet — 20+ outils</li>
+        <li class="ok">Structure d'un rapport DFIR recevable en justice</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.67rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.8rem">🚀 PROCHAINES ÉTAPES</div>
+      <ul class="bullets">
+        <li><strong>TryHackMe</strong> — parcours "SOC Level 1" + room "Volatility"</li>
+        <li><strong>CyberDefenders</strong> — challenges DFIR avec .pcap et memdump réels</li>
+        <li><strong>Malware-Traffic-Analysis.net</strong> — 200+ exercices PCAP</li>
+        <li><strong>SANS FOR508</strong> — formation de référence (chère mais complète)</li>
+        <li>Construire ton propre <strong>lab : REMnux + FlareVM</strong></li>
+      </ul>
+      <div class="hdiv">COURS SUIVANTS SUR SOOPHA LEARN</div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+        <span class="pill pill-blue" style="font-size:.6rem">🌐 Réseaux & Outils</span>
+        <span class="pill pill-green" style="font-size:.6rem">🐧 Linux Cyber</span>
+        <span class="pill pill-red" style="font-size:.6rem">🌐 Web Hacking</span>
+      </div>
+      <div class="terminal" style="margin-top:1rem;font-size:.7rem">
+        <span class="term-prompt">investigator@dfir:~$ </span>
+        <span class="term-out">// Les preuves parlent. Encore faut-il savoir les écouter.</span>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:1.2rem;text-align:center">
+    <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+    <div style="font-size:.62rem;color:rgba(170,68,255,.2);margin-top:.7rem;letter-spacing:.1em">SooPHA Learn × Forensics × Cybersécurité × Afrique Francophone</div>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Formation terminée !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 14</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+var QCM = {
+  2: { question:"Lors d'une investigation DFIR, dans quel ordre doit-on collecter les preuves ?", options:["Disque dur en premier car il contient le plus de données","Du plus volatile au moins volatile : RAM → processus → disque → logs","Par ordre alphabétique des types de fichiers","Peu importe, tant que tout est collecté avant d'éteindre la machine"], correct:1, explanation:"L'Order of Volatility impose de collecter d'abord ce qui disparaît en cas d'extinction : RAM > connexions réseau actives > processus en cours > disque dur > logs archivés. La RAM disparaît dès que la machine s'éteint." },
+  3: { question:"Pourquoi ne doit-on jamais travailler directement sur le disque original lors d'une investigation ?", options:["C'est trop lent","Toute modification altère les preuves et les rend irrecevables en justice","Le disque original peut être réinfecté","Pour des raisons de confidentialité"], correct:1, explanation:"En forensics légale, la chaîne de custody (chain of custody) exige que les preuves originales ne soient jamais altérées. On crée une copie bit-à-bit (image forensique) et on vérifie l'intégrité avec un hash SHA256." },
+  4: { question:"Volatility est principalement utilisé pour analyser :", options:["Les fichiers journaux système","La mémoire vive (RAM) capturée d'un système","Les paquets réseau d'une capture .pcap","Le registre Windows"], correct:1, explanation:"Volatility est le framework open source de référence pour l'analyse forensique de la mémoire RAM. Il permet d'extraire processus, connexions réseau, hashes de mots de passe, code injecté et bien plus depuis une image mémoire." },
+  5: { question:"Dans Wireshark, quelle action permet de reconstituer un fichier téléchargé dans une capture .pcap ?", options:["Statistics → Protocol Hierarchy","File → Export Objects → HTTP","Edit → Find Packet","Analyze → Follow → UDP Stream"], correct:1, explanation:"'File → Export Objects → HTTP' permet à Wireshark de reconstituer et exporter tous les fichiers transférés via HTTP dans une capture réseau. Utile pour retrouver des malwares téléchargés ou des données exfiltrées." },
+  6: { question:"L'Event ID 4624 dans les journaux Windows correspond à :", options:["Un fichier supprimé","Une connexion utilisateur réussie","L'installation d'un nouveau service","Un processus créé"], correct:1, explanation:"L'Event ID 4624 dans le Security Event Log Windows enregistre chaque connexion réussie avec les détails : nom d'utilisateur, type de connexion (locale, réseau, RDP), adresse IP source. Indispensable pour tracer les accès non autorisés." },
+  7: { question:"Un attaquant Linux veut maintenir son accès après redémarrage. Où va-t-il le plus probablement placer son backdoor ?", options:["Dans /bin/","Dans /etc/crontab ou ~/.ssh/authorized_keys","Dans /tmp/ uniquement","Dans /var/log/"], correct:1, explanation:"/etc/crontab (tâches planifiées exécutées régulièrement) et ~/.ssh/authorized_keys (clé SSH qui permet de se connecter sans mot de passe) sont les mécanismes de persistance Linux les plus utilisés par les attaquants." },
+  8: { question:"Quelle est la principale utilité d'une timeline DFIR ?", options:["Calculer le coût de l'incident","Corréler les événements de différentes sources pour reconstituer chronologiquement l'attaque","Lister tous les logiciels installés sur le système","Identifier les vulnérabilités non patchées"], correct:1, explanation:"La timeline DFIR agrège les timestamps de toutes les sources (logs, fichiers, RAM, réseau) pour reconstituer la chronologie exacte de l'attaque : point d'entrée, déplacement latéral, exfiltration. C'est le cœur de l'investigation." },
+  10: { question:"Dans une capture Wireshark, comment identifier rapidement un scan de ports SYN ?", options:["Filtrer avec : http.request.method == GET","Filtrer avec : tcp.flags.syn == 1 && tcp.flags.ack == 0","Regarder Statistics → IO Graph","Filtrer avec : dns.qry.name contains scan"], correct:1, explanation:"Un SYN scan (Nmap -sS) envoie des paquets TCP avec uniquement le flag SYN activé. Le filtre Wireshark 'tcp.flags.syn == 1 && tcp.flags.ack == 0' isole exactement ces paquets. Un grand nombre vers des ports variés = scan de reconnaissance." }
+};
+
+var COURSE_ID = 'forensics';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl  = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=70){ document.getElementById('comp-icon').textContent='🏆'; document.getElementById('comp-title').textContent='Excellent !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Tu maîtrises le DFIR !'; }
+  else { document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='Formation terminée'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Révise les slides pour progresser.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='01FORENSICSDFIRPCAPMEMORY{}[]|/',fs=13,drops;
+  function init(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  init(); window.addEventListener('resize',init);
+  setInterval(function(){
+    ctx.fillStyle='rgba(4,2,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#aa44ff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+
+init();
+</script>
+</body>
+</html>
