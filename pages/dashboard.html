@@ -40,7 +40,14 @@
 .theme-defense    .theme-label { color: rgba(0,170,255,0.7); }
 .theme-defense    .theme-header { border-color: rgba(0,170,255,0.12); }
 .theme-orientation .theme-label { color: rgba(170,68,255,0.7); }
+
 .theme-orientation .theme-header { border-color: rgba(170,68,255,0.12); }
+/* CHEVRON COLLAPSIBLE */
+.theme-header { cursor: pointer; user-select: none; }
+.theme-header:hover { opacity: 0.85; }
+.theme-chevron { margin-left: 0.5rem; font-size: 0.75rem; color: rgba(0,255,136,0.3); transition: transform 0.25s ease; display: inline-block; line-height: 1; }
+.theme-section.collapsed .theme-chevron { transform: rotate(-90deg); }
+.theme-section.collapsed .courses-grid { display: none; }
 /* SIDEBAR */
 .dashboard-layout { display: grid; grid-template-columns: 1fr 320px; gap: 2rem; align-items: start; }
 .profile-card { padding: 1.5rem; text-align: center; margin-bottom: 1.2rem; }
@@ -101,10 +108,11 @@
 
       <!-- ═══ 🧱 FONDATIONS ═══ -->
       <div class="theme-section theme-fondations">
-        <div class="theme-header">
+        <div class="theme-header" onclick="toggleSection('fondations')">
           <span class="theme-icon">🧱</span>
           <span class="theme-label">Fondations</span>
           <span class="theme-count">3 cours · Obligatoire avant tout le reste</span>
+          <span class="theme-chevron">▼</span>
         </div>
         <div class="courses-grid">
 
@@ -152,10 +160,11 @@
 
       <!-- ═══ ⚔️ OFFENSIF ═══ -->
       <div class="theme-section theme-offensif">
-        <div class="theme-header">
+        <div class="theme-header" onclick="toggleSection('offensif')">
           <span class="theme-icon">⚔️</span>
           <span class="theme-label">Offensif</span>
           <span class="theme-count">4 cours · Attaques & Reconnaissance</span>
+          <span class="theme-chevron">▼</span>
         </div>
         <div class="courses-grid">
 
@@ -216,10 +225,11 @@
 
       <!-- ═══ 🛡️ DÉFENSE ═══ -->
       <div class="theme-section theme-defense">
-        <div class="theme-header">
+        <div class="theme-header" onclick="toggleSection('defense')">
           <span class="theme-icon">🛡️</span>
           <span class="theme-label">Défense</span>
           <span class="theme-count">1 cours · Forensics & Active Directory à venir</span>
+          <span class="theme-chevron">▼</span>
         </div>
         <div class="courses-grid">
 
@@ -241,10 +251,11 @@
 
       <!-- ═══ 🧭 ORIENTATION ═══ -->
       <div class="theme-section theme-orientation">
-        <div class="theme-header">
+        <div class="theme-header" onclick="toggleSection('orientation')">
           <span class="theme-icon">🧭</span>
           <span class="theme-label">Orientation</span>
           <span class="theme-count">1 cours · Carrières & Métiers</span>
+          <span class="theme-chevron">▼</span>
         </div>
         <div class="courses-grid">
 
@@ -304,6 +315,12 @@
 var currentUser = null;
 var COURSES = ['j1','linux','j3','j2','attacks','web','osint','crypto','metiers-cyber'];
 var countryFlags = {'GA':'🇬🇦','SN':'🇸🇳','CI':'🇨🇮','CM':'🇨🇲','CD':'🇨🇩','CG':'🇨🇬','MG':'🇲🇬','ML':'🇲🇱','BF':'🇧🇫','NE':'🇳🇪','TG':'🇹🇬','BJ':'🇧🇯','GN':'🇬🇳','TN':'🇹🇳','MA':'🇲🇦','DZ':'🇩🇿','FR':'🇫🇷'};
+
+
+function toggleSection(id) {
+  var sec = document.querySelector('.theme-' + id);
+  if (sec) sec.classList.toggle('collapsed');
+}
 
 async function init() {
   currentUser = await requireAuth();
