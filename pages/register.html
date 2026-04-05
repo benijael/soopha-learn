@@ -15,8 +15,7 @@
 canvas#matrix-auth { position: fixed; inset: 0; z-index: 0; opacity: 0.04; pointer-events: none; }
 .auth-card { position: relative; z-index: 1; width: 100%; max-width: 480px; padding: 2.5rem; animation: fadeUp 0.5s ease both; }
 .auth-logo { text-align: center; margin-bottom: 2rem; }
-.auth-logo a { font-family: var(--display); font-size: 1.3rem; font-weight: 900; color: #fff; letter-spacing: 0.15em; }
-.auth-logo a span { color: var(--green); text-shadow: 0 0 12px var(--green); }
+.auth-logo a { display: inline-block; }
 .auth-logo p { font-family: var(--mono); font-size: 0.65rem; color: rgba(0,255,136,0.35); letter-spacing: 0.2em; margin-top: 0.4rem; }
 .gabon-bar { display: flex; height: 2px; width: 40px; border-radius: 2px; overflow: hidden; margin: 0.8rem auto; }
 .gabon-bar span:nth-child(1){flex:1;background:#009e60}
@@ -35,8 +34,11 @@ canvas#matrix-auth { position: fixed; inset: 0; z-index: 0; opacity: 0.04; point
 <canvas id="matrix-auth"></canvas>
 <div class="auth-page">
   <div class="card auth-card">
+
     <div class="auth-logo">
-      <a href="../index.html">SooPHA <span>LEARN</span></a>
+      <a href="../index.html">
+        <img src="../img/logo.png" alt="SooPHA Learn" style="height:44px;width:auto;display:block;margin:0 auto;">
+      </a>
       <div class="gabon-bar"><span></span><span></span><span></span></div>
       <p>// Rejoins la communauté · 100% gratuit</p>
     </div>
@@ -159,7 +161,6 @@ canvas#matrix-auth { position: fixed; inset: 0; z-index: 0; opacity: 0.04; point
 
 redirectIfAuthed();
 
-// Password strength
 document.getElementById('password').addEventListener('input', function(){
   var val = this.value;
   var bar = document.getElementById('strength-bar');
@@ -178,10 +179,9 @@ document.getElementById('password').addEventListener('input', function(){
 });
 
 function setLoading(loading) {
-  var btn = document.getElementById('submit-btn');
   document.getElementById('btn-text').style.display = loading ? 'none' : 'inline';
   document.getElementById('btn-spinner').style.display = loading ? 'inline-block' : 'none';
-  btn.disabled = loading;
+  document.getElementById('submit-btn').disabled = loading;
 }
 
 function showError(msg) {
@@ -193,14 +193,13 @@ function showError(msg) {
 document.getElementById('register-form').addEventListener('submit', async function(e) {
   e.preventDefault();
   var firstname = document.getElementById('firstname').value.trim();
-  var lastname = document.getElementById('lastname').value.trim();
-  var username = document.getElementById('username').value.trim();
-  var email = document.getElementById('email').value.trim();
-  var country = document.getElementById('country').value;
-  var password = document.getElementById('password').value;
-  var confirm = document.getElementById('confirm-password').value;
+  var lastname  = document.getElementById('lastname').value.trim();
+  var username  = document.getElementById('username').value.trim();
+  var email     = document.getElementById('email').value.trim();
+  var country   = document.getElementById('country').value;
+  var password  = document.getElementById('password').value;
+  var confirm   = document.getElementById('confirm-password').value;
 
-  // Validations
   if (!firstname || !lastname) { showError('Prénom et nom requis.'); return; }
   if (username.length < 3 || /\s/.test(username)) {
     document.getElementById('username-error').classList.add('show');
@@ -224,27 +223,17 @@ document.getElementById('register-form').addEventListener('submit', async functi
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
-        data: {
-          full_name: firstname + ' ' + lastname,
-          username: username,
-          country: country,
-          display_name: firstname
-        },
+        data: { full_name: firstname + ' ' + lastname, username, country, display_name: firstname },
         emailRedirectTo: window.location.origin + '/pages/login.html?confirmed=true'
       }
     });
 
     if (error) {
-      if (error.message.includes('already registered')) {
-        showError('Cette adresse email est déjà utilisée. Connecte-toi.');
-      } else {
-        showError(error.message);
-      }
+      showError(error.message.includes('already registered') ? 'Cette adresse email est déjà utilisée. Connecte-toi.' : error.message);
       setLoading(false);
       return;
     }
 
-    // Succès
     var successEl = document.getElementById('success-alert');
     successEl.innerHTML = '✓ Compte créé ! <strong>Vérifie ta boîte mail</strong> pour confirmer ton adresse.';
     successEl.classList.add('show');
