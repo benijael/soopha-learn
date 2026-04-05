@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>Politique de confidentialité — SooPHA Learn</title>
+<link rel="stylesheet" href="css/global.css">
+<style>
+.legal-page { max-width: 760px; margin: 0 auto; padding: 4rem 2rem; }
+.legal-hero { padding: 2.5rem 0 2rem; border-bottom: 1px solid var(--green-border); margin-bottom: 2.5rem; }
+.legal-hero h1 { margin-bottom: 0.4rem; }
+.legal-hero p { font-family: var(--mono); font-size: 0.72rem; color: rgba(0,255,136,0.35); letter-spacing: 0.15em; }
+.legal-section { margin-bottom: 2.5rem; }
+.legal-section h2 {
+  font-family: var(--display); font-size: 0.88rem; font-weight: 700;
+  color: var(--green); letter-spacing: 0.15em; text-transform: uppercase;
+  padding-bottom: 0.5rem; border-bottom: 1px solid rgba(0,255,136,0.1);
+  margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem;
+}
+.legal-section h2::before { content: ''; width: 3px; height: 14px; background: var(--green); box-shadow: 0 0 6px var(--green); flex-shrink: 0; }
+.legal-section p, .legal-section li {
+  font-family: var(--body); font-size: 0.9rem;
+  color: rgba(200,255,220,0.7); line-height: 1.8; margin-bottom: 0.7rem;
+}
+.legal-section ul { list-style: none; padding: 0; }
+.legal-section ul li { padding-left: 1.2rem; position: relative; }
+.legal-section ul li::before { content: '▶'; color: var(--green); font-size: 0.55rem; position: absolute; left: 0; top: 0.45rem; }
+.legal-section strong { color: #fff; }
+.legal-tag { display: inline-block; font-family: var(--mono); font-size: 0.62rem; padding: 0.2rem 0.6rem; background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.2); color: var(--green); margin-bottom: 1rem; letter-spacing: 0.08em; }
+.legal-footer { border-top: 1px solid var(--green-border); padding-top: 1.5rem; margin-top: 3rem; font-family: var(--mono); font-size: 0.65rem; color: rgba(0,255,136,0.25); letter-spacing: 0.08em; }
+.legal-footer a { color: rgba(0,255,136,0.5); }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <img src="/img/logo.png" alt="SooPHA Learn" style="height:36px;width:auto;display:block;">
+  </a>
+  <div class="navbar-links">
+    <a href="/" class="navbar-link">Accueil</a>
+    <a href="/terms.html" class="navbar-link hide-mobile">CGU</a>
+  </div>
+</nav>
+
+<div class="legal-page">
+
+  <div class="legal-hero">
+    <h1>POLITIQUE DE CONFIDENTIALITÉ</h1>
+    <p>// SooPHA Learn · Dernière mise à jour : Avril 2026</p>
+  </div>
+
+  <div class="legal-tag">// Résumé : tes données t'appartiennent. On ne les vend jamais.</div>
+
+  <div class="legal-section">
+    <h2>1. Qui sommes-nous ?</h2>
+    <p><strong>SooPHA Learn</strong> est une plateforme de formation en cybersécurité pour la jeunesse africaine francophone, opérée par <strong>SooPHA Network</strong>.</p>
+    <p>Contact : <strong>benijael@soopha-podcast.com</strong><br>Site : <strong>https://soopha-learn.com</strong></p>
+  </div>
+
+  <div class="legal-section">
+    <h2>2. Données collectées</h2>
+    <p>Lors de la création de ton compte et de l'utilisation de la plateforme, nous collectons :</p>
+    <ul>
+      <li><strong>Données d'identification</strong> — prénom, nom, adresse email, pseudo public</li>
+      <li><strong>Données de localisation</strong> — pays (déclaré volontairement)</li>
+      <li><strong>Photo de profil</strong> — uploadée manuellement ou importée depuis Google</li>
+      <li><strong>Données de progression</strong> — cours suivis, scores aux QCM, certifications obtenues</li>
+      <li><strong>Données de connexion</strong> — date d'inscription, dernière connexion</li>
+    </ul>
+    <p>Nous ne collectons <strong>pas</strong> : données bancaires, localisation géographique précise, données de navigation tierces, cookies publicitaires.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>3. Utilisation des données</h2>
+    <p>Tes données sont utilisées exclusivement pour :</p>
+    <ul>
+      <li>Gérer ton compte et authentifier tes connexions</li>
+      <li>Sauvegarder et afficher ta progression dans les formations</li>
+      <li>Calculer ton classement dans le leaderboard public</li>
+      <li>Générer tes certificats de formation</li>
+      <li>T'envoyer des emails transactionnels (confirmation de compte, réinitialisation de mot de passe)</li>
+    </ul>
+    <p>Nous <strong>n'utilisons pas</strong> tes données à des fins publicitaires, et nous ne les vendons ni ne les partageons avec des tiers commerciaux.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>4. Stockage et sécurité</h2>
+    <p>Tes données sont stockées sur <strong>Supabase</strong> (infrastructure PostgreSQL hébergée en Europe — région EU West 1). Les mots de passe sont <strong>hachés et salés</strong> — nous n'y avons jamais accès en clair.</p>
+    <p>Les photos de profil sont stockées dans <strong>Supabase Storage</strong>, un bucket sécurisé avec accès contrôlé. Seul toi peux modifier ta photo.</p>
+    <p>Les connexions sont sécurisées via <strong>HTTPS/TLS</strong>. Les tokens d'authentification sont gérés par Supabase Auth avec expiration automatique.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>5. Connexion via Google</h2>
+    <p>Si tu choisis de te connecter avec Google, nous récupérons depuis ton compte Google uniquement :</p>
+    <ul>
+      <li>Ton adresse email</li>
+      <li>Ton prénom et nom</li>
+      <li>Ta photo de profil Google (si disponible)</li>
+    </ul>
+    <p>Nous ne demandons <strong>aucun autre accès</strong> à ton compte Google (pas d'accès à Gmail, Drive, Contacts, etc.).</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>6. Données publiques</h2>
+    <p>Les informations suivantes sont visibles par les autres utilisateurs de la plateforme :</p>
+    <ul>
+      <li>Ton pseudo public</li>
+      <li>Ta photo de profil</li>
+      <li>Ton pays (drapeau)</li>
+      <li>Tes scores et classement dans le leaderboard</li>
+    </ul>
+    <p>Ton adresse email et ton mot de passe ne sont <strong>jamais</strong> visibles publiquement.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>7. Tes droits</h2>
+    <p>Conformément au RGPD et aux réglementations africaines applicables (notamment la loi gabonaise sur la protection des données personnelles), tu disposes des droits suivants :</p>
+    <ul>
+      <li><strong>Droit d'accès</strong> — consulter toutes tes données depuis ton profil</li>
+      <li><strong>Droit de rectification</strong> — modifier tes informations depuis ton profil</li>
+      <li><strong>Droit à l'effacement</strong> — demander la suppression de ton compte et de toutes tes données</li>
+      <li><strong>Droit à la portabilité</strong> — obtenir une copie de tes données</li>
+      <li><strong>Droit d'opposition</strong> — t'opposer à certains traitements</li>
+    </ul>
+    <p>Pour exercer ces droits : <strong>benijael@soopha-podcast.com</strong> — réponse sous 30 jours.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>8. Conservation des données</h2>
+    <p>Tes données sont conservées <strong>tant que ton compte est actif</strong>. En cas de suppression de compte, toutes tes données personnelles sont effacées dans un délai de 30 jours. Les données anonymisées de progression (statistiques globales) peuvent être conservées à des fins statistiques.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>9. Cookies</h2>
+    <p>SooPHA Learn utilise uniquement des <strong>cookies fonctionnels</strong> nécessaires au maintien de ta session de connexion. Aucun cookie publicitaire ou de tracking tiers n'est utilisé.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>10. Modifications</h2>
+    <p>Cette politique peut être mise à jour. En cas de modification substantielle, nous t'en informerons par email. La date de dernière mise à jour est indiquée en haut de cette page.</p>
+  </div>
+
+  <div class="legal-footer">
+    <div>SooPHA Learn × SooPHA Network × Cybersécurité × Afrique Francophone</div>
+    <div style="margin-top:0.5rem"><a href="/terms.html">Conditions générales d'utilisation</a> · <a href="/">Retour à l'accueil</a></div>
+  </div>
+
+</div>
+</body>
+</html>
