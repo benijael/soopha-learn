@@ -307,31 +307,28 @@ async function init() {
   var country    = (currentProfile && currentProfile.country)  || meta.country  || '';
   var letter     = (firstname || '?').charAt(0).toUpperCase();
 
-  // Fetch avatar_url directement — getProfile() ne le retourne pas forcément
+  // Fetch avatar_url depuis profiles
   var avatarUrl = null;
   try {
     var { data: profData } = await supabase
-      .from('profiles')
-      .select('avatar_url')
-      .eq('id', currentUser.id)
-      .single();
+      .from('profiles').select('avatar_url')
+      .eq('id', currentUser.id).single();
     avatarUrl = (profData && profData.avatar_url) || null;
-  } catch(e) { /* pas d'avatar */ }
-
-  setAvatarDisplay(avatarUrl, letter);
-
-  // Si pas d'avatar custom mais user Google → récupérer la photo Google
+  } catch(e) {}
+  
+  // Fallback Google si pas d'avatar custom
   if (!avatarUrl) {
     var googlePic = meta.avatar_url || meta.picture || null;
     if (googlePic) {
       avatarUrl = googlePic;
-      // Sauvegarder pour la prochaine fois
       supabase.from('profiles')
         .update({ avatar_url: googlePic, updated_at: new Date().toISOString() })
-        .eq('id', currentUser.id)
-        .then(function(){});
+        .eq('id', currentUser.id).then(function(){});
     }
   }
+  
+  // Afficher APRÈS avoir résolu les deux sources
+  setAvatarDisplay(avatarUrl, letter);
 
   document.getElementById('display-fullname').textContent = fullname || username;
   document.getElementById('display-username').textContent = '@' + username;
