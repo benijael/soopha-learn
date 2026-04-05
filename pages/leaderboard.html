@@ -2,13 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <!-- Favicon -->
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Classement — SooPHA Learn</title>
 <link rel="stylesheet" href="../css/global.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -38,7 +36,7 @@
   display: flex; align-items: center; justify-content: center;
   font-family: var(--display); font-weight: 900; font-size: 1.4rem;
   margin: 0 auto 0.6rem;
-  border: 2px solid;
+  border: 2px solid; overflow: hidden;
 }
 .podium-rank { font-size: 2rem; margin-bottom: 0.3rem; line-height: 1; }
 .podium-name { font-family: var(--display); font-size: 0.85rem; font-weight: 700; color: #fff; letter-spacing: 0.05em; margin-bottom: 0.2rem; }
@@ -88,8 +86,10 @@
   background: rgba(0,255,136,0.08); border: 1px solid var(--green-border);
   display: flex; align-items: center; justify-content: center;
   font-family: var(--display); font-weight: 700; font-size: 0.75rem; color: var(--green);
-  flex-shrink: 0;
+  flex-shrink: 0; overflow: hidden;
 }
+.lb-mini-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.podium-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .lb-username { font-family: var(--mono); font-size: 0.78rem; color: rgba(200,255,220,0.85); }
 .lb-you-badge { font-family: var(--mono); font-size: 0.55rem; padding: 0.15rem 0.4rem; background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.25); color: var(--green); margin-left: 0.4rem; letter-spacing: 0.08em; }
 .lb-country-cell { font-size: 1rem; }
@@ -242,7 +242,7 @@ async function init() {
   // Aggregate scores par user depuis course_completions
   const { data: completions } = await supabase
     .from('course_completions')
-    .select('user_id, score_pct, profiles(username, country, display_name)');
+    .select('user_id, score_pct, profiles(username, country, display_name, avatar_url)');
 
   if (!completions || completions.length === 0) {
     document.getElementById('loading').style.display = 'none';
@@ -314,9 +314,12 @@ function renderPodium(top) {
     var u = top[i];
     var flag = countryFlags[u.country] || '';
     var initial = (u.display_name || u.username || '?').charAt(0).toUpperCase();
+    var avatarContent = u.avatar_url
+      ? '<img src="' + u.avatar_url + '" alt="' + initial + '" onerror="this.parentNode.textContent='' + initial + ''">'
+      : initial;
     html += '<div class="podium-item ' + classes[pos] + '">' +
       '<div class="podium-rank">' + rankEmojis[i] + '</div>' +
-      '<div class="podium-avatar">' + initial + '</div>' +
+      '<div class="podium-avatar">' + avatarContent + '</div>' +
       '<div class="podium-name">@' + u.username + '</div>' +
       '<div class="podium-country">' + flag + '</div>' +
       '<div class="podium-score">' + u.avg + '%</div>' +
@@ -343,11 +346,14 @@ function renderTable(rows) {
     var rankDisplay = rank <= 3
       ? ['🥇','🥈','🥉'][rank-1]
       : '<span style="color:rgba(0,255,136,0.4)">' + rank + '</span>';
+    var miniAvatar = u.avatar_url
+      ? '<img src="' + u.avatar_url + '" alt="' + initial + '" onerror="this.parentNode.textContent='' + initial + ''">'
+      : initial;
 
     html += '<tr class="lb-row-data' + (isMe ? ' is-me' : '') + '">' +
       '<td class="lb-rank-cell">' + rankDisplay + '</td>' +
       '<td><div class="lb-user-cell">' +
-        '<div class="lb-mini-avatar">' + initial + '</div>' +
+        '<div class="lb-mini-avatar">' + miniAvatar + '</div>' +
         '<span class="lb-username">@' + u.username + '</span>' +
         (isMe ? '<span class="lb-you-badge">MOI</span>' : '') +
       '</div></td>' +
