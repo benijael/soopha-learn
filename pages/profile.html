@@ -13,15 +13,8 @@
 .page-hero { background: rgba(0,255,136,0.03); border-bottom: 1px solid var(--green-border); padding: 2.5rem 0; margin-bottom: 2.5rem; }
 .page-hero h1 { margin-bottom: 0.4rem; }
 .page-hero p { font-family: var(--mono); font-size: 0.75rem; color: rgba(0,255,136,0.4); letter-spacing: 0.15em; }
-
-/* PROFILE LAYOUT */
 .profile-layout { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; align-items: start; }
-
-/* PROFILE CARD */
-.profile-id-card {
-  padding: 2rem; text-align: center;
-  position: sticky; top: 80px;
-}
+.profile-id-card { padding: 2rem; text-align: center; position: sticky; top: 80px; }
 .profile-avatar-lg {
   width: 90px; height: 90px; border-radius: 50%;
   background: rgba(0,255,136,0.1); border: 2px solid var(--green-border);
@@ -35,21 +28,14 @@
 .profile-country-flag { font-size: 1.5rem; margin-bottom: 1rem; }
 .profile-member-since { font-family: var(--mono); font-size: 0.65rem; color: rgba(0,255,136,0.25); letter-spacing: 0.08em; }
 .profile-badges-list { display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
-
-/* STATS MINI */
 .profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 1.5rem; }
 .profile-stat-mini { padding: 0.8rem; text-align: center; border: 1px solid var(--green-border); background: rgba(0,255,136,0.03); }
 .profile-stat-mini-val { font-family: var(--display); font-size: 1.3rem; font-weight: 900; color: var(--green); text-shadow: 0 0 8px var(--green); }
 .profile-stat-mini-label { font-family: var(--mono); font-size: 0.58rem; color: rgba(0,255,136,0.35); letter-spacing: 0.08em; margin-top: 0.2rem; text-transform: uppercase; }
-
-/* EDIT FORM */
 .edit-section { margin-bottom: 2rem; }
 .edit-section-title { font-family: var(--display); font-size: 0.82rem; font-weight: 700; color: var(--green); letter-spacing: 0.2em; text-transform: uppercase; padding-bottom: 0.6rem; border-bottom: 1px solid var(--green-border); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
 .edit-section-title::before { content: ''; width: 3px; height: 14px; background: var(--green); box-shadow: 0 0 6px var(--green); }
-
 .country-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='%2300ff88'%3E%3Cpath d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem; }
-
-/* ACTIVITY */
 .activity-list { display: flex; flex-direction: column; }
 .activity-item { display: flex; align-items: flex-start; gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid rgba(0,255,136,0.06); }
 .activity-item:last-child { border-bottom: none; }
@@ -57,10 +43,7 @@
 .activity-dot.warn { background: #ff8800; box-shadow: 0 0 6px #ff8800; }
 .activity-text { font-family: var(--body); font-size: 0.82rem; color: rgba(200,255,220,0.7); flex: 1; line-height: 1.4; }
 .activity-time { font-family: var(--mono); font-size: 0.62rem; color: rgba(0,255,136,0.25); white-space: nowrap; }
-
-/* PASSWORD SECTION */
 .pwd-group { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-
 @media (max-width: 768px) {
   .profile-layout { grid-template-columns: 1fr; }
   .profile-id-card { position: static; }
@@ -71,7 +54,9 @@
 <body>
 
 <nav class="navbar">
-  <a href="../index.html" class="navbar-brand">SooPHA <span>LEARN</span></a>
+  <a href="../index.html" class="navbar-brand">
+    <img src="../img/logo.png" alt="SooPHA Learn" style="height:36px;width:auto;display:block;">
+  </a>
   <div class="navbar-links">
     <a href="dashboard.html" class="navbar-link">Dashboard</a>
     <a href="formations.html" class="navbar-link">Formations</a>
@@ -84,7 +69,6 @@
   <span>Chargement...</span>
 </div>
 
-<!-- TOAST -->
 <div class="toast-container" id="toast-container"></div>
 
 <div id="page-content" style="display:none">
@@ -228,9 +212,11 @@ var COUNTRY_FLAGS = {
 };
 
 var COURSE_NAMES = {
-  j1: 'Introduction à la Cybersécurité',
-  j2: 'Ingénierie Sociale & Phishing',
-  j3: 'Réseaux & Outils'
+  j1:'Introduction à la Cybersécurité', j2:'Ingénierie Sociale & Phishing',
+  j3:'Réseaux & Outils', linux:'Linux pour la Cybersécurité',
+  attacks:'Anatomie des Cyberattaques', web:'Web Hacking',
+  crypto:'Cryptographie Appliquée', osint:'OSINT & Reconnaissance',
+  forensics:'Forensics & Investigation', 'metiers-cyber':'Métiers de la Cybersécurité'
 };
 
 function showToast(msg, type) {
@@ -249,7 +235,6 @@ async function init() {
   currentProfile = await getProfile(currentUser.id);
   var meta = currentUser.user_metadata || {};
 
-  // Fill ID card
   var firstname = (currentProfile && currentProfile.display_name) || meta.display_name || meta.given_name || '';
   var lastname = '';
   var fullname = meta.full_name || firstname;
@@ -259,54 +244,46 @@ async function init() {
     lastname = parts.slice(1).join(' ');
   }
   var username = (currentProfile && currentProfile.username) || meta.username || '';
-  var country = (currentProfile && currentProfile.country) || meta.country || '';
-  var email = currentUser.email || '';
-  var since = new Date(currentUser.created_at).toLocaleDateString('fr-FR', {month:'long',year:'numeric'});
+  var country  = (currentProfile && currentProfile.country)  || meta.country  || '';
+  var email    = currentUser.email || '';
+  var since    = new Date(currentUser.created_at).toLocaleDateString('fr-FR', {month:'long',year:'numeric'});
 
-  document.getElementById('avatar-letter').textContent = (firstname || '?').charAt(0).toUpperCase();
+  document.getElementById('avatar-letter').textContent   = (firstname || '?').charAt(0).toUpperCase();
   document.getElementById('display-fullname').textContent = fullname || username;
   document.getElementById('display-username').textContent = '@' + username;
-  document.getElementById('display-flag').textContent = COUNTRY_FLAGS[country] || '';
-  document.getElementById('display-since').textContent = 'Membre depuis ' + since;
-  document.getElementById('display-email').textContent = email;
+  document.getElementById('display-flag').textContent     = COUNTRY_FLAGS[country] || '';
+  document.getElementById('display-since').textContent    = 'Membre depuis ' + since;
+  document.getElementById('display-email').textContent    = email;
 
-  // Fill form
   document.getElementById('edit-firstname').value = firstname;
-  document.getElementById('edit-lastname').value = lastname;
-  document.getElementById('edit-username').value = username;
-  document.getElementById('edit-country').value = country;
+  document.getElementById('edit-lastname').value  = lastname;
+  document.getElementById('edit-username').value  = username;
+  document.getElementById('edit-country').value   = country;
 
-  // Stats
   var stats = await getUserStats(currentUser.id);
   var { data: qcmData } = await supabase.from('qcm_results').select('id').eq('user_id', currentUser.id);
   var certifCount = stats.coursesPassedAt70 || 0;
 
   document.getElementById('ps-completed').textContent = stats.coursesCompleted;
-  document.getElementById('ps-score').textContent = stats.avgScore + '%';
-  document.getElementById('ps-qcm').textContent = (qcmData || []).length;
-  document.getElementById('ps-certif').textContent = certifCount;
+  document.getElementById('ps-score').textContent     = stats.avgScore + '%';
+  document.getElementById('ps-qcm').textContent       = (qcmData || []).length;
+  document.getElementById('ps-certif').textContent    = certifCount;
 
-  // Badges
   var badges = [];
-  if (stats.coursesCompleted >= 1) badges.push('<span class="badge badge-green">🎓 Premier cours</span>');
-  if (stats.coursesCompleted >= 3) badges.push('<span class="badge badge-yellow">⭐ Triplé</span>');
-  if (stats.avgScore >= 90) badges.push('<span class="badge badge-blue">💎 Expert</span>');
-  if (certifCount >= 1) badges.push('<span class="badge badge-green">📜 Certifié</span>');
-  document.getElementById('profile-badges-list').innerHTML = badges.join('') || '<span style="font-family:var(--mono);font-size:0.62rem;color:rgba(0,255,136,0.2)">Badges à débloquer</span>';
+  if (stats.coursesCompleted >= 1)  badges.push('<span class="badge badge-green">🎓 Premier cours</span>');
+  if (stats.coursesCompleted >= 3)  badges.push('<span class="badge badge-yellow">⭐ Triplé</span>');
+  if (stats.avgScore >= 90)         badges.push('<span class="badge badge-blue">💎 Expert</span>');
+  if (certifCount >= 1)             badges.push('<span class="badge badge-green">📜 Certifié</span>');
+  document.getElementById('profile-badges-list').innerHTML = badges.join('') ||
+    '<span style="font-family:var(--mono);font-size:0.62rem;color:rgba(0,255,136,0.2)">Badges à débloquer</span>';
 
-  // Activity
   loadActivity();
-
-  document.getElementById('loading').style.display = 'none';
+  document.getElementById('loading').style.display   = 'none';
   document.getElementById('page-content').style.display = 'block';
 }
 
 async function loadActivity() {
   var completions = await getCompletedCourses(currentUser.id);
-  var { data: qcmData } = await supabase
-    .from('qcm_results').select('*').eq('user_id', currentUser.id)
-    .order('answered_at', { ascending: false }).limit(5);
-
   var activities = [];
   completions.forEach(function(c) {
     activities.push({
@@ -335,58 +312,47 @@ async function loadActivity() {
 
 async function saveProfile() {
   var firstname = document.getElementById('edit-firstname').value.trim();
-  var lastname = document.getElementById('edit-lastname').value.trim();
-  var username = document.getElementById('edit-username').value.trim();
-  var country = document.getElementById('edit-country').value;
+  var lastname  = document.getElementById('edit-lastname').value.trim();
+  var username  = document.getElementById('edit-username').value.trim();
+  var country   = document.getElementById('edit-country').value;
 
   if (!firstname || !username) { showToast('Prénom et pseudo requis.', 'error'); return; }
-  if (username.length < 3 || /\s/.test(username)) { showToast('Pseudo invalide (min 3 caractères, pas d\'espaces).', 'error'); return; }
+  if (username.length < 3 || /\s/.test(username)) { showToast("Pseudo invalide (min 3 car., pas d'espaces).", 'error'); return; }
 
-  document.getElementById('save-text').style.display = 'none';
+  document.getElementById('save-text').style.display    = 'none';
   document.getElementById('save-spinner').style.display = 'inline-block';
-  document.getElementById('save-btn').disabled = true;
+  document.getElementById('save-btn').disabled           = true;
 
   try {
-    // Update Supabase auth metadata
     await supabase.auth.updateUser({
       data: {
         full_name: firstname + (lastname ? ' ' + lastname : ''),
-        display_name: firstname,
-        username: username,
-        country: country
+        display_name: firstname, username, country
       }
     });
-
-    // Update profiles table
     await supabase.from('profiles').upsert({
-      id: currentUser.id,
-      username: username,
-      display_name: firstname,
-      country: country,
-      updated_at: new Date().toISOString()
+      id: currentUser.id, username, display_name: firstname,
+      country, updated_at: new Date().toISOString()
     });
-
-    // Update display
     document.getElementById('display-fullname').textContent = firstname + (lastname ? ' ' + lastname : '');
-    document.getElementById('display-username').textContent = '@' + username;
-    document.getElementById('display-flag').textContent = COUNTRY_FLAGS[country] || '';
-    document.getElementById('avatar-letter').textContent = firstname.charAt(0).toUpperCase();
-
+    document.getElementById('display-username').textContent  = '@' + username;
+    document.getElementById('display-flag').textContent      = COUNTRY_FLAGS[country] || '';
+    document.getElementById('avatar-letter').textContent     = firstname.charAt(0).toUpperCase();
     showToast('✅ Profil mis à jour !', 'success');
   } catch(e) {
     showToast('Erreur : ' + e.message, 'error');
   }
 
-  document.getElementById('save-text').style.display = 'inline';
+  document.getElementById('save-text').style.display    = 'inline';
   document.getElementById('save-spinner').style.display = 'none';
-  document.getElementById('save-btn').disabled = false;
+  document.getElementById('save-btn').disabled           = false;
 }
 
 async function changePassword() {
-  var pwd = document.getElementById('new-password').value;
+  var pwd     = document.getElementById('new-password').value;
   var confirm = document.getElementById('confirm-password').value;
-  var errEl = document.getElementById('pwd-error');
-  var okEl = document.getElementById('pwd-success');
+  var errEl   = document.getElementById('pwd-error');
+  var okEl    = document.getElementById('pwd-success');
 
   errEl.classList.remove('show'); okEl.classList.remove('show');
 
@@ -397,7 +363,7 @@ async function changePassword() {
   if (error) { errEl.textContent = '⚠ ' + error.message; errEl.classList.add('show'); return; }
 
   okEl.textContent = '✅ Mot de passe mis à jour !'; okEl.classList.add('show');
-  document.getElementById('new-password').value = '';
+  document.getElementById('new-password').value   = '';
   document.getElementById('confirm-password').value = '';
 }
 
