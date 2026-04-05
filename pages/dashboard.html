@@ -425,7 +425,7 @@ async function goToCTF() {
   var result = await supabase.auth.getSession();
   var session = result.data && result.data.session;
   if (!session) { window.location.href = '../index.html'; return; }
-  window.location.href = 'https://ctfd.soopha-network.com/sso/supabase?token=' + session.access_token;
+  window.location.href = 'https://ctfd.soopha-learn.com/sso/supabase?token=' + session.access_token;
 }
 
 init();
