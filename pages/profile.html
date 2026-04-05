@@ -320,6 +320,19 @@ async function init() {
 
   setAvatarDisplay(avatarUrl, letter);
 
+  // Si pas d'avatar custom mais user Google → récupérer la photo Google
+  if (!avatarUrl) {
+    var googlePic = meta.avatar_url || meta.picture || null;
+    if (googlePic) {
+      avatarUrl = googlePic;
+      // Sauvegarder pour la prochaine fois
+      supabase.from('profiles')
+        .update({ avatar_url: googlePic, updated_at: new Date().toISOString() })
+        .eq('id', currentUser.id)
+        .then(function(){});
+    }
+  }
+
   document.getElementById('display-fullname').textContent = fullname || username;
   document.getElementById('display-username').textContent = '@' + username;
   document.getElementById('display-flag').textContent     = COUNTRY_FLAGS[country] || '';
