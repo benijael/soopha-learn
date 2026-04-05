@@ -315,7 +315,7 @@ function renderPodium(top) {
     var flag = countryFlags[u.country] || '';
     var initial = (u.display_name || u.username || '?').charAt(0).toUpperCase();
     var avatarContent = u.avatar_url
-      ? '<img src="' + u.avatar_url + '" alt="' + initial + '" onerror="this.parentNode.textContent='' + initial + ''">'
+      ? '<img src="' + u.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">'
       : initial;
     html += '<div class="podium-item ' + classes[pos] + '">' +
       '<div class="podium-rank">' + rankEmojis[i] + '</div>' +
@@ -347,7 +347,7 @@ function renderTable(rows) {
       ? ['🥇','🥈','🥉'][rank-1]
       : '<span style="color:rgba(0,255,136,0.4)">' + rank + '</span>';
     var miniAvatar = u.avatar_url
-      ? '<img src="' + u.avatar_url + '" alt="' + initial + '" onerror="this.parentNode.textContent='' + initial + ''">'
+      ? '<img src="' + u.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">'
       : initial;
 
     html += '<tr class="lb-row-data' + (isMe ? ' is-me' : '') + '">' +
