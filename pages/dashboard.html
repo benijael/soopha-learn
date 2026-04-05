@@ -357,14 +357,20 @@ async function init() {
   var avatarLetter = firstname.charAt(0).toUpperCase();
   document.getElementById('avatar-initials').textContent = avatarLetter;
 
-  // Fetch avatar_url pour la sidebar
+  // Fetch avatar_url pour la sidebar — createElement évite les problèmes de quotes
   supabase.from('profiles').select('avatar_url').eq('id', currentUser.id).single()
     .then(function(res) {
       if (res.data && res.data.avatar_url) {
         var av = document.getElementById('avatar-initials');
-        av.innerHTML = '<img src="' + res.data.avatar_url + '?t=' + Date.now() + '" alt="avatar" onerror="this.parentNode.textContent='' + avatarLetter + ''">';
+        var img = document.createElement('img');
+        img.src = res.data.avatar_url + '?t=' + Date.now();
+        img.alt = avatarLetter;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
+        img.onerror = function(){ av.textContent = avatarLetter; };
+        av.textContent = '';
+        av.appendChild(img);
       }
-    });
+    }).catch(function(){});
 
   if (country && countryFlags[country]) {
     document.getElementById('user-country').textContent = countryFlags[country];
