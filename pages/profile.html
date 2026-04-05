@@ -266,7 +266,12 @@ async function uploadAvatar(input) {
     var { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
     var publicUrl = urlData.publicUrl;
 
-    await supabase.from('profiles').upsert({ id: currentUser.id, avatar_url: publicUrl, updated_at: new Date().toISOString() });
+    // UPDATE ciblé — plus fiable que upsert avec RLS
+    var { error: dbErr } = await supabase
+      .from('profiles')
+      .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+      .eq('id', currentUser.id);
+    if (dbErr) throw dbErr;
 
     var letter = (document.getElementById('edit-firstname').value || '?').charAt(0).toUpperCase();
     setAvatarDisplay(publicUrl, letter);
@@ -291,10 +296,20 @@ async function init() {
     var parts = meta.full_name.split(' ');
     firstname = parts[0]; lastname = parts.slice(1).join(' ');
   }
-  var username   = (currentProfile && currentProfile.username)   || meta.username || '';
-  var country    = (currentProfile && currentProfile.country)    || meta.country  || '';
-  var avatarUrl  = (currentProfile && currentProfile.avatar_url) || null;
+  var username   = (currentProfile && currentProfile.username) || meta.username || '';
+  var country    = (currentProfile && currentProfile.country)  || meta.country  || '';
   var letter     = (firstname || '?').charAt(0).toUpperCase();
+
+  // Fetch avatar_url directement — getProfile() ne le retourne pas forcément
+  var avatarUrl = null;
+  try {
+    var { data: profData } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', currentUser.id)
+      .single();
+    avatarUrl = (profData && profData.avatar_url) || null;
+  } catch(e) { /* pas d'avatar */ }
 
   setAvatarDisplay(avatarUrl, letter);
 
