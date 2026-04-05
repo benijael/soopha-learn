@@ -29,14 +29,16 @@ canvas#matrix-auth {
   text-align: center; margin-bottom: 2rem;
 }
 .auth-logo a {
-  font-family: var(--display); font-size: 1.3rem;
-  font-weight: 900; color: #fff; letter-spacing: 0.15em;
+  display: inline-block;
 }
-.auth-logo a span { color: var(--green); text-shadow: 0 0 12px var(--green); }
+.auth-logo a img {
+  height: 44px; width: auto;
+  display: block; margin: 0 auto;
+}
 .auth-logo p {
   font-family: var(--mono); font-size: 0.65rem;
   color: rgba(0,255,136,0.35); letter-spacing: 0.2em;
-  margin-top: 0.4rem;
+  margin-top: 0.6rem;
 }
 .gabon-bar {
   display: flex; height: 2px; width: 40px;
@@ -46,7 +48,6 @@ canvas#matrix-auth {
 .gabon-bar span:nth-child(1){flex:1;background:#009e60}
 .gabon-bar span:nth-child(2){flex:1;background:#fcd116}
 .gabon-bar span:nth-child(3){flex:1;background:#003189}
-
 .auth-title {
   font-family: var(--display); font-size: 1rem;
   font-weight: 700; color: var(--green);
@@ -59,7 +60,6 @@ canvas#matrix-auth {
   color: rgba(0,255,136,0.35);
 }
 .auth-footer a { color: var(--green); }
-
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -73,7 +73,9 @@ canvas#matrix-auth {
 <div class="auth-page">
   <div class="card auth-card">
     <div class="auth-logo">
-      <a href="../index.html">SooPHA <span>LEARN</span></a>
+      <a href="../index.html">
+        <img src="../img/logo.png" alt="SooPHA Learn">
+      </a>
       <div class="gabon-bar"><span></span><span></span><span></span></div>
       <p>// CYBERSÉCURITÉ · AFRIQUE FRANCOPHONE</p>
     </div>
@@ -124,7 +126,6 @@ canvas#matrix-auth {
 </div>
 
 <script>
-// Matrix
 (function(){
   var c = document.getElementById('matrix-auth');
   var ctx = c.getContext('2d');
@@ -145,7 +146,6 @@ canvas#matrix-auth {
   }, 60);
 })();
 
-// Redirect if already authed
 redirectIfAuthed();
 
 function setLoading(loading) {
@@ -171,17 +171,11 @@ function showSuccess(msg) {
   document.getElementById('error-alert').classList.remove('show');
 }
 
-// LOGIN FORM
 document.getElementById('login-form').addEventListener('submit', async function(e) {
   e.preventDefault();
   var email = document.getElementById('email').value.trim();
   var password = document.getElementById('password').value;
-
-  if (!email || !password) {
-    showError('Email et mot de passe requis.');
-    return;
-  }
-
+  if (!email || !password) { showError('Email et mot de passe requis.'); return; }
   setLoading(true);
   try {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -196,7 +190,6 @@ document.getElementById('login-form').addEventListener('submit', async function(
       setLoading(false);
       return;
     }
-    // Succès → redirect
     showSuccess('Connexion réussie ! Redirection...');
     setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
   } catch (err) {
@@ -205,7 +198,6 @@ document.getElementById('login-form').addEventListener('submit', async function(
   }
 });
 
-// GOOGLE LOGIN
 document.getElementById('google-btn').addEventListener('click', async function() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -214,14 +206,9 @@ document.getElementById('google-btn').addEventListener('click', async function()
   if (error) showError('Erreur Google : ' + error.message);
 });
 
-// Check for email confirmation message
 const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.get('confirmed') === 'true') {
-  showSuccess('Email confirmé ! Tu peux te connecter.');
-}
-if (urlParams.get('reset') === 'sent') {
-  showSuccess('Email de réinitialisation envoyé. Vérifie ta boîte mail.');
-}
+if (urlParams.get('confirmed') === 'true') showSuccess('Email confirmé ! Tu peux te connecter.');
+if (urlParams.get('reset') === 'sent') showSuccess('Email de réinitialisation envoyé. Vérifie ta boîte mail.');
 </script>
 </body>
 </html>
