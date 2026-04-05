@@ -3,13 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- Favicon -->
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-
-
 <title>Mon Profil — SooPHA Learn</title>
 <link rel="stylesheet" href="../css/global.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -22,14 +18,59 @@
 .page-hero p { font-family: var(--mono); font-size: 0.75rem; color: rgba(0,255,136,0.4); letter-spacing: 0.15em; }
 .profile-layout { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; align-items: start; }
 .profile-id-card { padding: 2rem; text-align: center; position: sticky; top: 80px; }
+
+/* ── AVATAR UPLOAD ── */
+.avatar-wrapper {
+  position: relative; width: 90px; height: 90px;
+  margin: 0 auto 0.6rem; cursor: pointer;
+}
 .profile-avatar-lg {
   width: 90px; height: 90px; border-radius: 50%;
   background: rgba(0,255,136,0.1); border: 2px solid var(--green-border);
   display: flex; align-items: center; justify-content: center;
   font-family: var(--display); font-size: 2.5rem; font-weight: 900;
-  color: var(--green); margin: 0 auto 1rem;
+  color: var(--green); overflow: hidden;
   box-shadow: 0 0 20px rgba(0,255,136,0.1);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
+.profile-avatar-lg img {
+  width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+}
+.avatar-wrapper:hover .profile-avatar-lg {
+  border-color: var(--green); box-shadow: 0 0 25px rgba(0,255,136,0.25);
+}
+.avatar-overlay {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s; pointer-events: none;
+}
+.avatar-wrapper:hover .avatar-overlay { opacity: 1; }
+.avatar-overlay-text {
+  font-family: var(--mono); font-size: 0.58rem;
+  letter-spacing: 0.08em; color: var(--green);
+  text-transform: uppercase; line-height: 1.5; text-align: center;
+}
+.avatar-upload-spinner {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(0,0,0,0.7);
+  display: none; align-items: center; justify-content: center;
+}
+.avatar-upload-spinner.show { display: flex; }
+.avatar-upload-spinner .spinner {
+  width: 22px; height: 22px;
+  border: 2px solid rgba(0,255,136,0.2);
+  border-top-color: var(--green);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.avatar-hint {
+  font-family: var(--mono); font-size: 0.58rem;
+  color: rgba(0,255,136,0.22); letter-spacing: 0.06em;
+  margin-bottom: 0.8rem;
+}
+
+/* ── REST ── */
 .profile-fullname { font-family: var(--display); font-size: 1rem; font-weight: 700; color: #fff; letter-spacing: 0.05em; margin-bottom: 0.2rem; }
 .profile-username { font-family: var(--mono); font-size: 0.72rem; color: rgba(0,255,136,0.4); margin-bottom: 0.5rem; }
 .profile-country-flag { font-size: 1.5rem; margin-bottom: 1rem; }
@@ -78,6 +119,10 @@
 
 <div class="toast-container" id="toast-container"></div>
 
+<!-- Input fichier caché pour l'avatar -->
+<input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp"
+       style="display:none" onchange="uploadAvatar(this)">
+
 <div id="page-content" style="display:none">
   <div class="page-hero">
     <div class="container">
@@ -93,82 +138,63 @@
         <!-- LEFT — ID CARD -->
         <div>
           <div class="card profile-id-card">
-            <div class="profile-avatar-lg" id="avatar-letter">?</div>
+
+            <!-- AVATAR CLIQUABLE -->
+            <div class="avatar-wrapper" onclick="document.getElementById('avatar-input').click()" title="Changer la photo">
+              <div class="profile-avatar-lg" id="avatar-display">
+                <span id="avatar-letter">?</span>
+              </div>
+              <div class="avatar-overlay">
+                <div class="avatar-overlay-text">📷<br>Modifier</div>
+              </div>
+              <div class="avatar-upload-spinner" id="avatar-spinner">
+                <div class="spinner"></div>
+              </div>
+            </div>
+            <div class="avatar-hint">Clique · JPG PNG WEBP · 2 Mo max</div>
+
             <div class="profile-fullname" id="display-fullname">—</div>
             <div class="profile-username" id="display-username">@—</div>
             <div class="profile-country-flag" id="display-flag"></div>
             <div class="profile-member-since" id="display-since">Membre depuis —</div>
 
             <div class="profile-stats">
-              <div class="profile-stat-mini">
-                <div class="profile-stat-mini-val" id="ps-completed">0</div>
-                <div class="profile-stat-mini-label">Terminés</div>
-              </div>
-              <div class="profile-stat-mini">
-                <div class="profile-stat-mini-val" id="ps-score">0%</div>
-                <div class="profile-stat-mini-label">Score moy.</div>
-              </div>
-              <div class="profile-stat-mini">
-                <div class="profile-stat-mini-val" id="ps-qcm">0</div>
-                <div class="profile-stat-mini-label">QCM</div>
-              </div>
-              <div class="profile-stat-mini">
-                <div class="profile-stat-mini-val" id="ps-certif">0</div>
-                <div class="profile-stat-mini-label">Certifs</div>
-              </div>
+              <div class="profile-stat-mini"><div class="profile-stat-mini-val" id="ps-completed">0</div><div class="profile-stat-mini-label">Terminés</div></div>
+              <div class="profile-stat-mini"><div class="profile-stat-mini-val" id="ps-score">0%</div><div class="profile-stat-mini-label">Score moy.</div></div>
+              <div class="profile-stat-mini"><div class="profile-stat-mini-val" id="ps-qcm">0</div><div class="profile-stat-mini-label">QCM</div></div>
+              <div class="profile-stat-mini"><div class="profile-stat-mini-val" id="ps-certif">0</div><div class="profile-stat-mini-label">Certifs</div></div>
             </div>
 
             <div class="profile-badges-list" id="profile-badges-list" style="margin-top:1.2rem"></div>
           </div>
         </div>
 
-        <!-- RIGHT — EDIT + ACTIVITY -->
+        <!-- RIGHT -->
         <div>
-
-          <!-- INFOS GÉNÉRALES -->
           <div class="card edit-section">
             <div class="edit-section-title">Informations personnelles</div>
             <div class="grid-2" style="gap:0.8rem;margin-bottom:0">
-              <div class="form-group">
-                <label class="form-label" for="edit-firstname">Prénom</label>
-                <input type="text" id="edit-firstname" class="form-input" placeholder="Ton prénom">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="edit-lastname">Nom</label>
-                <input type="text" id="edit-lastname" class="form-input" placeholder="Ton nom">
-              </div>
+              <div class="form-group"><label class="form-label" for="edit-firstname">Prénom</label><input type="text" id="edit-firstname" class="form-input" placeholder="Ton prénom"></div>
+              <div class="form-group"><label class="form-label" for="edit-lastname">Nom</label><input type="text" id="edit-lastname" class="form-input" placeholder="Ton nom"></div>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="edit-username">Pseudo (public)</label>
-              <input type="text" id="edit-username" class="form-input" placeholder="ton_pseudo">
-            </div>
+            <div class="form-group"><label class="form-label" for="edit-username">Pseudo (public)</label><input type="text" id="edit-username" class="form-input" placeholder="ton_pseudo"></div>
             <div class="form-group">
               <label class="form-label" for="edit-country">Pays</label>
               <select id="edit-country" class="form-input country-select">
                 <option value="">Sélectionne ton pays</option>
-                <option value="GA">🇬🇦 Gabon</option>
-                <option value="SN">🇸🇳 Sénégal</option>
-                <option value="CI">🇨🇮 Côte d'Ivoire</option>
-                <option value="CM">🇨🇲 Cameroun</option>
-                <option value="CD">🇨🇩 RD Congo</option>
-                <option value="CG">🇨🇬 Congo-Brazzaville</option>
-                <option value="MG">🇲🇬 Madagascar</option>
-                <option value="ML">🇲🇱 Mali</option>
-                <option value="BF">🇧🇫 Burkina Faso</option>
-                <option value="NE">🇳🇪 Niger</option>
-                <option value="TG">🇹🇬 Togo</option>
-                <option value="BJ">🇧🇯 Bénin</option>
-                <option value="GN">🇬🇳 Guinée</option>
-                <option value="TN">🇹🇳 Tunisie</option>
-                <option value="MA">🇲🇦 Maroc</option>
-                <option value="DZ">🇩🇿 Algérie</option>
-                <option value="FR">🇫🇷 France</option>
-                <option value="other">Autre</option>
+                <option value="GA">🇬🇦 Gabon</option><option value="SN">🇸🇳 Sénégal</option>
+                <option value="CI">🇨🇮 Côte d'Ivoire</option><option value="CM">🇨🇲 Cameroun</option>
+                <option value="CD">🇨🇩 RD Congo</option><option value="CG">🇨🇬 Congo-Brazzaville</option>
+                <option value="MG">🇲🇬 Madagascar</option><option value="ML">🇲🇱 Mali</option>
+                <option value="BF">🇧🇫 Burkina Faso</option><option value="NE">🇳🇪 Niger</option>
+                <option value="TG">🇹🇬 Togo</option><option value="BJ">🇧🇯 Bénin</option>
+                <option value="GN">🇬🇳 Guinée</option><option value="TN">🇹🇳 Tunisie</option>
+                <option value="MA">🇲🇦 Maroc</option><option value="DZ">🇩🇿 Algérie</option>
+                <option value="FR">🇫🇷 France</option><option value="other">Autre</option>
               </select>
             </div>
             <div style="font-family:var(--mono);font-size:0.65rem;color:rgba(0,255,136,0.25);margin-bottom:1rem">
-              Email : <span id="display-email" style="color:rgba(0,255,136,0.5)">—</span>
-              (non modifiable)
+              Email : <span id="display-email" style="color:rgba(0,255,136,0.5)">—</span> (non modifiable)
             </div>
             <button class="btn btn-primary" id="save-btn" onclick="saveProfile()">
               <span id="save-text">Sauvegarder</span>
@@ -176,32 +202,23 @@
             </button>
           </div>
 
-          <!-- MOT DE PASSE -->
           <div class="card edit-section">
             <div class="edit-section-title">Changer le mot de passe</div>
             <div class="alert alert-error" id="pwd-error"></div>
             <div class="alert alert-success" id="pwd-success"></div>
             <div class="pwd-group">
-              <div class="form-group">
-                <label class="form-label" for="new-password">Nouveau mot de passe</label>
-                <input type="password" id="new-password" class="form-input" placeholder="Minimum 8 caractères">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="confirm-password">Confirmer</label>
-                <input type="password" id="confirm-password" class="form-input" placeholder="••••••••">
-              </div>
+              <div class="form-group"><label class="form-label" for="new-password">Nouveau mot de passe</label><input type="password" id="new-password" class="form-input" placeholder="Minimum 8 caractères"></div>
+              <div class="form-group"><label class="form-label" for="confirm-password">Confirmer</label><input type="password" id="confirm-password" class="form-input" placeholder="••••••••"></div>
             </div>
             <button class="btn btn-secondary" onclick="changePassword()">Mettre à jour le mot de passe</button>
           </div>
 
-          <!-- ACTIVITÉ RÉCENTE -->
           <div class="card">
             <div class="edit-section-title" style="margin-bottom:1rem">Activité récente</div>
             <div class="activity-list" id="activity-list">
               <div style="font-family:var(--mono);font-size:0.72rem;color:rgba(0,255,136,0.25);text-align:center;padding:1rem">Chargement...</div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -211,20 +228,8 @@
 <script>
 var currentUser = null;
 var currentProfile = null;
-
-var COUNTRY_FLAGS = {
-  'GA':'🇬🇦','SN':'🇸🇳','CI':'🇨🇮','CM':'🇨🇲','CD':'🇨🇩','CG':'🇨🇬',
-  'MG':'🇲🇬','ML':'🇲🇱','BF':'🇧🇫','NE':'🇳🇪','TG':'🇹🇬','BJ':'🇧🇯',
-  'GN':'🇬🇳','TN':'🇹🇳','MA':'🇲🇦','DZ':'🇩🇿','FR':'🇫🇷'
-};
-
-var COURSE_NAMES = {
-  j1:'Introduction à la Cybersécurité', j2:'Ingénierie Sociale & Phishing',
-  j3:'Réseaux & Outils', linux:'Linux pour la Cybersécurité',
-  attacks:'Anatomie des Cyberattaques', web:'Web Hacking',
-  crypto:'Cryptographie Appliquée', osint:'OSINT & Reconnaissance',
-  forensics:'Forensics & Investigation', 'metiers-cyber':'Métiers de la Cybersécurité'
-};
+var COUNTRY_FLAGS = {'GA':'🇬🇦','SN':'🇸🇳','CI':'🇨🇮','CM':'🇨🇲','CD':'🇨🇩','CG':'🇨🇬','MG':'🇲🇬','ML':'🇲🇱','BF':'🇧🇫','NE':'🇳🇪','TG':'🇹🇬','BJ':'🇧🇯','GN':'🇬🇳','TN':'🇹🇳','MA':'🇲🇦','DZ':'🇩🇿','FR':'🇫🇷'};
+var COURSE_NAMES = {j1:'Introduction à la Cybersécurité',j2:'Ingénierie Sociale & Phishing',j3:'Réseaux & Outils',linux:'Linux pour la Cybersécurité',attacks:'Anatomie des Cyberattaques',web:'Web Hacking',crypto:'Cryptographie Appliquée',osint:'OSINT & Reconnaissance',forensics:'Forensics & Investigation','metiers-cyber':'Métiers de la Cybersécurité'};
 
 function showToast(msg, type) {
   var tc = document.getElementById('toast-container');
@@ -235,10 +240,47 @@ function showToast(msg, type) {
   setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 3200);
 }
 
+function setAvatarDisplay(url, letter) {
+  var d = document.getElementById('avatar-display');
+  if (url) {
+    d.innerHTML = '<img src="' + url + '?t=' + Date.now() + '" alt="Avatar" onerror="this.parentNode.innerHTML=\'<span>' + letter + '</span>\'">';
+  } else {
+    d.innerHTML = '<span>' + letter + '</span>';
+  }
+}
+
+async function uploadAvatar(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { showToast('⚠ Fichier trop lourd (max 2 Mo)', 'error'); input.value=''; return; }
+  if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { showToast('⚠ Format non supporté (JPG, PNG, WEBP)', 'error'); input.value=''; return; }
+
+  document.getElementById('avatar-spinner').classList.add('show');
+  try {
+    var ext = file.name.split('.').pop().toLowerCase();
+    var path = currentUser.id + '/avatar.' + ext;
+
+    var { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) throw upErr;
+
+    var { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+    var publicUrl = urlData.publicUrl;
+
+    await supabase.from('profiles').upsert({ id: currentUser.id, avatar_url: publicUrl, updated_at: new Date().toISOString() });
+
+    var letter = (document.getElementById('edit-firstname').value || '?').charAt(0).toUpperCase();
+    setAvatarDisplay(publicUrl, letter);
+    showToast('✅ Photo mise à jour !', 'success');
+  } catch(e) {
+    showToast('Erreur upload : ' + (e.message || e), 'error');
+  }
+  document.getElementById('avatar-spinner').classList.remove('show');
+  input.value = '';
+}
+
 async function init() {
   currentUser = await requireAuth();
   if (!currentUser) return;
-
   currentProfile = await getProfile(currentUser.id);
   var meta = currentUser.user_metadata || {};
 
@@ -247,21 +289,20 @@ async function init() {
   var fullname = meta.full_name || firstname;
   if (meta.full_name && meta.full_name.includes(' ')) {
     var parts = meta.full_name.split(' ');
-    firstname = parts[0];
-    lastname = parts.slice(1).join(' ');
+    firstname = parts[0]; lastname = parts.slice(1).join(' ');
   }
-  var username = (currentProfile && currentProfile.username) || meta.username || '';
-  var country  = (currentProfile && currentProfile.country)  || meta.country  || '';
-  var email    = currentUser.email || '';
-  var since    = new Date(currentUser.created_at).toLocaleDateString('fr-FR', {month:'long',year:'numeric'});
+  var username   = (currentProfile && currentProfile.username)   || meta.username || '';
+  var country    = (currentProfile && currentProfile.country)    || meta.country  || '';
+  var avatarUrl  = (currentProfile && currentProfile.avatar_url) || null;
+  var letter     = (firstname || '?').charAt(0).toUpperCase();
 
-  document.getElementById('avatar-letter').textContent   = (firstname || '?').charAt(0).toUpperCase();
+  setAvatarDisplay(avatarUrl, letter);
+
   document.getElementById('display-fullname').textContent = fullname || username;
   document.getElementById('display-username').textContent = '@' + username;
   document.getElementById('display-flag').textContent     = COUNTRY_FLAGS[country] || '';
-  document.getElementById('display-since').textContent    = 'Membre depuis ' + since;
-  document.getElementById('display-email').textContent    = email;
-
+  document.getElementById('display-since').textContent    = 'Membre depuis ' + new Date(currentUser.created_at).toLocaleDateString('fr-FR', {month:'long',year:'numeric'});
+  document.getElementById('display-email').textContent    = currentUser.email || '';
   document.getElementById('edit-firstname').value = firstname;
   document.getElementById('edit-lastname').value  = lastname;
   document.getElementById('edit-username').value  = username;
@@ -270,50 +311,38 @@ async function init() {
   var stats = await getUserStats(currentUser.id);
   var { data: qcmData } = await supabase.from('qcm_results').select('id').eq('user_id', currentUser.id);
   var certifCount = stats.coursesPassedAt70 || 0;
-
   document.getElementById('ps-completed').textContent = stats.coursesCompleted;
   document.getElementById('ps-score').textContent     = stats.avgScore + '%';
   document.getElementById('ps-qcm').textContent       = (qcmData || []).length;
   document.getElementById('ps-certif').textContent    = certifCount;
 
   var badges = [];
-  if (stats.coursesCompleted >= 1)  badges.push('<span class="badge badge-green">🎓 Premier cours</span>');
-  if (stats.coursesCompleted >= 3)  badges.push('<span class="badge badge-yellow">⭐ Triplé</span>');
-  if (stats.avgScore >= 90)         badges.push('<span class="badge badge-blue">💎 Expert</span>');
-  if (certifCount >= 1)             badges.push('<span class="badge badge-green">📜 Certifié</span>');
-  document.getElementById('profile-badges-list').innerHTML = badges.join('') ||
-    '<span style="font-family:var(--mono);font-size:0.62rem;color:rgba(0,255,136,0.2)">Badges à débloquer</span>';
+  if (stats.coursesCompleted >= 1) badges.push('<span class="badge badge-green">🎓 Premier cours</span>');
+  if (stats.coursesCompleted >= 3) badges.push('<span class="badge badge-yellow">⭐ Triplé</span>');
+  if (stats.avgScore >= 90)        badges.push('<span class="badge badge-blue">💎 Expert</span>');
+  if (certifCount >= 1)            badges.push('<span class="badge badge-green">📜 Certifié</span>');
+  document.getElementById('profile-badges-list').innerHTML = badges.join('') || '<span style="font-family:var(--mono);font-size:0.62rem;color:rgba(0,255,136,0.2)">Badges à débloquer</span>';
 
   loadActivity();
-  document.getElementById('loading').style.display   = 'none';
+  document.getElementById('loading').style.display      = 'none';
   document.getElementById('page-content').style.display = 'block';
 }
 
 async function loadActivity() {
   var completions = await getCompletedCourses(currentUser.id);
-  var activities = [];
-  completions.forEach(function(c) {
-    activities.push({
+  var activities = completions.map(function(c){
+    return {
       type: c.score_pct >= 70 ? 'pass' : 'warn',
-      text: c.score_pct >= 70
-        ? '✅ Cours complété avec ' + Math.round(c.score_pct) + '% — ' + (COURSE_NAMES[c.course_id] || c.course_id)
-        : '📚 Cours terminé (' + Math.round(c.score_pct) + '%) — ' + (COURSE_NAMES[c.course_id] || c.course_id),
+      text: (c.score_pct >= 70 ? '✅ Cours complété avec ' : '📚 Cours terminé (') + Math.round(c.score_pct) + (c.score_pct >= 70 ? '%' : '%)') + ' — ' + (COURSE_NAMES[c.course_id] || c.course_id),
       time: new Date(c.completed_at).toLocaleDateString('fr-FR')
-    });
+    };
   });
-
-  if (activities.length === 0) {
-    document.getElementById('activity-list').innerHTML =
-      '<div style="font-family:var(--mono);font-size:0.72rem;color:rgba(0,255,136,0.25);text-align:center;padding:1rem">Commence une formation pour voir ton activité ici</div>';
+  if (!activities.length) {
+    document.getElementById('activity-list').innerHTML = '<div style="font-family:var(--mono);font-size:0.72rem;color:rgba(0,255,136,0.25);text-align:center;padding:1rem">Commence une formation pour voir ton activité ici</div>';
     return;
   }
-
-  document.getElementById('activity-list').innerHTML = activities.map(function(a) {
-    return '<div class="activity-item">' +
-      '<div class="activity-dot ' + (a.type === 'warn' ? 'warn' : '') + '"></div>' +
-      '<div class="activity-text">' + a.text + '</div>' +
-      '<div class="activity-time">' + a.time + '</div>' +
-      '</div>';
+  document.getElementById('activity-list').innerHTML = activities.map(function(a){
+    return '<div class="activity-item"><div class="activity-dot '+(a.type==='warn'?'warn':'')+'"></div><div class="activity-text">'+a.text+'</div><div class="activity-time">'+a.time+'</div></div>';
   }).join('');
 }
 
@@ -322,55 +351,38 @@ async function saveProfile() {
   var lastname  = document.getElementById('edit-lastname').value.trim();
   var username  = document.getElementById('edit-username').value.trim();
   var country   = document.getElementById('edit-country').value;
-
   if (!firstname || !username) { showToast('Prénom et pseudo requis.', 'error'); return; }
-  if (username.length < 3 || /\s/.test(username)) { showToast("Pseudo invalide (min 3 car., pas d'espaces).", 'error'); return; }
-
-  document.getElementById('save-text').style.display    = 'none';
+  if (username.length < 3 || /\s/.test(username)) { showToast("Pseudo invalide.", 'error'); return; }
+  document.getElementById('save-text').style.display = 'none';
   document.getElementById('save-spinner').style.display = 'inline-block';
-  document.getElementById('save-btn').disabled           = true;
-
+  document.getElementById('save-btn').disabled = true;
   try {
-    await supabase.auth.updateUser({
-      data: {
-        full_name: firstname + (lastname ? ' ' + lastname : ''),
-        display_name: firstname, username, country
-      }
-    });
-    await supabase.from('profiles').upsert({
-      id: currentUser.id, username, display_name: firstname,
-      country, updated_at: new Date().toISOString()
-    });
-    document.getElementById('display-fullname').textContent = firstname + (lastname ? ' ' + lastname : '');
-    document.getElementById('display-username').textContent  = '@' + username;
-    document.getElementById('display-flag').textContent      = COUNTRY_FLAGS[country] || '';
-    document.getElementById('avatar-letter').textContent     = firstname.charAt(0).toUpperCase();
+    await supabase.auth.updateUser({ data: { full_name: firstname+(lastname?' '+lastname:''), display_name: firstname, username, country } });
+    await supabase.from('profiles').upsert({ id: currentUser.id, username, display_name: firstname, country, updated_at: new Date().toISOString() });
+    document.getElementById('display-fullname').textContent = firstname+(lastname?' '+lastname:'');
+    document.getElementById('display-username').textContent = '@'+username;
+    document.getElementById('display-flag').textContent = COUNTRY_FLAGS[country] || '';
+    if (!document.querySelector('#avatar-display img')) {
+      document.getElementById('avatar-display').innerHTML = '<span>'+firstname.charAt(0).toUpperCase()+'</span>';
+    }
     showToast('✅ Profil mis à jour !', 'success');
-  } catch(e) {
-    showToast('Erreur : ' + e.message, 'error');
-  }
-
-  document.getElementById('save-text').style.display    = 'inline';
+  } catch(e) { showToast('Erreur : '+e.message, 'error'); }
+  document.getElementById('save-text').style.display = 'inline';
   document.getElementById('save-spinner').style.display = 'none';
-  document.getElementById('save-btn').disabled           = false;
+  document.getElementById('save-btn').disabled = false;
 }
 
 async function changePassword() {
-  var pwd     = document.getElementById('new-password').value;
+  var pwd = document.getElementById('new-password').value;
   var confirm = document.getElementById('confirm-password').value;
-  var errEl   = document.getElementById('pwd-error');
-  var okEl    = document.getElementById('pwd-success');
-
+  var errEl = document.getElementById('pwd-error'), okEl = document.getElementById('pwd-success');
   errEl.classList.remove('show'); okEl.classList.remove('show');
-
-  if (pwd.length < 8) { errEl.textContent = '⚠ Minimum 8 caractères.'; errEl.classList.add('show'); return; }
-  if (pwd !== confirm) { errEl.textContent = '⚠ Les mots de passe ne correspondent pas.'; errEl.classList.add('show'); return; }
-
+  if (pwd.length < 8) { errEl.textContent='⚠ Minimum 8 caractères.'; errEl.classList.add('show'); return; }
+  if (pwd !== confirm) { errEl.textContent='⚠ Les mots de passe ne correspondent pas.'; errEl.classList.add('show'); return; }
   const { error } = await supabase.auth.updateUser({ password: pwd });
-  if (error) { errEl.textContent = '⚠ ' + error.message; errEl.classList.add('show'); return; }
-
-  okEl.textContent = '✅ Mot de passe mis à jour !'; okEl.classList.add('show');
-  document.getElementById('new-password').value   = '';
+  if (error) { errEl.textContent='⚠ '+error.message; errEl.classList.add('show'); return; }
+  okEl.textContent='✅ Mot de passe mis à jour !'; okEl.classList.add('show');
+  document.getElementById('new-password').value = '';
   document.getElementById('confirm-password').value = '';
 }
 
