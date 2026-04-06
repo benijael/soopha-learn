@@ -2,13 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <!-- Favicon -->
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mes Certifications — SooPHA Learn</title>
 <link rel="stylesheet" href="../css/global.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -122,9 +120,10 @@ var COURSES = {
   osint:        { title: "OSINT & Reconnaissance",           day: "Module 07", qcm: 8  },
   forensics:    { title: "Forensics & Investigation",        day: "Module 08", qcm: 8  },
   crypto:       { title: "Cryptographie Appliquée",          day: "Module 09", qcm: 8  },
-  'metiers-cyber': { title: "Métiers de la Cybersécurité",  day: "Module 10", qcm: 8  }
+  'metiers-cyber': { title: "Métiers de la Cybersécurité",  day: "Module 10", qcm: 8  },
+  'malware':       { title: "Malware Analysis",               day: "Module 11", qcm: 8  }
 };
-var ALL_COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber'];
+var ALL_COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware'];
 var currentUser = null;
 var currentProfile = null;
 
@@ -286,7 +285,15 @@ function printCert() {
       .cert-id { font-size: 9px; color: #bbb; text-align: center; letter-spacing: 1px; }
       @media print { body { padding: 20px; } }
     </style>
-    </head><body>${cert.outerHTML}</body></html>`);
+    </head><body>${cert.outerHTML}
+<footer style="border-top:1px solid var(--green-border);padding:1.2rem 0;margin-top:2rem;text-align:center">
+  <div style="font-family:var(--mono);font-size:0.62rem;color:rgba(0,255,136,0.2);letter-spacing:0.08em;display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap">
+    <span>SooPHA Learn × Cybersécurité × Afrique Francophone</span>
+    <a href="../privacy.html" style="color:rgba(0,255,136,0.4)">Confidentialité</a>
+    <a href="../terms.html" style="color:rgba(0,255,136,0.4)">CGU</a>
+  </div>
+</footer>
+</body></html>`);
   win.document.close();
   win.focus();
   setTimeout(function(){ win.print(); }, 500);
@@ -302,6 +309,5 @@ init();
     <a href="../terms.html" style="color:rgba(0,255,136,0.4)">CGU</a>
   </div>
 </footer>
-
 </body>
 </html>

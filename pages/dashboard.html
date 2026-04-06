@@ -233,7 +233,7 @@
         <div class="theme-header" onclick="toggleSection('defense')">
           <span class="theme-icon">🛡️</span>
           <span class="theme-label">Défense</span>
-          <span class="theme-count">2 cours · Active Directory à venir</span>
+          <span class="theme-count">3 cours · Active Directory à venir</span>
           <span class="theme-chevron">▼</span>
         </div>
         <div class="courses-grid">
@@ -262,6 +262,19 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-crypto-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-crypto" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+          <a href="malware.html" class="card course-card" id="course-malware">
+            <div class="course-number">11</div>
+            <div class="course-day">// Malware Analysis</div>
+            <div class="course-title">Malware Analysis</div>
+            <div class="course-desc">Statique, dynamique, obfuscation, YARA, C2, ransomware. Autopsie des logiciels malveillants.</div>
+            <div class="course-tags"><span class="badge badge-purple">🦠 Malware</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">8 QCM</span></div>
+            <div class="course-progress" id="prog-malware" style="display:none">
+              <div class="course-progress-label"><span id="prog-malware-label">En cours</span><span id="prog-malware-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-malware-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-malware" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
           </a>
 
         </div>
@@ -331,7 +344,7 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber'];
+var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware'];
 var countryFlags = {'GA':'🇬🇦','SN':'🇸🇳','CI':'🇨🇮','CM':'🇨🇲','CD':'🇨🇩','CG':'🇨🇬','MG':'🇲🇬','ML':'🇲🇱','BF':'🇧🇫','NE':'🇳🇪','TG':'🇹🇬','BJ':'🇧🇯','GN':'🇬🇳','TN':'🇹🇳','MA':'🇲🇦','DZ':'🇩🇿','FR':'🇫🇷'};
 
 
@@ -459,7 +472,5 @@ init();
     <a href="../terms.html" style="color:rgba(0,255,136,0.4)">CGU</a>
   </div>
 </footer>
-  
-  
 </body>
 </html>

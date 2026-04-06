@@ -2,14 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <!-- Favicon -->
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-
-  
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Formations — SooPHA Learn</title>
 <link rel="stylesheet" href="../css/global.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -99,7 +96,7 @@
     <div class="container">
 
       <div class="stats-bar">
-        <div class="stats-bar-item"><div class="stat-val" id="stat-total">10</div><div class="stat-label">Cours disponibles</div></div>
+        <div class="stats-bar-item"><div class="stat-val" id="stat-total">11</div><div class="stat-label">Cours disponibles</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-completed">0</div><div class="stat-label">Terminés</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-avg">0%</div><div class="stat-label">Score moyen</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-qcm">0</div><div class="stat-label">QCM répondus</div></div>
@@ -240,7 +237,7 @@
         <div class="theme-header" onclick="toggleSection('defense')">
           <span class="theme-icon">🛡️</span>
           <span class="theme-label">Défense</span>
-          <span class="theme-desc">2 cours · Active Directory à venir</span>
+          <span class="theme-desc">3 cours · Active Directory à venir</span>
           <span class="theme-chevron">▼</span>
         </div>
         <div class="catalogue-grid">
@@ -269,6 +266,19 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-forensics-fill" style="width:0%"></div></div>
             </div>
             <span class="course-cta" id="cta-forensics">Commencer →</span>
+          </a>
+
+          <a href="malware.html" class="course-card" data-theme="defense" data-status="disponible" id="card-malware">
+            <div class="course-number">11</div>
+            <div class="course-day"><span>// Malware Analysis</span><span id="badge-malware"></span></div>
+            <div class="course-title">Malware Analysis</div>
+            <div class="course-desc">Statique, dynamique, obfuscation, packing, YARA, C2, ransomware. Autopsie complète des logiciels malveillants.</div>
+            <div class="course-tags"><span class="badge badge-purple">🦠 Malware</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">8 QCM</span><span class="badge badge-gray">~60 min</span></div>
+            <div class="course-progress-wrap" id="prog-malware" style="display:none">
+              <div class="course-progress-label"><span id="prog-malware-label">En cours</span><span id="prog-malware-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-malware-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-malware">Commencer →</span>
           </a>
 
         </div>
@@ -306,7 +316,7 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber'];
+var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware'];
 
 async function init() {
   currentUser = await requireAuth();
@@ -408,6 +418,5 @@ init();
     <a href="../terms.html" style="color:rgba(0,255,136,0.4)">CGU</a>
   </div>
 </footer>
-  
 </body>
 </html>
