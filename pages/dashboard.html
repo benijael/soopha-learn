@@ -168,7 +168,7 @@
         <div class="theme-header" onclick="toggleSection('offensif')">
           <span class="theme-icon">⚔️</span>
           <span class="theme-label">Offensif</span>
-          <span class="theme-count">4 cours · Attaques & Reconnaissance</span>
+          <span class="theme-count">6 cours · Attaques & Reconnaissance</span>
           <span class="theme-chevron">▼</span>
         </div>
         <div class="courses-grid">
@@ -223,6 +223,32 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-osint-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-osint" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+          <a href="pentest1.html" class="card course-card" id="course-pentest1">
+            <div class="course-number">13</div>
+            <div class="course-day">// Pentest · Méthodologie</div>
+            <div class="course-title">Pentest Methodology I</div>
+            <div class="course-desc">Recon, Scanning, Nmap, Burp Suite, Metasploit. Les fondamentaux du pentest professionnel.</div>
+            <div class="course-tags"><span class="badge badge-red">⚔️ Offensif</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">6 QCM</span></div>
+            <div class="course-progress" id="prog-pentest1" style="display:none">
+              <div class="course-progress-label"><span id="prog-pentest1-label">En cours</span><span id="prog-pentest1-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-pentest1-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-pentest1" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+          <a href="pentest2.html" class="card course-card" id="course-pentest2">
+            <div class="course-number">14</div>
+            <div class="course-day">// Pentest Avancé · AD</div>
+            <div class="course-title">Pentest Methodology II</div>
+            <div class="course-desc">Web App, Active Directory, Kerberoasting, PrivEsc, Pivoting, Rapport pro. Niveau OSCP.</div>
+            <div class="course-tags"><span class="badge badge-red">⚔️ Avancé</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
+            <div class="course-progress" id="prog-pentest2" style="display:none">
+              <div class="course-progress-label"><span id="prog-pentest2-label">En cours</span><span id="prog-pentest2-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-pentest2-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-pentest2" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
           </a>
 
         </div>
@@ -357,7 +383,7 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2'];
+var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2'];
 var countryFlags = {'GA':'🇬🇦','SN':'🇸🇳','CI':'🇨🇮','CM':'🇨🇲','CD':'🇨🇩','CG':'🇨🇬','MG':'🇲🇬','ML':'🇲🇱','BF':'🇧🇫','NE':'🇳🇪','TG':'🇹🇬','BJ':'🇧🇯','GN':'🇬🇳','TN':'🇹🇳','MA':'🇲🇦','DZ':'🇩🇿','FR':'🇫🇷'};
 
 
