@@ -1,0 +1,191 @@
+/* ============================================================
+   SooPHA Learn — Mobile Responsive CSS
+   Breakpoints : 768px (tablette) · 480px (mobile S)
+   À linker après global.css dans chaque page HTML :
+   <link rel="stylesheet" href="../css/mobile.css">
+   ============================================================ */
+
+/* ── TABLETTE & MOBILE (< 768px) ────────────────────────── */
+@media (max-width: 768px) {
+
+  /* TOPBAR */
+  #topbar { padding: .4rem .8rem; font-size: .58rem; gap: .5rem; }
+  .tb-back { font-size: .58rem; }
+  .tb-left { gap: .8rem; }
+  #topbar > .tb-left > span { display: none; } /* cache "// NET·06 · ..." sur petits écrans */
+
+  /* SLIDES — réduire le padding latéral */
+  .slide {
+    padding: 1rem 1rem 1.2rem !important;
+    overflow-y: auto !important;
+  }
+
+  /* TITRES */
+  .slide h1 { font-size: clamp(1.4rem, 7vw, 2rem) !important; }
+  .slide h2 { font-size: clamp(1rem, 5vw, 1.3rem) !important; margin-bottom: .6rem !important; }
+  .slide h3 { font-size: clamp(.72rem, 3vw, .85rem) !important; margin-bottom: .8rem !important; }
+
+  /* GRILLES — passer en colonne unique */
+  .grid2 { grid-template-columns: 1fr !important; gap: .7rem; }
+  .cmd-grid { grid-template-columns: 1fr !important; gap: .5rem; }
+
+  /* CARDS */
+  .card { padding: 1rem 1.1rem; }
+  .cmd-card { padding: .6rem .8rem; }
+
+  /* TERMINAL */
+  .terminal { font-size: .6rem !important; line-height: 1.6 !important; padding: .6rem .8rem; overflow-x: auto; }
+  .terminal.sm { font-size: .56rem !important; line-height: 1.55 !important; }
+
+  /* BULLETS */
+  .bullets li { font-size: .78rem !important; gap: .5rem; }
+
+  /* PILLS */
+  .pill { font-size: .58rem; padding: .18rem .5rem; }
+
+  /* ZONE STACK (NET·04) */
+  .zone { flex-direction: column; gap: .4rem; padding: .5rem .7rem; }
+  .zone-label { min-width: unset; }
+  .zone-examples { align-self: flex-start; }
+
+  /* DNS FLOW */
+  .dns-flow { gap: .2rem; }
+  .dns-step { flex-wrap: wrap; gap: .3rem; padding: .35rem .6rem; }
+  .dns-from, .dns-to { min-width: unset; font-size: .6rem; }
+  .dns-msg { font-size: .62rem; }
+
+  /* PORT TABLE */
+  .port-row { gap: .4rem; padding: .35rem .5rem; flex-wrap: wrap; }
+  .port-num { min-width: 40px; font-size: .72rem; }
+  .port-proto { min-width: 42px; font-size: .58rem; }
+  .port-desc { font-size: .65rem; }
+  .port-risk { font-size: .52rem; }
+
+  /* STEPS */
+  .step { padding: .5rem .7rem; gap: .5rem; }
+  .step-num { font-size: .85rem; min-width: 20px; }
+  .step-content { font-size: .74rem; }
+
+  /* FW RULES */
+  .fw-rule { font-size: .58rem; flex-wrap: wrap; gap: .3rem; }
+  .fw-src, .fw-dst { min-width: unset; }
+
+  /* VLAN ROWS */
+  .vlan-row { flex-wrap: wrap; gap: .3rem; padding: .4rem .6rem; }
+  .vlan-id { min-width: 44px; }
+  .vlan-name { min-width: unset; }
+  .vlan-range { min-width: unset; font-size: .58rem; }
+
+  /* ATTACK CARDS */
+  .attack-card { padding: .6rem .8rem; }
+  .attack-name { font-size: .7rem; }
+  .attack-desc { font-size: .66rem; }
+  .attack-fix { font-size: .58rem; }
+
+  /* SCAN ROWS */
+  .scan-row { flex-wrap: wrap; gap: .3rem; }
+  .scan-flag { min-width: 44px; }
+  .scan-name { min-width: unset; }
+
+  /* BOTTOM BAR */
+  #bottombar { padding: .45rem .8rem; }
+  .nav-btn { font-size: .58rem; padding: .35rem .7rem; letter-spacing: .06em; }
+  #slide-counter { font-size: .58rem; }
+  .qcm-indicator { font-size: .55rem; }
+
+  /* QCM OVERLAY */
+  #qcm-overlay { padding: 1rem; }
+  .qcm-box { padding: 1.5rem 1.2rem; }
+  .qcm-question { font-size: .9rem; margin-bottom: 1.2rem; }
+  .qcm-option { font-size: .8rem; padding: .65rem .9rem; gap: .7rem; }
+  .qcm-feedback { font-size: .75rem; padding: .7rem .9rem; }
+
+  /* COMPLETION MODAL */
+  #completion-modal { padding: 1rem; }
+  .completion-box { padding: 2rem 1.2rem; }
+  .completion-title { font-size: 1.1rem; }
+  .completion-score { font-size: 2.4rem; }
+  .completion-sub { font-size: .78rem; }
+  .completion-btn { font-size: .65rem; padding: .6rem 1.1rem; }
+
+  /* GABON BAR */
+  .gabon-bar { width: 44px; }
+
+  /* PAQUETS TABLE (NET·05) */
+  .pkt-table { font-size: .58rem; }
+  .pkt-table td, .pkt-table th { padding: .25rem .4rem; }
+
+  /* CHECK ITEMS */
+  .check-item { font-size: .68rem; }
+  .check-title { font-size: .62rem; }
+
+  /* DASHBOARD / FORMATIONS */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; }
+  .stats-bar { grid-template-columns: repeat(2,1fr) !important; }
+  .catalogue-grid { grid-template-columns: 1fr !important; }
+  .courses-grid { grid-template-columns: 1fr !important; }
+  .dashboard-layout { grid-template-columns: 1fr !important; }
+  .filter-tabs { gap: .35rem; }
+  .filter-tab { font-size: .6rem; padding: .3rem .7rem; }
+
+}
+
+/* ── MOBILE S (< 480px) ──────────────────────────────────── */
+@media (max-width: 480px) {
+
+  .slide { padding: .8rem .8rem 1rem !important; }
+  .slide h1 { font-size: clamp(1.2rem, 8vw, 1.6rem) !important; }
+  .slide h2 { font-size: clamp(.9rem, 6vw, 1.1rem) !important; }
+
+  /* Topbar encore plus compact */
+  #topbar { padding: .35rem .6rem; }
+  .tb-user { display: none; } /* cache @username */
+
+  /* Terminaux très compacts */
+  .terminal { font-size: .54rem !important; }
+  .terminal.sm { font-size: .5rem !important; }
+
+  /* Nav buttons abrégés */
+  #prev-btn::after { content: ''; }
+  #next-btn::after { content: ''; }
+
+  /* Grilles */
+  .cmd-grid { grid-template-columns: 1fr !important; }
+
+  /* Bullets plus petits */
+  .bullets li { font-size: .72rem !important; line-height: 1.4; }
+
+  /* Card */
+  .card { padding: .85rem .9rem; }
+
+  /* Steps */
+  .step-content { font-size: .7rem; }
+
+  /* QCM */
+  .qcm-box { padding: 1.2rem 1rem; }
+  .qcm-option { font-size: .75rem; padding: .55rem .75rem; }
+
+  /* Stats */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: .5rem; }
+  .stats-bar { grid-template-columns: repeat(2,1fr) !important; gap: .5rem; }
+
+  /* Course cards */
+  .course-card, .course-card.card { padding: 1.2rem; }
+  .course-number { font-size: 2.2rem; top: .6rem; right: .8rem; }
+  .course-title { font-size: .85rem; }
+  .course-desc { font-size: .72rem; }
+
+}
+
+/* ── PAYSAGE MOBILE (hauteur < 500px) ────────────────────── */
+@media (max-height: 500px) and (max-width: 900px) {
+
+  .slide { padding: .6rem 2rem !important; justify-content: flex-start; padding-top: .8rem !important; }
+  .slide h1 { font-size: 1.4rem !important; margin-bottom: .2rem !important; }
+  .slide h2 { font-size: 1rem !important; margin-bottom: .4rem !important; }
+  .slide h3 { font-size: .7rem !important; margin-bottom: .5rem !important; }
+  .gabon-bar { margin: .3rem 0; }
+  .card { padding: .7rem 1rem; }
+  .bullets li { font-size: .72rem !important; gap: .4rem; }
+
+}
