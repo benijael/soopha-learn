@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coaching — SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<link rel="stylesheet" href="../css/mobile.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+.page { padding: 2.5rem 0 4rem; }
+
+/* ── Module alert ── */
+.module-alert {
+  display: flex; gap: 1rem; align-items: flex-start;
+  background: rgba(255,180,0,0.05); border: 1px solid rgba(255,180,0,0.2);
+  border-left: 3px solid #ffb400; padding: 1rem 1.2rem; margin-bottom: 1.8rem;
+}
+.module-alert-icon { font-size: 1.1rem; margin-top: 0.1rem; flex-shrink: 0; }
+.module-alert-title { font-family: var(--mono); font-size: 0.68rem; color: #ffb400; letter-spacing: 0.12em; margin-bottom: 0.3rem; }
+.module-alert-desc { font-size: 0.8rem; color: rgba(200,255,220,0.5); line-height: 1.6; }
+
+/* ── Stepper ── */
+.coaching-stepper { display: flex; align-items: center; margin-bottom: 2.5rem; gap: 0; }
+.c-step { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; cursor: pointer; }
+.c-step-num {
+  width: 34px; height: 34px; border: 1px solid var(--green-border);
+  background: rgba(0,255,136,0.03); display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 0.7rem; color: rgba(0,255,136,0.3);
+  transition: all var(--transition); position: relative;
+}
+.c-step-num::before {
+  content: ''; position: absolute; top: -1px; left: -1px;
+  width: 7px; height: 7px; border-top: 1.5px solid rgba(0,255,136,0.2); border-left: 1.5px solid rgba(0,255,136,0.2);
+}
+.c-step.active .c-step-num { border-color: var(--green); background: rgba(0,255,136,0.08); color: var(--green); box-shadow: 0 0 12px rgba(0,255,136,0.15); }
+.c-step.active .c-step-num::before { border-color: var(--green); }
+.c-step.done .c-step-num { border-color: rgba(0,255,136,0.5); color: rgba(0,255,136,0.7); background: rgba(0,255,136,0.05); }
+.c-step-label { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em; color: rgba(0,255,136,0.2); text-transform: uppercase; white-space: nowrap; }
+.c-step.active .c-step-label { color: var(--green); }
+.c-step.done .c-step-label { color: rgba(0,255,136,0.4); }
+.c-line { flex: 1; height: 1px; background: var(--green-border); margin-bottom: 1.2rem; transition: background var(--transition); min-width: 16px; }
+.c-line.done { background: rgba(0,255,136,0.4); }
+
+/* ── Screens ── */
+.c-screen { display: none; animation: cFadeIn 0.25s ease; }
+.c-screen.active { display: block; }
+@keyframes cFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+/* ── Duration ── */
+.dur-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem; }
+.dur-opt {
+  padding: 1.4rem 1.2rem; border: 1px solid var(--green-border);
+  background: rgba(0,255,136,0.02); cursor: pointer; position: relative; transition: all var(--transition);
+}
+.dur-opt::before {
+  content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
+  border-top: 2px solid rgba(0,255,136,0.15); border-left: 2px solid rgba(0,255,136,0.15); transition: border-color var(--transition);
+}
+.dur-opt:hover { border-color: rgba(0,255,136,0.3); }
+.dur-opt:hover::before { border-color: rgba(0,255,136,0.4); }
+.dur-opt.selected { border-color: rgba(0,255,136,0.6); background: rgba(0,255,136,0.06); }
+.dur-opt.selected::before { border-color: var(--green); }
+.dur-badge-reco {
+  position: absolute; top: -9px; right: 10px; background: #ffb400; color: #000;
+  font-family: var(--mono); font-size: 0.58rem; font-weight: 700; padding: 1px 7px; letter-spacing: 0.08em;
+}
+.dur-time { font-family: var(--display); font-size: 2.2rem; font-weight: 900; color: var(--green); line-height: 1; }
+.dur-price { font-family: var(--display); font-size: 1rem; font-weight: 700; color: #fff; margin: 0.4rem 0 0.2rem; letter-spacing: 0.04em; }
+.dur-desc { font-family: var(--mono); font-size: 0.62rem; color: rgba(0,255,136,0.3); letter-spacing: 0.08em; }
+
+/* ── Formateur ── */
+.formateur-wrap { display: flex; gap: 1.2rem; align-items: flex-start; margin-bottom: 1rem; }
+.formateur-avatar {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: rgba(0,255,136,0.08); border: 2px solid var(--green-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; flex-shrink: 0; position: relative;
+}
+.formateur-online {
+  position: absolute; bottom: 2px; right: 2px;
+  width: 10px; height: 10px; background: var(--green); border-radius: 50%; border: 2px solid #050c07;
+}
+.formateur-name { font-family: var(--display); font-size: 1rem; font-weight: 700; color: #fff; letter-spacing: 0.04em; }
+.formateur-role { font-family: var(--mono); font-size: 0.62rem; color: var(--green); letter-spacing: 0.12em; margin-top: 0.15rem; }
+.formateur-bio {
+  font-size: 0.78rem; color: rgba(200,255,220,0.45); line-height: 1.6;
+  margin: 0.8rem 0; padding-top: 0.8rem; border-top: 1px solid var(--green-border);
+}
+.formateur-stats { display: grid; grid-template-columns: repeat(4,1fr); border: 1px solid var(--green-border); margin-top: 1rem; }
+.f-stat { text-align: center; padding: 0.7rem 0.5rem; border-right: 1px solid var(--green-border); }
+.f-stat:last-child { border-right: none; }
+.f-stat-val { font-family: var(--display); font-size: 1.1rem; font-weight: 700; color: var(--green); }
+.f-stat-lbl { font-family: var(--mono); font-size: 0.58rem; color: rgba(0,255,136,0.3); letter-spacing: 0.08em; margin-top: 0.15rem; }
+
+/* ── Calendar ── */
+.cal-zone { border: 1px solid var(--green-border); background: rgba(0,255,136,0.02); overflow: hidden; }
+.cal-header {
+  background: rgba(0,255,136,0.04); border-bottom: 1px solid var(--green-border);
+  padding: 0.7rem 1rem; display: flex; justify-content: space-between; align-items: center;
+}
+.cal-header-label { font-family: var(--mono); font-size: 0.62rem; color: rgba(0,255,136,0.4); letter-spacing: 0.12em; }
+.cal-nav-btns { display: flex; gap: 0.4rem; }
+.cal-nav-btns button {
+  background: none; border: 1px solid var(--green-border); color: rgba(0,255,136,0.5);
+  width: 26px; height: 26px; font-family: var(--mono); font-size: 0.75rem; cursor: pointer; transition: all var(--transition);
+}
+.cal-nav-btns button:hover { border-color: var(--green); color: var(--green); }
+.cal-body { padding: 1rem; }
+.cal-note { font-family: var(--mono); font-size: 0.6rem; color: rgba(0,255,136,0.2); letter-spacing: 0.1em; margin-bottom: 0.8rem; }
+.slots-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.6rem; }
+.slot { border: 1px solid var(--green-border); padding: 0.75rem 0.8rem; cursor: pointer; transition: all var(--transition); position: relative; }
+.slot::before {
+  content: ''; position: absolute; top: -1px; left: -1px;
+  width: 7px; height: 7px; border-top: 1px solid rgba(0,255,136,0.1); border-left: 1px solid rgba(0,255,136,0.1);
+}
+.slot:hover:not(.unavailable) { border-color: rgba(0,255,136,0.35); }
+.slot.selected { border-color: rgba(0,255,136,0.7); background: rgba(0,255,136,0.06); }
+.slot.selected::before { border-color: var(--green); }
+.slot.unavailable { opacity: 0.3; cursor: not-allowed; }
+.slot-day { font-family: var(--mono); font-size: 0.58rem; color: rgba(0,255,136,0.3); letter-spacing: 0.08em; }
+.slot-time { font-family: var(--display); font-size: 1.1rem; font-weight: 700; color: var(--green); margin-top: 0.15rem; }
+.slot-tag { font-family: var(--mono); font-size: 0.55rem; color: rgba(0,255,136,0.25); margin-top: 0.1rem; }
+.slot.unavailable .slot-tag { color: rgba(255,68,102,0.5); }
+.slot-confirm {
+  display: none; margin-top: 0.8rem; padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.04);
+  font-family: var(--mono); font-size: 0.65rem; color: var(--green); letter-spacing: 0.08em;
+}
+.slot-confirm.show { display: block; }
+
+/* ── Recap ── */
+.recap-table { border: 1px solid var(--green-border); margin-bottom: 0; }
+.recap-row { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 1rem; border-bottom: 1px solid var(--green-border); }
+.recap-row:last-child { border-bottom: none; }
+.recap-label { font-family: var(--mono); font-size: 0.62rem; color: rgba(0,255,136,0.3); letter-spacing: 0.1em; }
+.recap-val { font-family: var(--display); font-size: 0.85rem; font-weight: 600; color: #fff; text-align: right; max-width: 60%; }
+.recap-total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.9rem 1rem; background: rgba(0,255,136,0.04);
+  border: 1px solid var(--green-border); border-top: none; margin-bottom: 1.2rem;
+}
+.recap-total-label { font-family: var(--mono); font-size: 0.68rem; color: rgba(0,255,136,0.5); letter-spacing: 0.15em; font-weight: 700; }
+.recap-total-val { font-family: var(--display); font-size: 1.4rem; font-weight: 900; color: var(--green); }
+
+/* ── Pay methods ── */
+.pay-methods { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.6rem; margin-bottom: 1.2rem; }
+.pay-method {
+  border: 1px solid var(--green-border); background: none; color: rgba(0,255,136,0.35);
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  padding: 0.8rem 0.5rem; cursor: pointer; text-align: center; transition: all var(--transition);
+}
+.pay-method:hover, .pay-method.selected { border-color: rgba(0,255,136,0.5); color: rgba(0,255,136,0.8); background: rgba(0,255,136,0.04); }
+.pay-icon { font-size: 1.3rem; display: block; margin-bottom: 0.35rem; }
+
+/* ── Confirm ── */
+.confirm-box {
+  text-align: center; padding: 2rem 1rem;
+  border: 1px solid rgba(0,255,136,0.25); background: rgba(0,255,136,0.03);
+  margin-bottom: 1.2rem; position: relative;
+}
+.confirm-box::before { content: ''; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px; border-top: 2px solid var(--green); border-left: 2px solid var(--green); }
+.confirm-box::after { content: ''; position: absolute; bottom: -1px; right: -1px; width: 14px; height: 14px; border-bottom: 2px solid var(--green); border-right: 2px solid var(--green); }
+.confirm-check {
+  width: 60px; height: 60px; border: 2px solid var(--green); border-radius: 50%;
+  background: rgba(0,255,136,0.08); display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; margin: 0 auto 1rem; animation: glow-pulse 2s infinite;
+}
+@keyframes glow-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(0,255,136,0.3); } 50% { box-shadow:0 0 0 10px rgba(0,255,136,0); } }
+.confirm-title { font-family: var(--display); font-size: 1.3rem; font-weight: 900; color: var(--green); letter-spacing: 0.06em; text-shadow: 0 0 10px rgba(0,255,136,0.4); margin-bottom: 0.3rem; }
+.confirm-sub { font-family: var(--mono); font-size: 0.65rem; color: rgba(0,255,136,0.4); letter-spacing: 0.1em; }
+.confirm-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 0; border-bottom: 1px solid var(--green-border); }
+.confirm-item:last-child { border-bottom: none; }
+.confirm-item-icon { font-size: 1rem; flex-shrink: 0; width: 24px; text-align: center; }
+.confirm-item-label { font-family: var(--mono); font-size: 0.6rem; color: rgba(0,255,136,0.3); letter-spacing: 0.1em; display: block; margin-bottom: 0.15rem; }
+.confirm-item-desc { font-size: 0.78rem; color: rgba(200,255,220,0.55); }
+
+/* ── Buttons ── */
+.btn-coaching {
+  display: block; width: 100%; padding: 0.85rem 1rem;
+  background: var(--green); color: #050c07;
+  font-family: var(--display); font-size: 0.88rem; font-weight: 900;
+  letter-spacing: 0.1em; border: none; cursor: pointer; transition: all var(--transition);
+  margin-top: 1rem; text-align: center; text-decoration: none; text-transform: uppercase;
+}
+.btn-coaching:hover { background: #00cc66; }
+.btn-coaching:disabled { background: var(--green-border); color: rgba(0,255,136,0.3); cursor: not-allowed; }
+.btn-back-coaching {
+  background: none; border: none; font-family: var(--mono); font-size: 0.65rem;
+  color: rgba(0,255,136,0.3); letter-spacing: 0.1em; cursor: pointer; margin-top: 0.8rem;
+  display: block; transition: color var(--transition); padding: 0;
+}
+.btn-back-coaching:hover { color: rgba(0,255,136,0.7); }
+
+/* ── Layout ── */
+.coaching-layout { display: grid; grid-template-columns: 1fr 300px; gap: 2rem; align-items: start; }
+.coaching-sidebar-card { padding: 1.2rem; position: relative; }
+.sidebar-info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 0.5rem 0; border-bottom: 1px solid var(--green-border); }
+.sidebar-info-row:last-child { border-bottom: none; }
+.sidebar-info-label { font-family: var(--mono); font-size: 0.6rem; color: rgba(0,255,136,0.3); letter-spacing: 0.08em; }
+.sidebar-info-val { font-family: var(--mono); font-size: 0.68rem; color: rgba(200,255,220,0.7); text-align: right; max-width: 55%; word-break: break-word; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) { .coaching-layout { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+  .dur-grid { grid-template-columns: 1fr; }
+  .slots-grid { grid-template-columns: repeat(2,1fr); }
+  .pay-methods { grid-template-columns: 1fr 1fr; }
+  .formateur-stats { grid-template-columns: repeat(2,1fr); }
+  .c-line { min-width: 8px; }
+  .c-step-label { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar-brand"><img src="../img/logo.png" alt="SooPHA Learn" style="height:36px;width:auto;display:block;"></a>
+  <div class="navbar-links">
+    <a href="dashboard.html" class="navbar-link">Dashboard</a>
+    <a href="formations.html" class="navbar-link hide-mobile">Formations</a>
+    <a href="coaching.html" class="navbar-link active hide-mobile">Coaching</a>
+    <button class="btn btn-secondary btn-sm" onclick="logout()">Déconnexion</button>
+  </div>
+</nav>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <span>Chargement...</span>
+</div>
+
+<div class="page" id="page-content" style="display:none">
+<div class="container">
+
+  <div class="welcome-banner" style="margin-bottom:2rem">
+    <div>
+      <div class="welcome-name" style="font-size:1.1rem">🎓 Coaching Privé <span id="coaching-title-name">1-to-1</span></div>
+      <div class="welcome-sub" id="coaching-subtitle">// Réserve une session avec un formateur expert</div>
+    </div>
+    <span class="badge badge-green" id="coaching-badge">Session disponible</span>
+  </div>
+
+  <div class="coaching-layout">
+
+    <div>
+
+      <!-- Alert module bloqué -->
+      <div class="module-alert" id="module-alert" style="display:none">
+        <div class="module-alert-icon">⚠️</div>
+        <div>
+          <div class="module-alert-title">// MODULE BLOQUÉ · <span id="alert-module-name">—</span></div>
+          <div class="module-alert-desc">Tu sembles avoir des difficultés sur ce module. Un formateur expert peut t'aider à débloquer la situation en session privée 1-to-1.</div>
+        </div>
+      </div>
+
+      <!-- Stepper -->
+      <div class="coaching-stepper">
+        <div class="c-step active" data-step="1" onclick="goTo(1)">
+          <div class="c-step-num">01</div>
+          <div class="c-step-label">Durée</div>
+        </div>
+        <div class="c-line" id="line-1"></div>
+        <div class="c-step" data-step="2" onclick="goTo(2)">
+          <div class="c-step-num">02</div>
+          <div class="c-step-label">Formateur</div>
+        </div>
+        <div class="c-line" id="line-2"></div>
+        <div class="c-step" data-step="3" onclick="goTo(3)">
+          <div class="c-step-num">03</div>
+          <div class="c-step-label">Créneau</div>
+        </div>
+        <div class="c-line" id="line-3"></div>
+        <div class="c-step" data-step="4" onclick="goTo(4)">
+          <div class="c-step-num">04</div>
+          <div class="c-step-label">Paiement</div>
+        </div>
+        <div class="c-line" id="line-4"></div>
+        <div class="c-step" data-step="5" onclick="goTo(5)">
+          <div class="c-step-num">05</div>
+          <div class="c-step-label">Confirmé</div>
+        </div>
+      </div>
+
+      <!-- SCREEN 1 : Durée -->
+      <div class="c-screen active" id="screen-1">
+        <div class="card" style="padding:1.5rem">
+          <div class="section-title" style="margin-bottom:1.2rem">CHOISIR LA DURÉE DE LA SESSION</div>
+          <div class="dur-grid">
+            <div class="dur-opt" id="dur-1h" onclick="selectDuration('1h',35000)">
+              <div class="dur-time">1H</div>
+              <div class="dur-price">35 000 XAF</div>
+              <div class="dur-desc">// Déblocage rapide · Focus QCM</div>
+            </div>
+            <div class="dur-opt" id="dur-2h" onclick="selectDuration('2h',60000)">
+              <div class="dur-badge-reco">RECOMMANDÉ</div>
+              <div class="dur-time">2H</div>
+              <div class="dur-price">60 000 XAF</div>
+              <div class="dur-desc">// Approfondissement · Exercices pratiques</div>
+            </div>
+          </div>
+          <button class="btn-coaching" id="btn-step1" onclick="goTo(2)" disabled>Continuer →</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 2 : Formateur -->
+      <div class="c-screen" id="screen-2">
+        <div class="card" style="padding:1.5rem">
+          <div class="section-title" style="margin-bottom:1.2rem">VOTRE FORMATEUR DÉDIÉ</div>
+          <div class="formateur-wrap">
+            <div class="formateur-avatar">
+              🧑🏿‍💻
+              <div class="formateur-online"></div>
+            </div>
+            <div>
+              <div class="formateur-name">Béni-Jaël MBATA</div>
+              <div class="formateur-role">// EXPERT IAM · CONSULTANT INDÉPENDANT · FONDATEUR SOOPHA</div>
+              <div style="margin-top:0.6rem;display:flex;gap:0.4rem;flex-wrap:wrap">
+                <span class="badge badge-green">IAM/IGA</span>
+                <span class="badge badge-red">Pentest</span>
+                <span class="badge badge-blue">One Identity</span>
+                <span class="badge badge-purple">Malware Analysis</span>
+                <span class="badge badge-yellow">OSCP Prep</span>
+              </div>
+            </div>
+          </div>
+          <div class="formateur-bio">
+            Consultant indépendant spécialisé en cybersécurité et gestion des identités (IAM). +5 ans d'expérience sur des projets grands comptes. Fondateur de SooPHA Learn, première plateforme de formation cyber pour l'Afrique francophone. Intervient régulièrement sur des missions de conseil et implémentation en entreprises.
+          </div>
+          <div class="formateur-stats">
+            <div class="f-stat"><div class="f-stat-val">48</div><div class="f-stat-lbl">Sessions</div></div>
+            <div class="f-stat"><div class="f-stat-val">4.9 ★</div><div class="f-stat-lbl">Note moy.</div></div>
+            <div class="f-stat"><div class="f-stat-val">97%</div><div class="f-stat-lbl">Succès</div></div>
+            <div class="f-stat"><div class="f-stat-val">27</div><div class="f-stat-lbl">Modules</div></div>
+          </div>
+          <button class="btn-coaching" onclick="goTo(3)">Choisir un créneau →</button>
+          <button class="btn-back-coaching" onclick="goTo(1)">← Retour</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 3 : Créneau -->
+      <div class="c-screen" id="screen-3">
+        <div class="card" style="padding:1.5rem">
+          <div class="section-title" style="margin-bottom:1rem">SÉLECTIONNER UN CRÉNEAU</div>
+
+          <!-- ⚡ EN PRODUCTION : décommenter et supprimer cal-zone ci-dessous -->
+          <!--
+          <div class="calendly-inline-widget"
+            data-url="https://calendly.com/beni-jael-mbata/coaching-soopha"
+            style="min-width:320px;height:630px;">
+          </div>
+          <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
+          -->
+
+          <div class="cal-zone">
+            <div class="cal-header">
+              <span class="cal-header-label">📅 AVRIL 2026</span>
+              <div class="cal-nav-btns"><button>‹</button><button>›</button></div>
+            </div>
+            <div class="cal-body">
+              <div class="cal-note">// INTÉGRATION CALENDLY · data-url="https://calendly.com/beni-jael-mbata/coaching-soopha"</div>
+              <div class="slots-grid">
+                <div class="slot" onclick="selectSlot(this,'Mer 09 Avr · 09:00')">
+                  <div class="slot-day">MER 09 AVR</div>
+                  <div class="slot-time">09:00</div>
+                  <div class="slot-tag">// dispo</div>
+                </div>
+                <div class="slot" onclick="selectSlot(this,'Mer 09 Avr · 14:00')">
+                  <div class="slot-day">MER 09 AVR</div>
+                  <div class="slot-time">14:00</div>
+                  <div class="slot-tag">// dispo</div>
+                </div>
+                <div class="slot unavailable">
+                  <div class="slot-day">JEU 10 AVR</div>
+                  <div class="slot-time">10:00</div>
+                  <div class="slot-tag">// indispo</div>
+                </div>
+                <div class="slot" onclick="selectSlot(this,'Jeu 10 Avr · 16:00')">
+                  <div class="slot-day">JEU 10 AVR</div>
+                  <div class="slot-time">16:00</div>
+                  <div class="slot-tag">// dispo</div>
+                </div>
+                <div class="slot" onclick="selectSlot(this,'Ven 11 Avr · 09:00')">
+                  <div class="slot-day">VEN 11 AVR</div>
+                  <div class="slot-time">09:00</div>
+                  <div class="slot-tag">// dispo</div>
+                </div>
+                <div class="slot" onclick="selectSlot(this,'Ven 11 Avr · 11:00')">
+                  <div class="slot-day">VEN 11 AVR</div>
+                  <div class="slot-time">11:00</div>
+                  <div class="slot-tag">// dispo</div>
+                </div>
+              </div>
+              <div class="slot-confirm" id="slot-confirm">✓ CRÉNEAU : <span id="slot-text"></span></div>
+            </div>
+          </div>
+
+          <button class="btn-coaching" id="btn-step3" onclick="goTo(4)" disabled>Confirmer et payer →</button>
+          <button class="btn-back-coaching" onclick="goTo(2)">← Retour</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 4 : Paiement -->
+      <div class="c-screen" id="screen-4">
+        <div class="card" style="padding:1.5rem">
+          <div class="section-title" style="margin-bottom:1rem">PAIEMENT SÉCURISÉ</div>
+          <div class="recap-table">
+            <div class="recap-row"><span class="recap-label">MODULE</span><span class="recap-val" id="recap-module">—</span></div>
+            <div class="recap-row"><span class="recap-label">FORMATEUR</span><span class="recap-val">Béni-Jaël MBATA</span></div>
+            <div class="recap-row"><span class="recap-label">CRÉNEAU</span><span class="recap-val" id="recap-slot">—</span></div>
+            <div class="recap-row"><span class="recap-label">DURÉE</span><span class="recap-val" id="recap-dur">—</span></div>
+          </div>
+          <div class="recap-total-row">
+            <span class="recap-total-label">TOTAL</span>
+            <span class="recap-total-val" id="recap-total">—</span>
+          </div>
+          <div style="font-family:var(--mono);font-size:0.62rem;color:rgba(0,255,136,0.3);letter-spacing:0.1em;margin-bottom:0.6rem">// MÉTHODE DE PAIEMENT</div>
+          <div class="pay-methods">
+            <button class="pay-method" onclick="selectPay(this)"><span class="pay-icon">💳</span>CARTE</button>
+            <button class="pay-method" onclick="selectPay(this)"><span class="pay-icon">📱</span>MOBILE MONEY</button>
+            <button class="pay-method" onclick="selectPay(this)"><span class="pay-icon">🏦</span>VIREMENT</button>
+          </div>
+          <button class="btn-coaching" onclick="goTo(5)">🔒 Payer et confirmer la session</button>
+          <button class="btn-back-coaching" onclick="goTo(3)">← Retour</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 5 : Confirmation -->
+      <div class="c-screen" id="screen-5">
+        <div class="card" style="padding:1.5rem">
+          <div class="confirm-box">
+            <div class="confirm-check">✓</div>
+            <div class="confirm-title">SESSION CONFIRMÉE</div>
+            <div class="confirm-sub" id="confirm-details">// Détails envoyés par email et SMS</div>
+          </div>
+          <div class="section-title" style="margin-bottom:1rem">CE QUE TU VAS RECEVOIR</div>
+          <div class="confirm-item">
+            <span class="confirm-item-icon">📧</span>
+            <div><span class="confirm-item-label">// EMAIL DE CONFIRMATION</span><div class="confirm-item-desc">Lien de session Zoom / Google Meet inclus</div></div>
+          </div>
+          <div class="confirm-item">
+            <span class="confirm-item-icon">📱</span>
+            <div><span class="confirm-item-label">// SMS DE RAPPEL</span><div class="confirm-item-desc">Rappel automatique 1h avant la session</div></div>
+          </div>
+          <div class="confirm-item">
+            <span class="confirm-item-icon">📅</span>
+            <div><span class="confirm-item-label">// INVITATION CALENDRIER</span><div class="confirm-item-desc">Fichier .ics joint dans l'email de confirmation</div></div>
+          </div>
+          <div class="confirm-item">
+            <span class="confirm-item-icon">📝</span>
+            <div><span class="confirm-item-label">// RÉSUMÉ POST-SESSION</span><div class="confirm-item-desc">PDF récapitulatif envoyé après la session</div></div>
+          </div>
+          <a href="dashboard.html" class="btn btn-secondary btn-sm" style="justify-content:flex-start;margin-top:1.2rem;display:inline-flex">← Retour au Dashboard</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <div>
+      <div class="card coaching-sidebar-card" style="margin-bottom:1.2rem">
+        <div class="section-title" style="margin-bottom:1rem">RÉCAPITULATIF</div>
+        <div class="sidebar-info-row"><span class="sidebar-info-label">MODULE</span><span class="sidebar-info-val" id="sb-module">—</span></div>
+        <div class="sidebar-info-row"><span class="sidebar-info-label">DURÉE</span><span class="sidebar-info-val" id="sb-dur">—</span></div>
+        <div class="sidebar-info-row"><span class="sidebar-info-label">CRÉNEAU</span><span class="sidebar-info-val" id="sb-slot">—</span></div>
+        <div class="sidebar-info-row"><span class="sidebar-info-label">TOTAL</span><span class="sidebar-info-val" id="sb-total" style="color:var(--green)">—</span></div>
+      </div>
+      <div class="card" style="padding:1.2rem;margin-bottom:1.2rem">
+        <div class="section-title" style="margin-bottom:0.8rem">VOTRE EXPERT</div>
+        <div style="display:flex;align-items:center;gap:0.8rem;padding-bottom:0.8rem;border-bottom:1px solid var(--green-border)">
+          <div class="formateur-avatar" style="width:38px;height:38px;font-size:1rem">🧑🏿‍💻</div>
+          <div>
+            <div class="profile-name" style="font-size:0.82rem">Béni-Jaël MBATA</div>
+            <div class="profile-username">Expert IAM · Fondateur SooPHA</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-around;margin-top:0.8rem">
+          <div style="text-align:center"><div class="stat-val" style="font-size:1rem">4.9★</div><div class="stat-label" style="font-size:0.55rem">Note</div></div>
+          <div style="text-align:center"><div class="stat-val" style="font-size:1rem">97%</div><div class="stat-label" style="font-size:0.55rem">Succès</div></div>
+          <div style="text-align:center"><div class="stat-val" style="font-size:1rem">48</div><div class="stat-label" style="font-size:0.55rem">Sessions</div></div>
+        </div>
+      </div>
+      <div class="card" style="padding:1.2rem">
+        <div class="section-title" style="margin-bottom:0.8rem">TARIFS</div>
+        <div class="sidebar-info-row"><span class="sidebar-info-label">1H SESSION</span><span class="sidebar-info-val">35 000 XAF</span></div>
+        <div class="sidebar-info-row"><span class="sidebar-info-label">2H SESSION</span><span class="sidebar-info-val" style="color:var(--green)">60 000 XAF ✦</span></div>
+        <div style="font-family:var(--mono);font-size:0.58rem;color:rgba(0,255,136,0.2);margin-top:0.8rem;line-height:1.7;letter-spacing:0.06em">
+          // Paiement sécurisé · Stripe<br>// Mobile Money · CinetPay / Wave<br>// Remboursement si annulation 24h avant
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<footer style="border-top:1px solid var(--green-border);padding:1.2rem 0;margin-top:2rem;text-align:center">
+  <div style="font-family:var(--mono);font-size:0.62rem;color:rgba(0,255,136,0.2);letter-spacing:0.08em;display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap">
+    <span>SooPHA Learn × Cybersécurité × Afrique Francophone</span>
+    <a href="../privacy.html" style="color:rgba(0,255,136,0.4)">Confidentialité</a>
+    <a href="../terms.html" style="color:rgba(0,255,136,0.4)">CGU</a>
+  </div>
+</footer>
+
+<script>
+var currentUser = null;
+var selDuration = null, selPrice = null, selSlot = null;
+var moduleId = '', moduleName = '';
+
+function selectDuration(dur, price) {
+  selDuration = dur; selPrice = price;
+  document.querySelectorAll('.dur-opt').forEach(function(el){ el.classList.remove('selected'); });
+  document.getElementById('dur-' + dur).classList.add('selected');
+  document.getElementById('btn-step1').disabled = false;
+  updateSidebar();
+}
+function selectSlot(el, text) {
+  if (el.classList.contains('unavailable')) return;
+  selSlot = text;
+  document.querySelectorAll('.slot:not(.unavailable)').forEach(function(s){ s.classList.remove('selected'); });
+  el.classList.add('selected');
+  document.getElementById('slot-text').textContent = text + (selDuration ? ' · ' + selDuration.toUpperCase() : '');
+  document.getElementById('slot-confirm').classList.add('show');
+  document.getElementById('btn-step3').disabled = false;
+  updateSidebar();
+}
+function selectPay(el) {
+  document.querySelectorAll('.pay-method').forEach(function(b){ b.classList.remove('selected'); });
+  el.classList.add('selected');
+}
+function updateSidebar() {
+  document.getElementById('sb-module').textContent = moduleName || '—';
+  document.getElementById('sb-dur').textContent = selDuration ? selDuration.toUpperCase() : '—';
+  document.getElementById('sb-slot').textContent = selSlot || '—';
+  document.getElementById('sb-total').textContent = selPrice ? selPrice.toLocaleString('fr-FR') + ' XAF' : '—';
+}
+function goTo(step) {
+  if (step === 4) {
+    document.getElementById('recap-module').textContent = moduleName || 'Non spécifié';
+    document.getElementById('recap-slot').textContent = selSlot || '—';
+    document.getElementById('recap-dur').textContent = selDuration ? selDuration.toUpperCase() : '—';
+    document.getElementById('recap-total').textContent = selPrice ? selPrice.toLocaleString('fr-FR') + ' XAF' : '—';
+  }
+  if (step === 5) {
+    document.getElementById('confirm-details').textContent = '// ' + (selSlot||'—') + ' · ' + (selDuration||'').toUpperCase();
+  }
+  document.querySelectorAll('.c-screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-' + step).classList.add('active');
+  document.querySelectorAll('.c-step').forEach(function(s){
+    var n = parseInt(s.dataset.step);
+    s.classList.remove('active','done');
+    if (n === step) s.classList.add('active');
+    if (n < step) s.classList.add('done');
+  });
+  for (var i = 1; i <= 4; i++) {
+    var ln = document.getElementById('line-' + i);
+    if (ln) ln.classList.toggle('done', i < step);
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var params = new URLSearchParams(window.location.search);
+  moduleId = params.get('module') || '';
+  moduleName = decodeURIComponent(params.get('name') || '');
+  if (moduleName) {
+    document.getElementById('coaching-subtitle').textContent = '// Module bloqué : ' + moduleName;
+    document.getElementById('coaching-badge').textContent = 'Module bloqué';
+    document.getElementById('module-alert').style.display = 'flex';
+    document.getElementById('alert-module-name').textContent = moduleName.toUpperCase();
+  }
+  updateSidebar();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('page-content').style.display = 'block';
+}
+init();
+</script>
+</body>
+</html>
