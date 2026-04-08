@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="/favicon.ico" rel="icon" type="image/x-icon"/>
+<link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<title>RE·06 — Anti-Debug &amp; Malware · SooPHA Learn</title>
+<link href="../css/global.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(4,2,12,.97);border-bottom:1px solid rgba(170,68,255,.15);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(170,68,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(170,68,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}
+.tb-back:hover{color:#aa44ff}
+.tb-dot{width:6px;height:6px;background:#aa44ff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(170,68,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#6622cc,#aa44ff);box-shadow:0 0 8px #aa44ff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#aa44ff;--acc-dim:rgba(170,68,255,.15);--acc-faint:rgba(170,68,255,.06);--acc-border:rgba(170,68,255,.2)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#aa44ff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(170,68,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(8,4,20,.88);border:1px solid var(--acc-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(220,200,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#aa44ff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}
+.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}
+.bullets li.danger::before{content:'🔴';font-size:.7rem}
+.bullets li.ok::before{content:'✅';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.terminal{background:rgba(4,0,12,.85);border:1px solid rgba(170,68,255,.12);border-left:3px solid #aa44ff;padding:.9rem 1.2rem;font-family:var(--mono);font-size:.75rem;color:rgba(200,170,255,.8);line-height:2;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.85}
+.term-prompt{color:#aa44ff}
+.term-out{color:rgba(200,170,255,.45)}
+.term-comment{color:rgba(170,68,255,.4);font-style:italic}
+.term-red{color:#ff4466}
+.term-yellow{color:#ffd700}
+.term-green{color:#00ff88}
+.term-blue{color:#00aaff}
+.quote{border-left:3px solid #aa44ff;padding:.7rem 1rem;background:var(--acc-faint);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#e8d0ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #aa44ff,0 0 80px rgba(170,68,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #aa44ff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#aa44ff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#aa44ff;text-shadow:0 0 8px #aa44ff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(220,200,255,.85);line-height:1.5}
+.phase-row{display:flex;gap:.8rem;padding:.55rem .9rem;border-bottom:1px solid rgba(170,68,255,.07);align-items:flex-start}
+.phase-row:last-child{border-bottom:none}
+.phase-num{font-family:var(--mono);font-size:.68rem;color:#aa44ff;min-width:90px;flex-shrink:0}
+.phase-name{font-family:var(--display);font-size:.72rem;font-weight:700;color:#fff;min-width:120px;flex-shrink:0}
+.phase-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.65);line-height:1.4}
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(4,2,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(8,4,20,.97);border:1px solid rgba(170,68,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(170,68,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(170,68,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.35);margin-bottom:.5rem;display:none}
+.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(4,0,16,.3);border:1px solid rgba(170,68,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(210,190,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(170,68,255,.35);background:rgba(170,68,255,.06);color:rgba(220,200,255,.95)}
+.qcm-option.correct{border-color:#aa44ff!important;background:rgba(170,68,255,.12)!important;color:#aa44ff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#aa44ff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:rgba(220,200,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(170,68,255,.15);border:1px solid rgba(170,68,255,.4);color:#aa44ff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(170,68,255,.25);box-shadow:0 0 20px rgba(170,68,255,.2)}
+.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(4,2,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(170,68,255,.3);background:rgba(8,4,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#aa44ff;text-shadow:0 0 20px #aa44ff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,170,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#aa44ff;color:#0a0014}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(170,68,255,.4);color:#aa44ff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(4,2,12,.97);border-top:1px solid rgba(170,68,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(170,68,255,.2);color:rgba(170,68,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#aa44ff;color:#aa44ff}
+.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#aa44ff;letter-spacing:.06em}
+.final-badge{display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:1.2rem 2rem;border:1px solid rgba(170,68,255,.3);background:var(--acc-faint);text-align:center}
+.final-badge-icon{font-size:2.5rem}
+.final-badge-title{font-family:var(--display);font-size:.82rem;font-weight:700;color:#aa44ff;letter-spacing:.1em}
+.final-badge-sub{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.5)}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+<div class="tb-left">
+<a class="tb-back" href="formations.html">← Formations</a>
+<span><span class="tb-dot"></span>// RE·06 · Anti-Debug · Malware · Module Final</span>
+</div>
+<div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+<div id="slides">
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+<div class="slide-tag">// RE·06 · Module 20 · SooPHA Learn · MODULE FINAL</div>
+<h1 class="glitch">ANTI-DEBUG<br/>&amp; MALWARE</h1>
+<div class="gabon-bar"><span></span><span></span><span></span></div>
+<h3>Anti-Debug · IOCs · YARA · Sandbox · Rapport Pro</h3>
+<div class="card" style="text-align:center;max-width:700px">
+<ul class="bullets" style="text-align:left">
+<li><strong>14 slides</strong> · 5 QCM obligatoires · ~65 min · MODULE FINAL du parcours RE</li>
+<li><strong>Techniques anti-debug</strong> — ptrace, timing, IsDebuggerPresent, VM detection</li>
+<li><strong>Contourner l'anti-debug</strong> — patcher, GDB catch syscall, scripts</li>
+<li><strong>Analyse malware</strong> — IOCs, classification, YARA rules</li>
+<li><strong>Sandbox vs manuelle</strong> — choisir la bonne approche selon le contexte</li>
+<li><strong>Rapport d'analyse</strong> — rédiger un rapport professionnel DFIR/Threat Intel</li>
+<li class="ok">Le module qui synthétise tout le parcours RE — de l'outil au pro</li>
+</ul>
+</div>
+<div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-red">RE · Module 6/6 · FINAL</span>
+<span class="pill pill-orange">Anti-Debug · ptrace</span>
+<span class="pill pill-yellow">YARA · IOCs · Sandbox</span>
+<span class="pill pill-purple">Rapport Pro · DFIR</span>
+</div>
+</div>
+<!-- SLIDE 1 — QCM : TECHNIQUES ANTI-DEBUG -->
+<div class="slide" data-index="1">
+<div class="slide-tag">// Slide 02 · Anti-debug · Techniques · Détection · QCM requis</div>
+<h2>Techniques Anti-Debug — Arsenal Complet</h2>
+<h3>Les méthodes utilisées par les malwares pour détecter et tuer les debuggers</h3>
+<div class="cmd-grid" style="margin-bottom:.8rem">
+<div class="cmd-card" style="border-color:rgba(255,68,102,.35)">
+<div class="cmd-name" style="color:#ff4466">ptrace(PTRACE_TRACEME)</div>
+<div class="cmd-desc">Linux. Un processus ne peut être tracé que par un seul parent. Si ptrace(PTRACE_TRACEME) échoue → GDB déjà attaché → quitter. La technique la plus répandue sur Linux.</div>
+<div class="cmd-ex">if (ptrace(PTRACE_TRACEME,0,0,0) == -1) { exit(1); }</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,68,102,.35)">
+<div class="cmd-name" style="color:#ff4466">Timing checks</div>
+<div class="cmd-desc">Mesurer le temps entre deux instructions. Sous debugger, le stepping ralentit drastiquement l'exécution. Si delta &gt; seuil → debugger détecté → comportement altéré.</div>
+<div class="cmd-ex">clock_gettime avant → stepping GDB → clock_gettime après<br/>delta &gt; 1000ms → debug détecté</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.3)">
+<div class="cmd-name" style="color:#ffd700">IsDebuggerPresent (Windows)</div>
+<div class="cmd-desc">API Win32 qui lit le flag BeingDebugged dans le PEB (Process Environment Block). Simple et très courant dans les malwares Windows.</div>
+<div class="cmd-ex">if (IsDebuggerPresent()) { FakeDecoy(); }<br/>// PEB+2 = BeingDebugged byte</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.3)">
+<div class="cmd-name" style="color:#ffd700">INT3 / INT 0x2D scan</div>
+<div class="cmd-desc">Scanner sa propre mémoire à la recherche des breakpoints GDB (opcode 0xCC = INT3). Si trouvé → debugger présent → exit ou comportement alternatif.</div>
+<div class="cmd-ex">if (*(byte*)func == 0xCC) exit(1);<br/>// Scan du code en mémoire</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(170,68,255,.25)">
+<div class="cmd-name">VM / Sandbox detection</div>
+<div class="cmd-desc">Détecter l'environnement d'analyse : présence VMware/VBox (CPUID, fichiers /sys/), hostname par défaut, peu de RAM, pas de vraie activité utilisateur.</div>
+<div class="cmd-ex">dmidecode | grep -i "virtual\|vmware\|vbox"<br/>cat /sys/class/dmi/id/product_name</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,170,255,.2)">
+<div class="cmd-name" style="color:#00aaff">Fork + ptrace parent</div>
+<div class="cmd-desc">Fork() → le child trace le parent avec ptrace → si un autre debugger essaie de s'attacher, il échoue. Technique "self-debugging" pour occuper le slot ptrace.</div>
+<div class="cmd-ex">pid = fork();<br/>if (child) ptrace(ATTACH, parent, ...);</div>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "Face à l'anti-debug, la règle d'or : identifier la technique dans Ghidra AVANT de lancer GDB. Patcher la détection statiquement est toujours plus propre que de la contourner dynamiquement."
+  </div>
+</div>
+<!-- SLIDE 2 — CONTOURNER L'ANTI-DEBUG -->
+<div class="slide" data-index="2">
+<div class="slide-tag">// Slide 03 · Bypass anti-debug · Patcher · GDB catch syscall</div>
+<h2>Contourner l'Anti-Debug — Techniques de Bypass</h2>
+<h3>Pour chaque technique de détection, une technique de contournement</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🔓 Bypasses par technique</div>
+<div style="display:flex;flex-direction:column;gap:.4rem">
+<div class="step"><div class="step-num">1</div><div class="step-content"><strong>ptrace(PTRACE_TRACEME) → Patcher le résultat</strong><br/>Ghidra : trouver le <code style="color:#aa44ff;font-family:var(--mono)">CALL ptrace</code> → NOP les instructions de test du retour (<code style="color:#aa44ff;font-family:var(--mono)">TEST EAX, EAX / JS exit</code>) → le binaire ne peut plus détecter le debugger<br/><code style="color:#00ff88;font-family:var(--mono);font-size:.72rem">Ou : GDB → catch syscall ptrace → si appelé, set $rax = 0 (succès forcé)</code></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><strong>Timing checks → Patcher le seuil ou le branchement</strong><br/>Ghidra : trouver la comparaison <code style="color:#aa44ff;font-family:var(--mono)">CMP delta, threshold / JG exit</code> → changer le seuil (très grande valeur) ou NOP le JG<br/><code style="color:#00ff88;font-family:var(--mono);font-size:.72rem">Ou : GDB → modifier le résultat de clock_gettime pour simuler un delta court</code></div></div>
+<div class="step"><div class="step-num">3</div><div class="step-content"><strong>IsDebuggerPresent (Win) → Patch PEB ou valeur de retour</strong><br/>x64dbg : modifier manuellement le byte <code style="color:#aa44ff;font-family:var(--mono)">PEB+2 (BeingDebugged) → 0x00</code> après chargement<br/><code style="color:#00ff88;font-family:var(--mono);font-size:.72rem">Ou : patcher la valeur de retour de IsDebuggerPresent → MOV EAX, 0 / RET</code></div></div>
+<div class="step"><div class="step-num">4</div><div class="step-content"><strong>VM detection → Masquer l'environnement</strong><br/>Modifier les valeurs DMI/CPUID (VMware Tools), changer le hostname, simuler de l'activité utilisateur, augmenter la RAM de la VM<br/><code style="color:#00ff88;font-family:var(--mono);font-size:.72rem">Ou : utiliser une bare-metal machine pour l'analyse dynamique</code></div></div>
+</div>
+</div>
+</div>
+<!-- SLIDE 3 — QCM : ANALYSE MALWARE STATIQUE -->
+<div class="slide" data-index="3">
+<div class="slide-tag">// Slide 04 · Analyse statique malware · IOCs · Classification · QCM requis</div>
+<h2>Analyse Statique de Malware</h2>
+<h3>Extraire les IOCs et comprendre le comportement sans exécuter le danger</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🔍 Triage statique — workflow</div>
+<div style="display:flex;flex-direction:column;gap:.3rem">
+<div class="step"><div class="step-num">1</div><div class="step-content"><strong>Hash</strong> — md5sum, sha256sum → chercher sur VirusTotal → connu ou inconnu ?</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><strong>file + strings</strong> — architecture, strings visibles, URLs, IPs, registry keys</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-content"><strong>Entropie</strong> — sections packées ? Sections suspects (UPX0, .ndata) ?</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-content"><strong>Imports (readelf -d ou dumpbin)</strong> — quelles fonctions système → comportement déduit</div></div>
+<div class="step"><div class="step-num">5</div><div class="step-content"><strong>Ghidra</strong> — analyser la logique de main(), persistence, C2 communication</div></div>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🎯 IOCs à extraire</div>
+<ul class="bullets">
+<li><strong>Réseau</strong> — URLs, IPs, domaines C2, ports, user-agents custom</li>
+<li><strong>Fichiers</strong> — chemins créés/modifiés/supprimés, noms de fichiers déposés</li>
+<li><strong>Registre (Win)</strong> — clés de run, services créés, clés de config</li>
+<li><strong>Processus</strong> — processus lancés, injection de code, noms de mutex</li>
+<li><strong>Hashes</strong> — MD5/SHA256 du malware et des fichiers qu'il dépose</li>
+<li class="ok">IOCs → alimenter SIEM, EDR, firewall, threat intelligence</li>
+</ul>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment"># Triage rapide d'un binaire suspect</span><br/>
+<span class="term-prompt">$ </span>sha256sum malware.bin | tee hash.txt<br/>
+<span class="term-prompt">$ </span>file malware.bin<br/>
+<span class="term-prompt">$ </span>strings malware.bin | grep -E 'http|\.exe|HKEY|cmd\.exe|powershell' | sort -u<br/>
+<span class="term-prompt">$ </span>readelf -d malware.elf | grep NEEDED  <span class="term-comment"># libs → comportement réseau/crypto ?</span><br/>
+<span class="term-prompt">$ </span>curl -s "https://www.virustotal.com/api/v3/files/$(cat hash.txt | cut -d' ' -f1)" -H "x-apikey: YOUR_KEY"
+  </div>
+</div>
+<!-- SLIDE 4 — YARA RULES -->
+<div class="slide" data-index="4">
+<div class="slide-tag">// Slide 05 · YARA · Règles · Détection de malwares</div>
+<h2>YARA — Écrire des Règles de Détection</h2>
+<h3>Le langage de signature de malwares — créer des règles qui détectent des familles entières</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">📝 Anatomie d'une règle YARA</div>
+<div class="terminal sm">
+<span class="term-blue">rule</span> <span class="term-green">SooPHA_XOR_Backdoor</span> {<br/>
+        <span class="term-blue">meta:</span><br/>
+          author = <span class="term-yellow">"Béni-Jaël MBATA"</span><br/>
+          description = <span class="term-yellow">"Détecte le backdoor XOR 0x42 SooPHA CTF"</span><br/>
+          date = <span class="term-yellow">"2025-01"</span><br/>
+          severity = <span class="term-yellow">"HIGH"</span><br/>
+<br/>
+        <span class="term-blue">strings:</span><br/>
+          $xor_key = { <span class="term-yellow">80 70 42</span> }                  <span class="term-comment">// XOR byte [rax], 0x42</span><br/>
+          $c2_encoded = { <span class="term-yellow">11 0D 0D 12 0A 03</span> }         <span class="term-comment">// "SOOPHA" XOR 0x42</span><br/>
+          $wrong_msg = <span class="term-yellow">"Wrong flag, try again"</span> nocase<br/>
+          $flag_fmt = <span class="term-yellow">/SOOPHA\{[a-z0-9_]+\}/</span>            <span class="term-comment">// regex flag</span><br/>
+<br/>
+        <span class="term-blue">condition:</span><br/>
+          uint32(<span class="term-yellow">0</span>) == <span class="term-yellow">0x464C457F</span>                  <span class="term-comment">// magic ELF</span><br/>
+          and (<span class="term-yellow">$xor_key</span> or <span class="term-yellow">$c2_encoded</span>)<br/>
+          and <span class="term-yellow">$wrong_msg</span><br/>
+      }<br/>
+<br/>
+<span class="term-comment"># Utilisation</span><br/>
+<span class="term-prompt">$ </span>yara SooPHA_XOR_Backdoor.yar ./samples/<br/>
+<span class="term-green">SooPHA_XOR_Backdoor ./samples/crackme_05</span>
+</div>
+</div>
+</div>
+<!-- SLIDE 5 — QCM : SANDBOX -->
+<div class="slide" data-index="5">
+<div class="slide-tag">// Slide 06 · Sandbox · Any.run · Cuckoo · Analyse dynamique malware · QCM requis</div>
+<h2>Sandbox — Analyse Dynamique Sans Risque</h2>
+<h3>Observer le comportement d'un malware dans un environnement contrôlé et isolé</h3>
+<div class="cmd-grid" style="margin-bottom:.8rem">
+<div class="cmd-card" style="border-color:rgba(255,68,102,.35)">
+<div class="cmd-name" style="color:#ff4466">🌐 Any.run</div>
+<div class="cmd-desc">Sandbox interactive en ligne. Voir le malware s'exécuter en temps réel. Rapport automatique : processus, réseau, fichiers, IOCs. Plan gratuit disponible.</div>
+<div class="cmd-ex">app.any.run → Upload → Analyser → Rapport JSON</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.3)">
+<div class="cmd-name" style="color:#ffd700">🔬 VirusTotal</div>
+<div class="cmd-desc">70+ moteurs AV. Analyse comportementale automatique. Relations avec d'autres samples. Idéal pour les triage rapide et la chasse aux variants.</div>
+<div class="cmd-ex">virustotal.com → Hash lookup → Behavior tab</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+<div class="cmd-name" style="color:#00ff88">🦆 Cuckoo Sandbox</div>
+<div class="cmd-desc">Sandbox open source auto-hébergée. Rapport complet : syscalls, réseau PCAP, dump mémoire, screenshots. Idéal pour les équipes SOC avec données sensibles.</div>
+<div class="cmd-ex">pip install cuckoo → cuckoo submit malware.bin</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,170,255,.2)">
+<div class="cmd-name" style="color:#00aaff">🖥️ REMnux VM</div>
+<div class="cmd-desc">Distribution Linux spécialisée analyse malware. 100+ outils préconfigurés : Ghidra, radare2, YARA, Volatility, Wireshark en mode forensics.</div>
+<div class="cmd-ex">remnux.org → VM OVA → VMware/VBox</div>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.6rem">🎯 Sandbox vs Analyse Manuelle — quand choisir quoi ?</div>
+<div class="phase-row"><div class="phase-num">SANDBOX</div><div class="phase-name">Triage rapide</div><div class="phase-desc">Malware inconnu, besoin de IOCs rapides, pas de temps pour l'analyse manuelle. 10 minutes → rapport complet. Risque : sandbox-aware malware qui change de comportement.</div></div>
+<div class="phase-row"><div class="phase-num">MANUELLE</div><div class="phase-name">Investigation deep</div><div class="phase-desc">Malware APT avancé, anti-sandbox, comportement conditionnel. Attribution, comprendre l'algorithme complet, reverse du protocole C2. Peut prendre des heures/jours.</div></div>
+<div class="phase-row"><div class="phase-num">COMBINÉE</div><div class="phase-name">Best practice</div><div class="phase-desc">Sandbox d'abord pour les IOCs rapides et la classification. Analyse manuelle pour les samples critiques ou les nouvelles familles. Approche professionnelle SOC/CERT.</div></div>
+</div>
+</div>
+<!-- SLIDE 6 — PERSISTANCE & C2 -->
+<div class="slide" data-index="6">
+<div class="slide-tag">// Slide 07 · Persistance · C2 · Architecture malware</div>
+<h2>Persistance &amp; Communication C2</h2>
+<h3>Comprendre l'architecture des malwares modernes — les deux piliers de tout RAT/backdoor</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🔒 Mécanismes de persistance Linux</div>
+<ul class="bullets">
+<li><strong>Crontab</strong> — <code style="color:#aa44ff;font-family:var(--mono)">@reboot /tmp/.hidden_payload</code> → exécuté au démarrage</li>
+<li><strong>~/.bashrc / ~/.profile</strong> — injection de commande au login shell</li>
+<li><strong>Systemd service</strong> — créer un faux service légitime-sounding</li>
+<li><strong>LD_PRELOAD</strong> — hooker les fonctions système pour cacher le malware</li>
+<li><strong>Rootkit LKM</strong> — module kernel qui cache les processus/fichiers</li>
+<li class="ok">Chercher dans strace : open("/etc/crontab"), write(".bashrc")</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📡 Protocoles C2 courants</div>
+<ul class="bullets">
+<li><strong>HTTP/HTTPS</strong> — requêtes GET/POST vers le C2. User-agent custom identifiable dans strace/Wireshark</li>
+<li><strong>DNS tunneling</strong> — données encodées dans les requêtes DNS TXT. Très discret, contourne les firewalls</li>
+<li><strong>IRC / Telegram</strong> — botnets anciens (IRC) ou modernes (Telegram API)</li>
+<li><strong>Tor / I2P</strong> — anonymisation du serveur C2 → plus difficile à bloquer</li>
+<li class="warn">Identifier dans Ghidra : imports de socket(), connect(), send(), recv()</li>
+</ul>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment"># Détecter la persistance avec strace</span><br/>
+<span class="term-prompt">$ </span>strace -e trace=file,process ./malware 2&gt;&amp;1 | grep -E "cron|bashrc|systemd|/tmp|\.hidden"<br/>
+<span class="term-out"> openat(AT_FDCWD, "/tmp/.x", O_WRONLY|O_CREAT) = 4</span><br/>
+<span class="term-out"> openat(AT_FDCWD, "/home/user/.bashrc", O_RDWR) = 5</span><br/>
+<span class="term-red"> → Persistance via .bashrc détectée !</span>
+</div>
+</div>
+<!-- SLIDE 7 — QCM : MITRE ATT&CK -->
+<div class="slide" data-index="7">
+<div class="slide-tag">// Slide 08 · MITRE ATT&amp;CK · TTPs · Classification · QCM requis</div>
+<h2>MITRE ATT&amp;CK — Classifier les Comportements</h2>
+<h3>Le framework de référence pour documenter et communiquer sur les techniques des attaquants</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📚 Qu'est-ce que MITRE ATT&amp;CK ?</div>
+<ul class="bullets">
+<li>Framework ouvert de <strong>Tactics, Techniques &amp; Procedures (TTPs)</strong> des attaquants réels</li>
+<li><strong>14 Tactiques</strong> : Initial Access → Execution → Persistence → Privilege Escalation → Defense Evasion → Credential Access → Discovery → Lateral Movement → Collection → C2 → Exfiltration → Impact</li>
+<li><strong>500+ Techniques</strong> chacune avec sous-techniques, exemples réels, groupes APT</li>
+<li>Chaque comportement observé peut être <strong>mappé à un ID</strong> : T1055 = Process Injection</li>
+<li class="ok">Référence : attack.mitre.org — entièrement gratuit</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🗺️ Mapper notre malware CTF</div>
+<div class="phase-row" style="padding:.4rem .6rem"><div class="phase-num">T1027</div><div class="phase-name" style="min-width:80px">Obfuscation</div><div class="phase-desc">XOR encoding du flag et des strings</div></div>
+<div class="phase-row" style="padding:.4rem .6rem"><div class="phase-num">T1055</div><div class="phase-name" style="min-width:80px">Defense Evasion</div><div class="phase-desc">ptrace anti-debug pour détecter l'analyse</div></div>
+<div class="phase-row" style="padding:.4rem .6rem"><div class="phase-num">T1053</div><div class="phase-name" style="min-width:80px">Persistence</div><div class="phase-desc">Crontab entry créée pour survive reboot</div></div>
+<div class="phase-row" style="padding:.4rem .6rem"><div class="phase-num">T1071</div><div class="phase-name" style="min-width:80px">C2</div><div class="phase-desc">HTTP beacon vers domaine encodé</div></div>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "Mapper tes trouvailles sur MITRE ATT&amp;CK transforme une analyse technique en intelligence opérationnelle. C'est ce qui distingue un rapport de reverse engineering d'un rapport de Threat Intelligence."
+  </div>
+</div>
+<!-- SLIDE 8 — ANALYSE COMPLÈTE MALWARE -->
+<div class="slide" data-index="8">
+<div class="slide-tag">// Slide 09 · Exercice · Analyse malware complète · Workflow pro</div>
+<h2>Exercice — Analyse Complète d'un Malware</h2>
+<h3>Workflow professionnel de A à Z — de la réception du sample au rapport</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🔬 Workflow pro complet — malware Linux inconnu</div>
+<div class="terminal sm">
+<span class="term-comment">── PHASE 1 : Réception et isolation ────────────────────────</span><br/>
+<span class="term-out">• SHA256 : a3f2... → VirusTotal : 12/72 → partiellement détecté</span><br/>
+<span class="term-out">• VM snapshot avant analyse → rollback après</span><br/>
+<span class="term-out">• Réseau VM isolé (host-only) → capture Wireshark lancée</span><br/>
+<br/>
+<span class="term-comment">── PHASE 2 : Statique (5 min) ──────────────────────────────</span><br/>
+<span class="term-prompt">$ </span>strings malware | grep -E "http|/tmp|bash|cron"<br/>
+<span class="term-out"> http://185.220.xxx.xxx/gate.php     <span class="term-red">← IOC réseau</span></span><br/>
+<span class="term-out"> /tmp/.sysupdate                    <span class="term-red">← fichier déposé</span></span><br/>
+<span class="term-out"> @reboot /tmp/.sysupdate            <span class="term-red">← persistance crontab</span></span><br/>
+<br/>
+<span class="term-comment">── PHASE 3 : Dynamique (sandbox) ───────────────────────────</span><br/>
+<span class="term-out">• Any.run : connexions vers 185.220.xxx.xxx:443 → HTTPS C2</span><br/>
+<span class="term-out">• Fichier créé : /tmp/.sysupdate (copie du malware)</span><br/>
+<span class="term-out">• Crontab modifié : @reboot ajouté</span><br/>
+<br/>
+<span class="term-comment">── PHASE 4 : Ghidra → protocole C2 ────────────────────────</span><br/>
+<span class="term-comment">// send_beacon() : HTTP POST + JSON {uuid, hostname, os}</span><br/>
+<span class="term-comment">// recv_cmd() : decode XOR 0x37 → exécute via execve()</span><br/>
+<br/>
+<span class="term-comment">── PHASE 5 : IOCs finaux + MITRE mapping ──────────────────</span><br/>
+<span class="term-green">IOC: 185.220.xxx.xxx, /tmp/.sysupdate, sha256:a3f2...</span>
+</div>
+</div>
+</div>
+<!-- SLIDE 9 — QCM : RAPPORT D'ANALYSE -->
+<div class="slide" data-index="9">
+<div class="slide-tag">// Slide 10 · Rapport · DFIR · Threat Intel · QCM requis</div>
+<h2>Rédiger un Rapport d'Analyse Malware Professionnel</h2>
+<h3>La compétence qui distingue le reverser amateur du analyste professionnel</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📄 Structure du rapport pro</div>
+<div style="display:flex;flex-direction:column;gap:.3rem">
+<div class="step"><div class="step-num">1</div><div class="step-content"><strong>Executive Summary</strong> — 5 lignes max. Ce que fait le malware, le niveau de risque, les actions immédiates requises. Pour le RSSI/management.</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><strong>Metadata</strong> — Hash SHA256/MD5, type de fichier, date de découverte, source du sample</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-content"><strong>Analyse statique</strong> — Strings, imports, sections, entropie, famille détectée</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-content"><strong>Analyse dynamique</strong> — Comportements observés : réseau, fichiers, processus, registry</div></div>
+<div class="step"><div class="step-num">5</div><div class="step-content"><strong>IOCs</strong> — Tableau : Type | Valeur | Description | Confiance</div></div>
+<div class="step"><div class="step-num">6</div><div class="step-content"><strong>MITRE ATT&amp;CK</strong> — Tableau des TTPs mappés avec IDs et descriptions</div></div>
+<div class="step"><div class="step-num">7</div><div class="step-content"><strong>Recommandations</strong> — Règles YARA, règles SIEM/EDR, actions de remédiation</div></div>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">✅ Bonnes pratiques rédactionnelles</div>
+<ul class="bullets">
+<li><strong>Séparer faits et interprétations</strong> — "Le binaire appelle ptrace()" vs "Il détecte probablement GDB"</li>
+<li><strong>Quantifier la confiance</strong> — HIGH/MEDIUM/LOW pour chaque IOC et conclusion</li>
+<li><strong>Screenshots annotés</strong> — Ghidra, GDB, trafic réseau, comportements observés</li>
+<li><strong>IOCs actionnables</strong> — Format STIX/TAXII pour l'intégration SIEM</li>
+<li><strong>Reproductibilité</strong> — Liste des outils, versions, commandes exactes utilisées</li>
+<li class="ok">Modèles gratuits : MISP, OpenCTI, Cortex Analyzer pour automatiser</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- SLIDE 10 — OUTILS MALWARE ANALYSIS -->
+<div class="slide" data-index="10">
+<div class="slide-tag">// Slide 11 · Arsenal · Outils malware · REMnux</div>
+<h2>Arsenal Complet — Outils d'Analyse Malware</h2>
+<h3>Les outils de référence organisés par phase d'analyse</h3>
+<div class="cmd-grid" style="margin-bottom:.8rem">
+<div class="cmd-card" style="border-color:rgba(170,68,255,.35)">
+<div class="cmd-name">🏷️ YARA</div>
+<div class="cmd-desc">Création et matching de règles de détection. Standard industriel pour la signature de malwares. Intégré dans tous les SIEM/EDR.</div>
+<div class="cmd-ex">yara -r rules/ samples/<br/>yara rule.yar malware.bin</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,68,102,.2)">
+<div class="cmd-name">🧠 Volatility 3</div>
+<div class="cmd-desc">Forensics mémoire RAM. Extraire processus, connections réseau, clés de registre, injections mémoire depuis un dump RAM.</div>
+<div class="cmd-ex">vol -f mem.dmp windows.pslist<br/>vol -f mem.dmp linux.bash</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,170,255,.2)">
+<div class="cmd-name">🦠 Capa</div>
+<div class="cmd-desc">Outil FLARE de FireEye. Identifie automatiquement les capacités d'un binaire (download files, create mutex, inject code) et les mappe sur MITRE ATT&amp;CK.</div>
+<div class="cmd-ex">capa malware.bin<br/>→ rapport MITRE automatique</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+<div class="cmd-name">📡 Wireshark</div>
+<div class="cmd-desc">Capture et analyse trafic réseau. Identifier les connexions C2, protocoles utilisés, données exfiltrées. Mode forensics : ouvrir des PCAPs de sandbox.</div>
+<div class="cmd-ex">wireshark -r sandbox.pcap<br/>Filtre : http.request.method == POST</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+<div class="cmd-name">🔍 PEStudio / PEiD</div>
+<div class="cmd-desc">Analyse PE (Windows). Imports, strings, sections, certificats, anomalies. Détection de packers, version info, manifests. Indispensable pour les malwares Windows.</div>
+<div class="cmd-ex">pestudio malware.exe<br/>→ rapport complet en GUI</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,136,0,.2)">
+<div class="cmd-name">🌐 MISP</div>
+<div class="cmd-desc">Plateforme de partage de Threat Intelligence. Stocker, partager et consommer des IOCs. Standard dans les SOC/CERT/CSIRT professionnels.</div>
+<div class="cmd-ex">misp-project.org<br/>→ Open source, auto-hébergeable</div>
+</div>
+</div>
+</div>
+<!-- SLIDE 11 — ÉTHIQUE & LÉGALITÉ -->
+<div class="slide" data-index="11">
+<div class="slide-tag">// Slide 12 · Éthique · Légalité · Responsabilité</div>
+<h2>Éthique &amp; Responsabilité de l'Analyste Malware</h2>
+<h3>Les règles non négociables — protéger, ne pas nuire, rester dans les clous</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">✅ Ce qui est toujours légal</div>
+<ul class="bullets">
+<li class="ok"><strong>CTF</strong> — tout est permis dans le périmètre du challenge</li>
+<li class="ok"><strong>Malware reçu en incident</strong> — analyser un malware qui a infecté ton organisation est légal et nécessaire</li>
+<li class="ok"><strong>Samples publics</strong> — MalwareBazaar, VirusTotal, TheZoo — samples partagés pour la recherche</li>
+<li class="ok"><strong>Sandbox isolation totale</strong> — la VM n'a aucun accès réseau vers l'extérieur → aucun risque d'activation</li>
+<li class="ok"><strong>Bug bounty</strong> — RE dans le périmètre du programme de bug bounty</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🚫 Les lignes rouges</div>
+<ul class="bullets">
+<li class="danger"><strong>JAMAIS exécuter</strong> un malware sur une machine connectée à un réseau réel</li>
+<li class="danger"><strong>JAMAIS partager</strong> des samples actifs sans chiffrement et mots de passe (standard : zip "infected")</li>
+<li class="danger"><strong>JAMAIS contacter</strong> les serveurs C2 d'un malware — même pour "voir" ce qu'ils répondent</li>
+<li class="danger"><strong>JAMAIS utiliser</strong> les techniques apprises pour attaquer des systèmes sans autorisation</li>
+<li class="warn">Signaler toujours un malware actif aux autorités compétentes (ANSSI, CERT-FR, INTERPOL)</li>
+</ul>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "Le reverse engineer défensif est l'égal de l'attaquant en compétences — mais son supérieur en éthique. La connaissance sans responsabilité n'est pas de la cybersécurité, c'est juste du hacking. — SooPHA Learn"
+  </div>
+</div>
+<!-- SLIDE 12 — RÉCAP FINAL PARCOURS RE -->
+<div class="slide" data-index="12"><div class="slide-tag">// Slide 13 · Rapport pro · Suite du parcours · Capstone</div>
+<h2>Le Livrable Final — Ce qu'un Analyste Rend Vraiment</h2>
+<h3>Le reverse engineering n'est pas fini quand tu comprends le sample : il est fini quand tu peux l'expliquer</h3>
+<div class="grid2" style="margin-bottom:.9rem">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">📝 Structure d'un vrai rapport</div>
+<ul class="bullets">
+<li><strong>Contexte</strong> — origine du sample, périmètre, date, hash</li>
+<li><strong>Résumé exécutif</strong> — ce qu'il fait en 5 lignes compréhensibles</li>
+<li><strong>Analyse technique</strong> — anti-debug, persistance, réseau, obfuscation</li>
+<li><strong>IOCs</strong> — IPs, domaines, chemins, mutex, hashes, règles YARA</li>
+<li><strong>Recommandations</strong> — containment, détection, hunting, remédiation</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🚀 Suite logique</div>
+<ul class="bullets">
+<li>Tu as maintenant les briques du parcours complet : triage, asm, Ghidra, GDB, obfuscation, anti-debug.</li>
+<li>La meilleure suite n'est pas un autre cours théorique : c'est un <strong>cas de synthèse complet</strong>.</li>
+<li class="ok">Le capstone <strong>RE·07</strong> sert précisément à ça : enchaîner tout le workflow sur un même sample.</li>
+</ul>
+</div>
+</div>
+<div class="quote">Comprendre un malware est une compétence. Produire un rapport clair, actionnable et défendable devant un client ou un SOC, c'est le niveau professionnel.</div></div>
+<!-- SLIDE 13 — FINAL -->
+<div class="slide" data-index="13"><div class="slide-tag">// Slide 14 · Félicitations · Parcours RE terminé · 🇬🇦</div>
+<h2>Tu as terminé le socle RE — maintenant valide-le sur un cas complet</h2>
+<h3>Le parcours de base est fini. Le vrai test commence avec le capstone.</h3>
+<div class="card" style="text-align:center;max-width:760px;margin-bottom:1rem">
+<ul class="bullets" style="text-align:left">
+<li><strong>RE·01</strong> — triage, ELF, réflexes initiaux</li>
+<li><strong>RE·02</strong> — lecture assembleur et reconstruction logique</li>
+<li><strong>RE·03</strong> — cartographie statique avec Ghidra</li>
+<li><strong>RE·04</strong> — validation runtime avec GDB</li>
+<li><strong>RE·05</strong> — obfuscation, XOR, diagnostic</li>
+<li><strong>RE·06</strong> — anti-debug, malware, rapport pro</li>
+<li class="ok"><strong>Prochaine étape recommandée</strong> — <strong>RE·07 Capstone</strong> pour tout appliquer sur un même sample</li>
+</ul>
+</div>
+<div style="display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-red">Socle RE validé</span>
+<span class="pill pill-green">Orientation analyste</span>
+<span class="pill pill-purple">RE·07 recommandé</span>
+</div></div>
+</div><!-- /slides -->
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+<div class="qcm-box">
+<div class="qcm-header">
+<span class="qcm-label">// QCM · RE·06 · Anti-Debug &amp; Malware</span>
+<span class="qcm-prog" id="qcm-prog">QCM 1 / 5</span>
+</div>
+<div class="qcm-saving" id="qcm-saving">💾 Sauvegarde Supabase...</div>
+<div class="qcm-question" id="qcm-question"></div>
+<div class="qcm-options" id="qcm-options"></div>
+<div class="qcm-feedback" id="qcm-feedback"></div>
+<button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+</div>
+</div>
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+<div class="completion-box">
+<div class="completion-icon" id="comp-icon">🎓</div>
+<div class="completion-score" id="comp-score">100%</div>
+<div class="completion-title" id="comp-title">Parcours RE Terminé !</div>
+<div class="completion-sub" id="comp-sub"></div>
+<div class="completion-saved">✓ Résultat sauvegardé · Parcours RE complet !</div>
+<a class="completion-btn completion-btn-primary" href="re7.html">RE·07 : Capstone Reverse Engineering →</a>
+<a class="completion-btn completion-btn-secondary" href="dashboard.html">Mon Dashboard</a>
+</div>
+</div>
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+<button class="nav-btn" disabled="" id="prev-btn" onclick="navigate(-1)">← PRÉC</button>
+<div style="display:flex;gap:1rem;align-items:center">
+<span class="qcm-indicator" id="qcm-ind"></span>
+<span id="slide-counter">01 / 14</span>
+</div>
+<button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIV →</button>
+</div>
+<script>
+var QCM = {
+  1: {
+    question: "Un malware Linux se ferme instantanément quand tu lances GDB. Après analyse statique Ghidra, tu trouves : 'if (ptrace(PTRACE_TRACEME,0,0,0) == -1) { exit(1); }'. Quelle est la solution la plus propre ?",
+    options: [
+      "Utiliser strace au lieu de GDB — strace ne déclenche pas ptrace(PTRACE_TRACEME) et permet d'observer l'exécution complète sans être détecté",
+      "Dans Ghidra, identifier et patcher le test du retour de ptrace : NOP les instructions 'CMP EAX, -1 / JE exit' ou modifier le JE en JNE. Exporter le binaire patché → GDB sur le patché sans anti-debug.",
+      "Lancer GDB avec sudo root — les privilèges root désactivent automatiquement la détection ptrace dans les binaires Linux",
+      "Créer un wrapper shell qui relance le binaire en boucle — il finit par passer l'anti-debug aléatoirement selon l'état du scheduler"
+    ],
+    correct: 1,
+    explanation: "La technique ptrace(PTRACE_TRACEME) exploite le fait qu'un processus ne peut être tracé que par un seul parent. Si GDB est attaché, l'appel PTRACE_TRACEME échoue (retourne -1) → le malware détecte GDB et quitte. Solution propre : Ghidra → trouver le CALL ptrace → trouver le test du retour (CMP EAX, -1 ou TEST EAX, EAX / JS exit) → NOP le JE/JS qui mène au exit. Exporter le binaire patché → GDB fonctionne normalement. Alternative GDB : 'catch syscall ptrace' → quand déclenché → 'set $rax = 0' pour simuler un succès → continue. Le patch statique est préférable car plus propre et reproductible."
+  },
+  3: {
+    question: "Lors de l'analyse statique d'un malware, readelf -d montre : 'libssl.so.1.1, libcrypto.so.1.1, libcurl.so.4'. Que peut-on déduire sur le comportement probable de ce malware sans l'exécuter ?",
+    options: [
+      "Le malware est un outil de sécurité légitime — libssl et libcrypto sont uniquement utilisés par les logiciels de protection et jamais par des malwares",
+      "Le malware fait probablement des communications réseau chiffrées (libssl = TLS/SSL, libcurl = HTTP/HTTPS client). C'est le profil typique d'un RAT/backdoor avec C2 en HTTPS. IOC probable : requêtes HTTP vers domaine/IP C2.",
+      "Le malware est un serveur web — libssl est uniquement utilisé pour créer des serveurs HTTPS, jamais pour des connexions sortantes",
+      "Ces bibliothèques indiquent que le malware fait de la cryptographie locale (chiffrement de fichiers) — un ransomware. libcurl n'est jamais utilisé pour les communications C2"
+    ],
+    correct: 1,
+    explanation: "Les imports de bibliothèques révèlent les capacités sans exécuter le binaire. libssl.so + libcrypto.so = OpenSSL → chiffrement TLS/SSL pour des connexions HTTPS sécurisées. libcurl.so = libcurl → client HTTP/HTTPS pour faire des requêtes web. Combinaison = malware qui fait des connexions HTTPS vers un C2 (Command & Control). C'est le profil classique d'un RAT, downloader ou backdoor. IOCs à chercher dans strings : URLs, IPs, domaines, User-Agent custom. Dans Ghidra : suivre les appels à curl_easy_setopt() pour trouver l'URL C2 et les données exfiltrées. MITRE ATT&CK : T1071.001 (Application Layer Protocol - Web Protocols)."
+  },
+  5: {
+    question: "Tu soumets un malware sur Any.run et tu obtiens : connexions vers 185.220.101.45:443, création de /tmp/.x11, modification de ~/.bashrc, mutex 'Global\\MutexSooPHA'. Lesquels de ces éléments sont des IOCs réseaux actionnables pour bloquer d'autres infections ?",
+    options: [
+      "Uniquement le mutex 'Global\\MutexSooPHA' — les mutex sont les seuls IOCs fiables car ils ne changent pas entre variants contrairement aux IPs et fichiers",
+      "L'IP 185.220.101.45:443 est un IOC réseau → bloquer sur firewall/proxy. /tmp/.x11 et ~/.bashrc sont des IOCs host → détecter avec EDR/YARA. Le mutex → détecter avec EDR Windows. Tous sont actionnables selon leur type.",
+      "Aucun — les IOCs d'Any.run sont des faux positifs car la sandbox modifie le comportement du malware. Il faut une analyse manuelle sur bare-metal pour des IOCs fiables",
+      "Uniquement l'IP et le port — les chemins de fichiers comme /tmp/.x11 varient aléatoirement entre exécutions et ne peuvent pas servir d'IOC fiable"
+    ],
+    correct: 1,
+    explanation: "Tous ces éléments sont des IOCs valables mais de types différents : (1) IP:Port 185.220.101.45:443 → IOC réseau → bloquer immédiatement sur firewall/proxy/EDR réseau. (2) /tmp/.x11 → IOC fichier (host-based) → rechercher sur tous les systèmes, créer règle YARA. (3) ~/.bashrc modifié → IOC comportemental → chercher la ligne ajoutée dans /home/*/.bashrc. (4) Mutex 'Global\\MutexSooPHA' → IOC host Windows → détecter avec EDR. Les IPs peuvent changer (bullet-proof hosting), les chemins de fichiers peuvent varier, mais le comportement (persistance via .bashrc) et le mutex restent des signatures fiables. Format STIX/TAXII pour partage avec d'autres SOC."
+  },
+  7: {
+    question: "Après analyse, tu observes : le malware fait HTTP POST vers /gate.php avec body base64(json{id,hostname,arch}), puis décode la réponse XOR 0x42 et l'exécute via execve(). Quel(s) TTP(s) MITRE ATT&CK correspondent à ce comportement ?",
+    options: [
+      "T1566 (Phishing) et T1078 (Valid Accounts) — le malware utilise des comptes légitimes pour se connecter et se fait passer pour un email de phishing",
+      "T1071.001 (C2 via Web Protocols - HTTP), T1027 (Obfuscated Files - XOR+Base64), T1059 (Command and Scripting - execve), T1041 (Exfiltration Over C2 Channel pour le JSON hostname/arch)",
+      "T1190 (Exploit Public-Facing Application) — le malware exploite une vulnérabilité dans le serveur web pour établir la connexion HTTP vers le C2",
+      "Uniquement T1071 (Application Layer Protocol) — un seul TTP peut être appliqué par comportement observé, MITRE n'autorise pas le mapping multiple pour un seul sample"
+    ],
+    correct: 1,
+    explanation: "MITRE ATT&CK supporte et encourage le mapping multiple pour un sample. Analyse du comportement : (1) HTTP POST vers /gate.php = T1071.001 (Application Layer Protocol: Web Protocols) — communication C2 via HTTP standard pour éviter la détection réseau. (2) Body base64 + réponse XOR 0x42 = T1027 (Obfuscated Files or Information) — les données sont encodées pour éviter la détection content inspection. (3) Décoder et execve() = T1059 (Command and Scripting Interpreter) — exécution de commandes reçues du C2. (4) JSON avec id/hostname/arch = T1082 (System Information Discovery) et T1041 (Exfiltration Over C2 Channel). Les adversaires utilisent toujours plusieurs techniques simultanément — les mapper toutes donne une image fidèle des capacités."
+  },
+  9: {
+    question: "Tu dois rédiger un rapport d'analyse malware pour un RSSI non-technique et une équipe SOC technique. Quelle structure est la plus appropriée ?",
+    options: [
+      "Un seul document très technique avec tous les détails ASM Ghidra, breakpoints GDB et opcodes — le RSSI peut sauter les parties trop techniques",
+      "Executive Summary (5 lignes de risque et actions pour le RSSI) + sections techniques détaillées (IOCs, MITRE TTPs, analyse Ghidra, captures sandbox) pour le SOC + tableaux d'IOCs actionnables. Les deux audiences dans un seul document structuré.",
+      "Deux documents séparés : un email d'une phrase pour le RSSI, et un document technique illimité pour le SOC — mélanger les audiences dilue le message",
+      "Un rapport uniquement pour le SOC — le RSSI n'a pas besoin de détails sur les malwares, seulement d'un ticket dans le système de gestion des incidents"
+    ],
+    correct: 1,
+    explanation: "Un rapport professionnel d'analyse malware s'adresse à plusieurs audiences avec un seul document structuré. Structure optimale : (1) EXECUTIVE SUMMARY (5-10 lignes) : 'Ce malware est un backdoor HTTPS qui permet un accès complet à la machine infectée. Risque : CRITIQUE. Action immédiate : bloquer 185.220.101.45, chercher /tmp/.x11 sur tous les systèmes.' → pour RSSI/Management. (2) METADATA : hash, date, source. (3) ANALYSE STATIQUE + DYNAMIQUE : détails techniques, screenshots Ghidra/GDB, logs sandbox → pour SOC. (4) IOCs TABLE : format structuré Type/Valeur/Confiance → pour SIEM/EDR. (5) MITRE MAPPING : IDs + descriptions → pour Threat Intel. (6) RECOMMANDATIONS : règles YARA, règles Sigma pour SIEM, actions de remédiation. Cette structure est le standard DFIR/Threat Intelligence."
+  }
+};
+
+var COURSE_ID = 're6';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active'); current = next; updateUI();
+}
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){ document.getElementById('comp-icon').textContent='🎓'; document.getElementById('comp-title').textContent='Parcours RE Maîtrisé !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Tu as complété les 6 modules RE de SooPHA Learn. Bienvenue dans le monde du Reverse Engineering professionnel. 🇬🇦'; }
+  else if(pct>=60){ document.getElementById('comp-icon').textContent='🔬'; document.getElementById('comp-title').textContent='RE·06 Terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Relis les sections anti-debug et rapport pro avant de te lancer en pro.'; }
+  else { document.getElementById('comp-icon').textContent='⚙️'; document.getElementById('comp-title').textContent='RE·06 Terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Reprends les modules RE·03 à RE·06 pour consolider tes bases.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='01ANTIDEBUGMALWAREYARAIOCSANDBOXMITREPTRACEPTRACEATTACK',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(4,2,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#aa44ff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>RE·07 — Capstone Reverse Engineering · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(4,2,12,.97);border-bottom:1px solid rgba(170,68,255,.15);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(170,68,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(170,68,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}
+.tb-back:hover{color:#aa44ff}
+.tb-dot{width:6px;height:6px;background:#aa44ff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(170,68,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#6622cc,#aa44ff);box-shadow:0 0 8px #aa44ff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#aa44ff;--acc-dim:rgba(170,68,255,.15);--acc-faint:rgba(170,68,255,.06);--acc-border:rgba(170,68,255,.2)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#aa44ff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(170,68,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(8,4,20,.88);border:1px solid var(--acc-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(220,200,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#aa44ff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}
+.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}
+.bullets li.danger::before{content:'🔴';font-size:.7rem}
+.bullets li.ok::before{content:'✅';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.terminal{background:rgba(4,0,12,.85);border:1px solid rgba(170,68,255,.12);border-left:3px solid #aa44ff;padding:.9rem 1.2rem;font-family:var(--mono);font-size:.75rem;color:rgba(200,170,255,.8);line-height:2;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.85}
+.term-prompt{color:#aa44ff}
+.term-out{color:rgba(200,170,255,.45)}
+.term-comment{color:rgba(170,68,255,.4);font-style:italic}
+.term-red{color:#ff4466}
+.term-yellow{color:#ffd700}
+.term-green{color:#00ff88}
+.term-blue{color:#00aaff}
+.quote{border-left:3px solid #aa44ff;padding:.7rem 1rem;background:var(--acc-faint);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#e8d0ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #aa44ff,0 0 80px rgba(170,68,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #aa44ff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#aa44ff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#aa44ff;text-shadow:0 0 8px #aa44ff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(220,200,255,.85);line-height:1.5}
+.phase-row{display:flex;gap:.8rem;padding:.55rem .9rem;border-bottom:1px solid rgba(170,68,255,.07);align-items:flex-start}
+.phase-row:last-child{border-bottom:none}
+.phase-num{font-family:var(--mono);font-size:.68rem;color:#aa44ff;min-width:90px;flex-shrink:0}
+.phase-name{font-family:var(--display);font-size:.72rem;font-weight:700;color:#fff;min-width:120px;flex-shrink:0}
+.phase-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.65);line-height:1.4}
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(4,2,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(8,4,20,.97);border:1px solid rgba(170,68,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(170,68,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(170,68,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.35);margin-bottom:.5rem;display:none}
+.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(4,0,16,.3);border:1px solid rgba(170,68,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(210,190,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(170,68,255,.35);background:rgba(170,68,255,.06);color:rgba(220,200,255,.95)}
+.qcm-option.correct{border-color:#aa44ff!important;background:rgba(170,68,255,.12)!important;color:#aa44ff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#aa44ff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:rgba(220,200,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(170,68,255,.15);border:1px solid rgba(170,68,255,.4);color:#aa44ff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(170,68,255,.25);box-shadow:0 0 20px rgba(170,68,255,.2)}
+.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(4,2,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(170,68,255,.3);background:rgba(8,4,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#aa44ff;text-shadow:0 0 20px #aa44ff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,170,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#aa44ff;color:#0a0014}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(170,68,255,.4);color:#aa44ff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(4,2,12,.97);border-top:1px solid rgba(170,68,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(170,68,255,.2);color:rgba(170,68,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#aa44ff;color:#aa44ff}
+.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#aa44ff;letter-spacing:.06em}
+.final-badge{display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:1.2rem 2rem;border:1px solid rgba(170,68,255,.3);background:var(--acc-faint);text-align:center}
+.final-badge-icon{font-size:2.5rem}
+.final-badge-title{font-family:var(--display);font-size:.82rem;font-weight:700;color:#aa44ff;letter-spacing:.1em}
+.final-badge-sub{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.5)}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<div id="topbar">
+  <div class="tb-left">
+    <a href="formations.html" class="tb-back">← Formations</a>
+    <span><span class="tb-dot"></span>// RE·07 · Capstone · Challenge Final · Module Bonus</span>
+  </div>
+  <div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+
+<div id="slides">
+
+
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// RE·07 · Module 21 · SooPHA Learn · CAPSTONE</div>
+  <h1 class="glitch">CAPSTONE<br>REVERSE</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Challenge Final · Méthodologie · Triage → Rapport</h3>
+  <div class="card" style="text-align:center;max-width:700px">
+    <ul class="bullets" style="text-align:left">
+      <li><strong>14 slides</strong> · 5 QCM obligatoires · ~70 min · module bonus de synthèse</li>
+      <li><strong>Un fil rouge unique</strong> — un binaire inconnu, du triage initial jusqu'au rapport final</li>
+      <li><strong>Workflow complet</strong> — statique, dynamique, obfuscation, anti-debug, extraction d'IOCs</li>
+      <li><strong>Décision d'analyste</strong> — quoi faire, dans quel ordre, et pourquoi</li>
+      <li><strong>Restitution professionnelle</strong> — findings, hypothèses, limites, recommandations</li>
+      <li><strong>Pas un cours d'outil</strong> — ici, tu apprends à penser comme un reverse engineer complet</li>
+      <li class="ok">Prérequis : RE·01 à RE·06 validés — ce module consolide tout le parcours</li>
+    </ul>
+  </div>
+  <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-red">RE · Module 7/7 · CAPSTONE</span>
+    <span class="pill pill-orange">Triage · Ghidra · GDB</span>
+    <span class="pill pill-yellow">XOR · Anti-Debug · IOCs</span>
+    <span class="pill pill-purple">Rapport · Méthodologie</span>
+  </div>
+</div>
+
+<!-- SLIDE 1 — CONTEXTE + QCM -->
+<div class="slide" data-index="1">
+  <div class="slide-tag">// Slide 02 · Contexte opérationnel · Triage initial · QCM requis</div>
+  <h2>Le Sample « update-checker » arrive sur ton bureau</h2>
+  <h3>Un faux utilitaire Linux, reçu après une alerte EDR sur un poste développeur</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📥 Ce que tu sais au départ</div>
+      <ul class="bullets">
+        <li>Nom du fichier : <strong>update-checker</strong> — présenté comme un outil interne de diagnostic</li>
+        <li>Hash inconnu dans l'environnement — aucun historique de déploiement légitime</li>
+        <li>L'EDR signale une exécution suivie d'un appel réseau suspect puis d'une sortie rapide</li>
+        <li>Pas de source, pas de symboles utiles, pas de documentation</li>
+        <li class="warn">Ton rôle : comprendre le comportement <strong>sans brûler les preuves</strong></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🎯 Mission du capstone</div>
+      <ul class="bullets">
+        <li><strong>Trier</strong> le binaire sans l'exécuter au hasard</li>
+        <li><strong>Formuler des hypothèses</strong> à partir d'artefacts tangibles</li>
+        <li><strong>Confirmer / infirmer</strong> avec Ghidra et GDB</li>
+        <li><strong>Contourner</strong> une couche d'obfuscation et d'anti-debug</li>
+        <li><strong>Extraire des IOCs</strong> et produire un rapport clair</li>
+        <li class="ok">Tu dois agir comme un analyste, pas comme un touriste du RE</li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "Le vrai reverse engineering commence quand tu ne cherches plus juste à comprendre le binaire, mais à décider intelligemment de la prochaine action. — SooPHA Learn"
+  </div>
+</div>
+
+<!-- SLIDE 2 — TRIAGE -->
+<div class="slide" data-index="2">
+  <div class="slide-tag">// Slide 03 · Triage initial · Réflexes minimums</div>
+  <h2>Triage — Les 5 premières minutes décident du reste</h2>
+  <h3>Avant Ghidra, avant GDB, tu dois cadrer le sample</h3>
+  <div class="terminal sm" style="margin-bottom:.8rem">
+    <span class="term-prompt">analyst@lab:~$</span> sha256sum update-checker<br>
+    <span class="term-green">9f14...d3c1  update-checker</span><br><br>
+    <span class="term-prompt">analyst@lab:~$</span> file update-checker<br>
+    <span class="term-green">ELF 64-bit LSB pie executable, x86-64, dynamically linked, not stripped</span><br><br>
+    <span class="term-prompt">analyst@lab:~$</span> strings -n 6 update-checker | head -20<br>
+    <span class="term-out">checking update source...</span><br>
+    <span class="term-out">Debugger detected</span><br>
+    <span class="term-out">/api/v1/ping</span><br>
+    <span class="term-out">libcurl.so.4</span><br><br>
+    <span class="term-prompt">analyst@lab:~$</span> readelf -h -S update-checker | head -25
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">✅ Ce que ce triage te dit déjà</div>
+      <ul class="bullets">
+        <li><strong>ELF x86-64 PIE</strong> — attention aux adresses runtime et à l'ASLR</li>
+        <li><strong>Dynamically linked</strong> — imports intéressants à explorer rapidement</li>
+        <li><strong>Not stripped</strong> — avantage énorme pour la première passe</li>
+        <li><strong>Strings réseau + anti-debug</strong> — double piste comportementale immédiate</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🚫 Ce qu'il ne faut pas faire</div>
+      <ul class="bullets">
+        <li class="danger">Double-cliquer et "voir ce que ça fait" sur une machine normale</li>
+        <li class="danger">Conclure qu'il est bénin parce qu'il n'est pas stripped</li>
+        <li class="warn">Se jeter dans le décompilateur sans hypothèse initiale</li>
+        <li class="warn">Ignorer les imports et les sections avant de debugger</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3 — PLAN D'ATTAQUE -->
+<div class="slide" data-index="3">
+  <div class="slide-tag">// Slide 04 · Plan d'attaque · Hypothèses</div>
+  <h2>Construire un Plan d'Analyse Avant d'ouvrir les outils</h2>
+  <h3>Un bon reverse engineer choisit son ordre d'attaque</h3>
+  <div class="card" style="margin-bottom:.8rem">
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      <div class="step"><div class="step-num">1</div><div class="step-content"><strong>Identifier les points d'entrée</strong> — main, imports réseau, messages d'erreur, fonctions de validation, wrappers anti-debug</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content"><strong>Choisir la voie statique initiale</strong> — localiser le flux général sans exécuter le sample</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content"><strong>Préparer la dynamique</strong> — où casser ? quoi observer ? quels registres ou buffers inspecter ?</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content"><strong>Confirmer les couches de protection</strong> — obfuscation, anti-debug, appels réseau, temporisation</div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-content"><strong>Sortir avec des artefacts</strong> — IOCs, logique métier, risque, recommandations défensives</div></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-purple">Triage → Hypothèse → Statique → Dynamique → Rapport</span>
+    <span class="pill pill-blue">Le process compte autant que l'outil</span>
+  </div>
+</div>
+
+<!-- SLIDE 4 — GHIDRA + QCM -->
+<div class="slide" data-index="4">
+  <div class="slide-tag">// Slide 05 · Ghidra · Cartographie du sample · QCM requis</div>
+  <h2>Première Passe Ghidra — Cartographier sans se perdre</h2>
+  <h3>Tu cherches la structure, pas encore tous les détails</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔬 Ce que tu repères dans Ghidra</div>
+      <ul class="bullets">
+        <li><strong>main</strong> appelle d'abord une fonction de vérification d'environnement</li>
+        <li>Puis une routine renommée <strong>build_payload()</strong> construit un buffer octet par octet</li>
+        <li>Une fonction compare ensuite le résultat à une chaîne attendue avant d'appeler libcurl</li>
+        <li>Une branche d'échec imprime <strong>Debugger detected</strong> puis sort immédiatement</li>
+        <li class="ok">Le décompilateur te donne la carte globale en quelques minutes</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🧭 Workflow Ghidra minimal</div>
+      <ul class="bullets">
+        <li>Importer et laisser tourner l'<strong>auto-analyse</strong></li>
+        <li>Localiser <strong>main</strong> puis remonter les appels</li>
+        <li>Explorer les <strong>strings</strong> et leurs XREF</li>
+        <li>Renommer immédiatement les fonctions clés</li>
+        <li>Comparer <strong>listing asm</strong> et pseudo-code quand quelque chose sent mauvais</li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "Si Ghidra te montre une fonction confuse, ne lui fais pas un procès : il t'avertit peut-être qu'il y a de l'obfuscation, un mauvais typage, ou une logique volontairement tordue."
+  </div>
+</div>
+
+<!-- SLIDE 5 — PSEUDO-CODE FINDINGS -->
+<div class="slide" data-index="5">
+  <div class="slide-tag">// Slide 06 · Pseudo-code · Hypothèse validation</div>
+  <h2>Le Cœur de l'Échantillon — Une Chaîne Reconstruite à la Main</h2>
+  <h3>Quand le sample évite les strings statiques, il faut suivre la logique</h3>
+  <div class="terminal sm" style="margin-bottom:.8rem">
+    <span class="term-comment">// pseudo-code retypé dans Ghidra</span><br>
+    <span class="term-blue">int</span> <span class="term-green">build_payload</span>(<span class="term-blue">char</span> *buf) {<br>
+    &nbsp;&nbsp;buf[0] = <span class="term-yellow">0x2f</span> ^ <span class="term-yellow">0x42</span>;<br>
+    &nbsp;&nbsp;buf[1] = <span class="term-yellow">0x23</span> ^ <span class="term-yellow">0x42</span>;<br>
+    &nbsp;&nbsp;...<br>
+    &nbsp;&nbsp;<span class="term-blue">for</span> (i=<span class="term-yellow">0</span>; i&lt;<span class="term-yellow">0x12</span>; i++) tmp[i] = buf[i] ^ key;<br>
+    &nbsp;&nbsp;<span class="term-blue">if</span> (check_debugger() != <span class="term-yellow">0</span>) return <span class="term-yellow">-1</span>;<br>
+    &nbsp;&nbsp;<span class="term-blue">return</span> compare_magic(tmp);<br>
+    }<br><br>
+    <span class="term-comment">// intuition : construction d'une chaîne obfusquée avant un check réseau</span>
+  </div>
+  <div class="cmd-grid">
+    <div class="cmd-card"><div class="cmd-name">Signal 1</div><div class="cmd-desc">Construction caractère par caractère → probable <strong>stack string / XOR simple</strong></div><div class="cmd-ex">pas de string claire dans .rodata</div></div>
+    <div class="cmd-card"><div class="cmd-name">Signal 2</div><div class="cmd-desc">Fonction <strong>check_debugger()</strong> appelée avant la suite logique</div><div class="cmd-ex">garder un breakpoint dessus</div></div>
+    <div class="cmd-card"><div class="cmd-name">Signal 3</div><div class="cmd-desc">Appel à <strong>compare_magic</strong> — parfait pour un breakpoint plus tard</div><div class="cmd-ex">avant strcmp ou memcmp</div></div>
+    <div class="cmd-card"><div class="cmd-name">Signal 4</div><div class="cmd-desc">libcurl apparaît seulement après validation → comportement conditionnel</div><div class="cmd-ex">runtime indispensable</div></div>
+  </div>
+</div>
+
+<!-- SLIDE 6 — DYNAMIQUE -->
+<div class="slide" data-index="6">
+  <div class="slide-tag">// Slide 07 · GDB · Exécution contrôlée</div>
+  <h2>Passer en Dynamique au Bon Moment</h2>
+  <h3>La statique t'a donné une hypothèse ; GDB doit la prouver</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🎯 Breakpoints prioritaires</div>
+      <ul class="bullets">
+        <li><strong>main</strong> — vérifier le point de départ réel</li>
+        <li><strong>check_debugger</strong> — voir le mécanisme exact</li>
+        <li><strong>compare_magic</strong> — récupérer la valeur comparée</li>
+        <li><strong>strcmp / memcmp</strong> — lire les buffers juste avant la comparaison</li>
+        <li><strong>curl_easy_perform</strong> — confirmer l'appel réseau final</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🧪 Ce que tu dois observer</div>
+      <ul class="bullets">
+        <li>Valeurs dans <strong>RDI / RSI</strong> avant les appels critiques</li>
+        <li>Contenu réel du buffer après décodage runtime</li>
+        <li>La condition qui fait bifurquer vers <strong>Debugger detected</strong></li>
+        <li>Éventuelle différence entre exécution normale et exécution sous debugger</li>
+        <li class="ok">La dynamique sert ici à révéler ce que la statique suggère sans certitude</li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "Le meilleur breakpoint n'est pas forcément le premier appel trouvé. C'est celui qui te donne la vérité la plus vite."
+  </div>
+</div>
+
+<!-- SLIDE 7 — GDB PRACTIQUE + QCM -->
+<div class="slide" data-index="7">
+  <div class="slide-tag">// Slide 08 · GDB pratique · Lecture runtime · QCM requis</div>
+  <h2>La Découverte Clé dans GDB</h2>
+  <h3>Une seule commande bien placée peut économiser 30 minutes de souffrance</h3>
+  <div class="terminal sm" style="margin-bottom:.8rem">
+    <span class="term-prompt">pwndbg&gt;</span> b *compare_magic<br>
+    <span class="term-prompt">pwndbg&gt;</span> run<br>
+    <span class="term-out">Breakpoint hit at compare_magic</span><br><br>
+    <span class="term-prompt">pwndbg&gt;</span> i r rdi rsi<br>
+    <span class="term-green">RDI → 0x7fffffffdc20</span><br>
+    <span class="term-green">RSI → 0x5555555581c0</span><br><br>
+    <span class="term-prompt">pwndbg&gt;</span> x/s $rdi<br>
+    <span class="term-yellow">"/api/v1/ping"</span><br>
+    <span class="term-prompt">pwndbg&gt;</span> x/s $rsi<br>
+    <span class="term-yellow">"/api/v1/ping"</span><br><br>
+    <span class="term-comment">// hypothèse confirmée : le buffer XOR reconstruit une route HTTP cachée</span>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">✅ Ce que tu viens de prouver</div>
+      <ul class="bullets">
+        <li>Le buffer reconstruit n'était pas arbitraire : il cachait bien une ressource réseau</li>
+        <li>La comparaison sert probablement de <strong>garde logique</strong> avant l'appel curl</li>
+        <li>Le runtime t'a permis de lire la vérité sans recoder manuellement toute la routine</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">⚡ Réflexe à mémoriser</div>
+      <ul class="bullets">
+        <li><strong>x/s $rdi</strong> et <strong>x/s $rsi</strong> avant strcmp/memcmp</li>
+        <li>Inspecter avant de patcher</li>
+        <li>Confirmer la donnée avant de théoriser sur son usage</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8 — OBFUSCATION -->
+<div class="slide" data-index="8">
+  <div class="slide-tag">// Slide 09 · Obfuscation · Décodage raisonné</div>
+  <h2>Décoder Sans Surréagir</h2>
+  <h3>Toute donnée encodée n'est pas du chiffrement avancé</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔓 Ici, l'obfuscation sert à quoi ?</div>
+      <ul class="bullets">
+        <li>Éviter une détection triviale par <strong>strings</strong></li>
+        <li>Masquer la route HTTP et la logique de validation</li>
+        <li>Retarder un analyste pressé de quelques minutes</li>
+        <li class="warn">Ce n'est pas du chiffrement robuste ; c'est du camouflage opérationnel</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🛠️ La bonne méthode</div>
+      <ul class="bullets">
+        <li>Repérer la <strong>clé</strong> ou l'opération répétée</li>
+        <li>Vérifier si le runtime révèle déjà le résultat</li>
+        <li>Sinon, recoder la routine en Python propre</li>
+        <li>Documenter la transformation pour le rapport</li>
+      </ul>
+    </div>
+  </div>
+  <div class="terminal sm">
+    <span class="term-comment"># reconstitution rapide</span><br>
+    <span class="term-blue">data</span> = bytes([0x2f,0x23,0x32,0x2b,0x6d])<br>
+    <span class="term-blue">key</span> = 0x42<br>
+    <span class="term-green">print</span>(bytes([b ^ key for b in data]))<br>
+    <span class="term-yellow">b'/api/'</span>
+  </div>
+</div>
+
+<!-- SLIDE 9 — ANTI-DEBUG + QCM -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// Slide 10 · Anti-debug · Contournement raisonné · QCM requis</div>
+  <h2>La Protection Anti-Debug n'est pas un Mur</h2>
+  <h3>Elle t'impose juste de comprendre ce qu'elle teste</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🧨 Ce que révèle l'analyse</div>
+      <ul class="bullets">
+        <li><strong>check_debugger()</strong> appelle un wrapper autour de <strong>ptrace</strong></li>
+        <li>Si l'appel échoue, le programme considère qu'il est observé</li>
+        <li>Le sample affiche <strong>Debugger detected</strong> puis court-circuite le flux principal</li>
+        <li class="warn">Le but n'est pas de te stopper définitivement, mais de casser ton rythme</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🩹 Stratégies propres de bypass</div>
+      <ul class="bullets">
+        <li><strong>Breakpoint</strong> après le test puis forcer le registre de retour à 0</li>
+        <li><strong>Patch temporaire</strong> du saut de la branche anti-debug</li>
+        <li><strong>LD_PRELOAD</strong> ou instrumentation si le contexte s'y prête</li>
+        <li>Documenter la technique utilisée et ses limites</li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "Un anti-debug simple ne se combat pas avec l'ego. Il se combat avec une hypothèse, un test, et un bypass minimal."
+  </div>
+</div>
+
+<!-- SLIDE 10 — IOCS -->
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Slide 11 · IOCs · Valeur défensive</div>
+  <h2>Sortir du RE avec des Artefacts Défensifs</h2>
+  <h3>Le bon analyste ne garde pas juste la compréhension pour lui</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card"><div class="cmd-name">Hash</div><div class="cmd-desc">SHA-256 du sample pour identification et blocklist</div><div class="cmd-ex">9f14...d3c1</div></div>
+    <div class="cmd-card"><div class="cmd-name">Route cachée</div><div class="cmd-desc">Chemin HTTP reconstitué à partir du buffer XOR</div><div class="cmd-ex">/api/v1/ping</div></div>
+    <div class="cmd-card"><div class="cmd-name">Import critique</div><div class="cmd-desc">Usage de <strong>libcurl</strong> après validation</div><div class="cmd-ex">curl_easy_perform</div></div>
+    <div class="cmd-card"><div class="cmd-name">Anti-debug</div><div class="cmd-desc">Présence d'un test ptrace défensif/offensif</div><div class="cmd-ex">PTRACE_TRACEME wrapper</div></div>
+    <div class="cmd-card"><div class="cmd-name">Message observable</div><div class="cmd-desc">Chaîne exploitable pour détection EDR / Sigma</div><div class="cmd-ex">Debugger detected</div></div>
+    <div class="cmd-card"><div class="cmd-name">Risque</div><div class="cmd-desc">Capacité réseau conditionnelle avec logique masquée</div><div class="cmd-ex">Triage SOC / sandbox</div></div>
+  </div>
+</div>
+
+<!-- SLIDE 11 — RAPPORT -->
+<div class="slide" data-index="11">
+  <div class="slide-tag">// Slide 12 · Rapport · Restitution claire</div>
+  <h2>Le Rapport Fait la Différence entre un Hacker et un Pro</h2>
+  <h3>Si tu ne sais pas restituer, tu n'as pas fini l'analyse</h3>
+  <div class="card" style="margin-bottom:.8rem">
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      <div class="step"><div class="step-num">1</div><div class="step-content"><strong>Résumé exécutif</strong> — ce que fait probablement le sample, niveau de risque, pourquoi on s'en soucie</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content"><strong>Contexte technique</strong> — type de fichier, architecture, dépendances, présence d'obfuscation / anti-debug</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content"><strong>Findings prouvés</strong> — route cachée, flux conditionnel, appel réseau, mécanisme ptrace</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content"><strong>IOCs</strong> — hash, chaînes, imports, chemins, comportements observés</div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-content"><strong>Recommandations</strong> — isolement, blocage, règles de détection, enrichissement TI, surveillance complémentaire</div></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-green">Prouvé</span>
+    <span class="pill pill-yellow">Hypothèse</span>
+    <span class="pill pill-red">À vérifier en sandbox</span>
+    <span class="pill pill-purple">Toujours séparer les trois</span>
+  </div>
+</div>
+
+<!-- SLIDE 12 — METHODOLOGIE GLOBALE -->
+<div class="slide" data-index="12">
+  <div class="slide-tag">// Slide 13 · Synthèse méthodologique · Parcours complet</div>
+  <h2>La Méthode Complète du Reverse Engineer</h2>
+  <h3>Le vrai livrable de ce capstone : un process réutilisable sur n'importe quel sample</h3>
+  <div class="card" style="margin-bottom:.8rem">
+    <div class="phase-row"><div class="phase-num">Phase 01</div><div class="phase-name">Triage</div><div class="phase-desc">Hash, file, strings, readelf, imports, sections. On cadre le terrain avant toute exécution.</div></div>
+    <div class="phase-row"><div class="phase-num">Phase 02</div><div class="phase-name">Hypothèses</div><div class="phase-desc">On note ce qui semble réseau, validation, obfuscation, anti-debug. On prépare le plan.</div></div>
+    <div class="phase-row"><div class="phase-num">Phase 03</div><div class="phase-name">Statique</div><div class="phase-desc">Ghidra pour cartographier, renommer, comprendre le flux principal et localiser les fonctions clés.</div></div>
+    <div class="phase-row"><div class="phase-num">Phase 04</div><div class="phase-name">Dynamique</div><div class="phase-desc">GDB pour lire la vérité runtime, casser au bon endroit, inspecter registres et mémoire.</div></div>
+    <div class="phase-row"><div class="phase-num">Phase 05</div><div class="phase-name">Contournement</div><div class="phase-desc">Bypass minimal d'obfuscation et d'anti-debug — seulement ce qui est nécessaire pour comprendre.</div></div>
+    <div class="phase-row"><div class="phase-num">Phase 06</div><div class="phase-name">Restitution</div><div class="phase-desc">IOCs, findings, risques, recommandations. On transforme l'analyse en valeur pour la défense.</div></div>
+  </div>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-red">Ne jamais improviser l'ordre</span>
+    <span class="pill pill-blue">Toujours documenter</span>
+    <span class="pill pill-green">Toujours distinguer preuve et intuition</span>
+  </div>
+</div>
+
+<!-- SLIDE 13 — FINAL + QCM -->
+<div class="slide" data-index="13">
+  <div class="slide-tag">// Slide 14 · Fin du capstone · Certification mentale · QCM final</div>
+  <h2>Capstone Terminé — Tu penses maintenant comme un Reverse Engineer</h2>
+  <h3>Ce module bonus transforme les compétences isolées en méthode professionnelle</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">✅ Ce que tu sais faire maintenant</div>
+      <ul class="bullets">
+        <li class="ok">Aborder un sample inconnu avec un <strong>ordre d'analyse propre</strong></li>
+        <li class="ok">Passer de <strong>Ghidra à GDB</strong> sans te perdre</li>
+        <li class="ok">Identifier une <strong>obfuscation simple</strong> et la casser rapidement</li>
+        <li class="ok">Contourner un <strong>anti-debug basique</strong> avec méthode</li>
+        <li class="ok">Produire des <strong>IOCs et un rapport</strong> utiles à une équipe défense</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🏁 Suite logique</div>
+      <ul class="bullets">
+        <li><strong>CTF RE</strong> — crackmes.one, picoCTF, HTB Reversing</li>
+        <li><strong>Malware triage</strong> — sandbox, YARA, règles de détection</li>
+        <li><strong>Automation</strong> — scripts Ghidra, Python, pwndbg helpers</li>
+        <li><strong>Writeups</strong> — documenter tes analyses pour progresser vraiment</li>
+        <li class="ok">Le niveau suivant, c'est la répétition disciplinée</li>
+      </ul>
+    </div>
+  </div>
+  <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-green">✅ RE·01</span>
+    <span class="pill pill-green">✅ RE·02</span>
+    <span class="pill pill-green">✅ RE·03</span>
+    <span class="pill pill-green">✅ RE·04</span>
+    <span class="pill pill-green">✅ RE·05</span>
+    <span class="pill pill-green">✅ RE·06</span>
+    <span class="pill pill-purple">🏁 RE·07 Capstone</span>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM · RE·07 · Capstone Reverse</span>
+      <span class="qcm-prog" id="qcm-prog">QCM 1 / 5</span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">💾 Sauvegarde Supabase...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏁</div>
+    <div class="completion-score" id="comp-score">100%</div>
+    <div class="completion-title" id="comp-title">RE·07 Terminé !</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">✓ Résultat sauvegardé · Capstone RE validé</div>
+    <a href="formations.html" class="completion-btn completion-btn-primary">Retour aux formations →</a>
+    <a href="dashboard.html" class="completion-btn completion-btn-secondary">Mon Dashboard</a>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉC</button>
+  <div style="display:flex;gap:1rem;align-items:center">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 14</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIV →</button>
+</div>
+
+<script>
+var QCM = {
+  1: {
+    question: "Sur un sample inconnu qui a déclenché une alerte EDR, quelle est la meilleure première approche ?",
+    options: [
+      "L'exécuter immédiatement pour voir s'il affiche quelque chose, puis ouvrir Ghidra si nécessaire",
+      "Commencer par un triage contrôlé : hash, file, strings, readelf/imports, puis seulement construire un plan d'analyse",
+      "Aller directement dans GDB car la dynamique donne toujours plus d'informations que la statique",
+      "Chercher la fonction main dans Ghidra et ignorer le reste du contexte pour gagner du temps"
+    ],
+    correct: 1,
+    explanation: "Le bon ordre est triage → hypothèses → choix des outils. Tu ne lances pas un binaire inconnu au hasard, et tu ne sautes pas non plus la phase de cadrage. Le triage réduit le risque et oriente toute la suite."
+  },
+  4: {
+    question: "Pendant une première passe Ghidra sur un binaire suspect, quel objectif est le plus pertinent ?",
+    options: [
+      "Réécrire tout le programme en C propre dès la première ouverture",
+      "Cartographier le flux principal, identifier les fonctions clés, explorer strings et XREF, puis renommer les zones importantes",
+      "Patcher immédiatement tous les sauts conditionnels pour gagner du temps",
+      "Se concentrer uniquement sur les sections ELF et ignorer la logique applicative"
+    ],
+    correct: 1,
+    explanation: "La première passe statique sert à comprendre la structure générale et à localiser les points d'intérêt. Tu cherches la carte du terrain : main, chaînes, XREF, routines clés, protections éventuelles."
+  },
+  7: {
+    question: "Pourquoi un breakpoint juste avant strcmp ou memcmp est-il souvent extrêmement rentable en reverse engineering ?",
+    options: [
+      "Parce qu'il garantit que le programme n'utilise pas d'obfuscation",
+      "Parce qu'il permet de lire directement les buffers réellement comparés au runtime, souvent plus vite que de reconstituer toute la logique en statique",
+      "Parce qu'il désactive automatiquement toutes les protections anti-debug",
+      "Parce qu'il remplace complètement l'analyse statique et rend Ghidra inutile"
+    ],
+    correct: 1,
+    explanation: "Juste avant strcmp/memcmp, les données sont généralement déjà construites/décodées. Lire RDI/RSI ou la mémoire pointée peut révéler immédiatement la vérité runtime. C'est un raccourci puissant, pas une baguette magique universelle."
+  },
+  9: {
+    question: "Quelle est la meilleure attitude face à un anti-debug simple basé sur ptrace ?",
+    options: [
+      "Abandonner immédiatement : si le programme détecte GDB, il est impossible à analyser proprement",
+      "Supprimer tout le code anti-debug du binaire avant même de comprendre sa logique",
+      "Comprendre ce que teste la routine, puis appliquer le bypass minimal nécessaire : registre de retour, patch ciblé ou instrumentation adaptée",
+      "Lancer le sample sur une machine de production pour voir s'il se comporte différemment hors debugger"
+    ],
+    correct: 2,
+    explanation: "Le bon réflexe est d'analyser la protection, pas de paniquer. Un anti-debug basique se contourne souvent avec un bypass minimal et documenté. L'objectif est la compréhension contrôlée, pas la destruction aveugle du code."
+  },
+  13: {
+    question: "Quel est le véritable livrable final d'un capstone de reverse engineering professionnel ?",
+    options: [
+      "Uniquement la capacité à ouvrir Ghidra et GDB sans aide",
+      "Un patch qui force systématiquement le programme à réussir",
+      "Une méthodologie réutilisable : triage, hypothèses, statique, dynamique, extraction d'artefacts et restitution claire",
+      "La mémorisation d'un maximum de commandes shell sans comprendre leur rôle"
+    ],
+    correct: 2,
+    explanation: "Les outils comptent, mais le vrai niveau pro vient d'une méthode stable et transmissible. Savoir produire des findings, des IOCs, des limites et des recommandations est ce qui transforme l'analyse en valeur réelle."
+  }
+};
+var COURSE_ID = 're7';
+var TOTAL = 14;
+var current = 0;
+var currentQcmSlide = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentUser = null;
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active'); current = next; updateUI();
+}
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){ document.getElementById('comp-icon').textContent='🏁'; document.getElementById('comp-title').textContent='Capstone RE Validé !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Tu as transformé les 6 modules RE en une vraie méthode opérationnelle. '; }
+  else if(pct>=60){ document.getElementById('comp-icon').textContent='🔬'; document.getElementById('comp-title').textContent='RE·07 Terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. La structure est là — refais le capstone pour fluidifier ton raisonnement et ta restitution.'; }
+  else { document.getElementById('comp-icon').textContent='⚙️'; document.getElementById('comp-title').textContent='RE·07 Terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Reprends RE·03 à RE·06, puis refais ce capstone pour consolider ta méthode.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='01CAPSTONETRIAGEGHIDRAGDBXORREPORTIOCSANALYSISMETHOD',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(4,2,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#aa44ff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

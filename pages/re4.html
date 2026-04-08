@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="/favicon.ico" rel="icon" type="image/x-icon"/>
+<link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<title>RE·04 — Analyse Dynamique &amp; GDB · SooPHA Learn</title>
+<link href="../css/global.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(4,2,12,.97);border-bottom:1px solid rgba(170,68,255,.15);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(170,68,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(170,68,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}
+.tb-back:hover{color:#aa44ff}
+.tb-dot{width:6px;height:6px;background:#aa44ff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(170,68,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#6622cc,#aa44ff);box-shadow:0 0 8px #aa44ff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#aa44ff;--acc-dim:rgba(170,68,255,.15);--acc-faint:rgba(170,68,255,.06);--acc-border:rgba(170,68,255,.2)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#aa44ff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(170,68,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(8,4,20,.88);border:1px solid var(--acc-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(220,200,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#aa44ff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}
+.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}
+.bullets li.danger::before{content:'🔴';font-size:.7rem}
+.bullets li.ok::before{content:'✅';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.terminal{background:rgba(4,0,12,.85);border:1px solid rgba(170,68,255,.12);border-left:3px solid #aa44ff;padding:.9rem 1.2rem;font-family:var(--mono);font-size:.75rem;color:rgba(200,170,255,.8);line-height:2;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.85}
+.term-prompt{color:#aa44ff}
+.term-out{color:rgba(200,170,255,.45)}
+.term-comment{color:rgba(170,68,255,.4);font-style:italic}
+.term-red{color:#ff4466}
+.term-yellow{color:#ffd700}
+.term-green{color:#00ff88}
+.term-blue{color:#00aaff}
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(170,68,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(170,68,255,.1)}
+.quote{border-left:3px solid #aa44ff;padding:.7rem 1rem;background:var(--acc-faint);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#e8d0ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #aa44ff,0 0 80px rgba(170,68,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #aa44ff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#aa44ff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#aa44ff;text-shadow:0 0 8px #aa44ff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(220,200,255,.85);line-height:1.5}
+.phase-row{display:flex;gap:.8rem;padding:.55rem .9rem;border-bottom:1px solid rgba(170,68,255,.07);align-items:flex-start}
+.phase-row:last-child{border-bottom:none}
+.phase-num{font-family:var(--mono);font-size:.68rem;color:#aa44ff;min-width:90px;flex-shrink:0}
+.phase-name{font-family:var(--display);font-size:.72rem;font-weight:700;color:#fff;min-width:100px;flex-shrink:0}
+.phase-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.65);line-height:1.4}
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(4,2,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(8,4,20,.97);border:1px solid rgba(170,68,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(170,68,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(170,68,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.35);margin-bottom:.5rem;display:none}
+.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(4,0,16,.3);border:1px solid rgba(170,68,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(210,190,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(170,68,255,.35);background:rgba(170,68,255,.06);color:rgba(220,200,255,.95)}
+.qcm-option.correct{border-color:#aa44ff!important;background:rgba(170,68,255,.12)!important;color:#aa44ff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#aa44ff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:rgba(220,200,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(170,68,255,.15);border:1px solid rgba(170,68,255,.4);color:#aa44ff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(170,68,255,.25);box-shadow:0 0 20px rgba(170,68,255,.2)}
+.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(4,2,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(170,68,255,.3);background:rgba(8,4,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#aa44ff;text-shadow:0 0 20px #aa44ff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,170,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#aa44ff;color:#0a0014}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(170,68,255,.4);color:#aa44ff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(4,2,12,.97);border-top:1px solid rgba(170,68,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(170,68,255,.2);color:rgba(170,68,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#aa44ff;color:#aa44ff}
+.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#aa44ff;letter-spacing:.06em}
+.pwndbg-panel{background:rgba(4,0,12,.9);border:1px solid rgba(170,68,255,.2);border-radius:2px;font-family:var(--mono);font-size:.68rem;max-width:880px;width:100%;line-height:1.8}
+.pwndbg-header{background:rgba(170,68,255,.06);border-bottom:1px solid rgba(170,68,255,.1);padding:.35rem .8rem;color:rgba(170,68,255,.4);font-size:.6rem;letter-spacing:.2em}
+.pwndbg-body{padding:.7rem 1rem}
+.reg-row{display:flex;gap:.5rem;align-items:center;margin-bottom:.2rem}
+.reg-name{color:#aa44ff;min-width:50px}
+.reg-val{color:#ffd700}
+.reg-sym{color:#00ff88;font-size:.62rem}
+.reg-changed{color:#ff4466}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+<div class="tb-left">
+<a class="tb-back" href="formations.html">← Formations</a>
+<span><span class="tb-dot"></span>// RE·04 · Analyse Dynamique · GDB · pwndbg</span>
+</div>
+<div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+<div id="slides">
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+<div class="slide-tag">// RE·04 · Module 18 · SooPHA Learn</div>
+<h1 class="glitch">ANALYSE<br/>DYNAMIQUE</h1>
+<div class="gabon-bar"><span></span><span></span><span></span></div>
+<h3>GDB · pwndbg · Breakpoints · Runtime · Memory</h3>
+<div class="card" style="text-align:center;max-width:700px">
+<ul class="bullets" style="text-align:left">
+<li><strong>14 slides</strong> · 5 QCM obligatoires · ~65 min</li>
+<li><strong>GDB + pwndbg</strong> — le duo indispensable du reverse engineer Linux</li>
+<li><strong>Breakpoints &amp; stepping</strong> — contrôler l'exécution instruction par instruction</li>
+<li><strong>Inspecter registres et mémoire</strong> — lire les valeurs réelles à runtime</li>
+<li><strong>Bypass runtime</strong> — modifier les registres pour forcer un succès</li>
+<li><strong>ltrace / strace</strong> — tracer les appels système sans debugger</li>
+<li class="ok">Prérequis : RE·01, RE·02 (ASM x86-64), RE·03 (Ghidra) validés</li>
+</ul>
+</div>
+<div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-purple">RE · Module 4/6</span>
+<span class="pill pill-red">GDB · pwndbg</span>
+<span class="pill pill-orange">Breakpoints · Runtime</span>
+<span class="pill pill-blue">ltrace · strace</span>
+</div>
+</div>
+<!-- SLIDE 1 — QCM : DYNAMIQUE vs STATIQUE -->
+<div class="slide" data-index="1">
+<div class="slide-tag">// Slide 02 · Quand utiliser l'analyse dynamique · QCM requis</div>
+<h2>L'Analyse Dynamique — Quand et Pourquoi ?</h2>
+<h3>Les cas où l'analyse statique atteint ses limites — la dynamique prend le relais</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🚧 Limites de la statique</div>
+<ul class="bullets">
+<li><strong>Binaires packés/chiffrés</strong> — le vrai code est déchiffré en mémoire au runtime</li>
+<li><strong>Valeurs runtime inconnues</strong> — input utilisateur, contenu de fichiers, réponses réseau</li>
+<li><strong>Branches complexes</strong> — difficile de suivre toutes les conditions sans exécuter</li>
+<li><strong>Auto-modification</strong> — le binaire modifie son propre code pendant l'exécution</li>
+<li class="warn">Ghidra seul ne peut pas voir ce qui se passe APRÈS le déchiffrement</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">⚡ Force de la dynamique</div>
+<ul class="bullets">
+<li>Voir les <strong>valeurs réelles</strong> dans les registres et la mémoire au moment précis</li>
+<li>Lire le flag <strong>avant la comparaison</strong> — même si chiffré dans le binaire</li>
+<li>Modifier les registres pour <strong>bypasser les conditions</strong> sans recompiler</li>
+<li>Observer les <strong>appels système</strong> (fichiers, réseau, processus) en temps réel</li>
+<li class="ok">Combinée avec Ghidra : outil ultime — statique pour la carte, dynamique pour la boussole</li>
+</ul>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "Sur un CTF RE, si strings et Ghidra ne révèlent pas le flag directement — mets un breakpoint avant le strcmp, lance GDB, et lis $rsi. 9 fois sur 10, le flag est là, en clair, dans le registre."
+  </div>
+</div>
+<!-- SLIDE 2 — GDB + PWNDBG INSTALLATION -->
+<div class="slide" data-index="2">
+<div class="slide-tag">// Slide 03 · GDB · pwndbg · Installation</div>
+<h2>GDB + pwndbg — Le Duo Indispensable</h2>
+<h3>GDB seul est austère — pwndbg lui donne une interface moderne et puissante</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📦 Installation</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-comment"># GDB (généralement déjà installé)</span><br/>
+<span class="term-prompt">$ </span>sudo apt install gdb<br/>
+<span class="term-prompt">$ </span>gdb --version<br/>
+<span class="term-out"> GNU gdb 13.2</span><br/>
+<br/>
+<span class="term-comment"># pwndbg — surcouche Python sur GDB</span><br/>
+<span class="term-prompt">$ </span>git clone https://github.com/pwndbg/pwndbg<br/>
+<span class="term-prompt">$ </span>cd pwndbg &amp;&amp; ./setup.sh<br/>
+<br/>
+<span class="term-comment"># Vérifier l'installation</span><br/>
+<span class="term-prompt">$ </span>gdb ./crackme<br/>
+<span class="term-green">pwndbg&gt; </span><span class="term-comment"># pwndbg actif ✅</span>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🎯 Pourquoi pwndbg ?</div>
+<ul class="bullets">
+<li><strong>Vue registres colorée</strong> — RAX, RIP, RFLAGS affichés automatiquement</li>
+<li><strong>Disassembly automatique</strong> — le code autour du RIP à chaque step</li>
+<li><strong>Stack visuelle</strong> — contenu de la pile affiché proprement</li>
+<li><strong>Commandes étendues</strong> — <code style="color:#aa44ff;font-family:var(--mono)">cyclic, vmmap, heap</code></li>
+<li><strong>REPL Python</strong> — scripter le debugger en Python directement</li>
+<li class="ok">Alternatives : peda, GEF (même principe, styles différents)</li>
+</ul>
+</div>
+</div>
+<div class="pwndbg-panel">
+<div class="pwndbg-header">// pwndbg — Vue automatique à chaque breakpoint</div>
+<div class="pwndbg-body">
+<div class="reg-row"><span class="reg-name">RAX</span><span class="reg-val">0x0000000000000000</span></div>
+<div class="reg-row"><span class="reg-name">RDI</span><span class="reg-val">0x00007ffd9a8b1234</span> <span class="reg-sym">← RSP+0x18 "SOOPHA{...}"</span></div>
+<div class="reg-row"><span class="reg-name">RSI</span><span class="reg-val">0x0000000000404020</span> <span class="reg-sym">← encoded_flag</span></div>
+<div class="reg-row"><span class="reg-name reg-changed">RIP</span><span class="reg-val reg-changed">0x0000000000401280</span> <span class="reg-sym reg-changed">← check_flag+0</span></div>
+</div>
+</div>
+</div>
+<!-- SLIDE 3 — QCM : BREAKPOINTS -->
+<div class="slide" data-index="3">
+<div class="slide-tag">// Slide 04 · Breakpoints · Run · Navigation · QCM requis</div>
+<h2>Breakpoints — Figer l'Exécution au Bon Moment</h2>
+<h3>Le breakpoint est l'arme principale du reverse engineer dynamique</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🎯 Les commandes essentielles GDB</div>
+<div class="terminal sm">
+<span class="term-comment"># Ouvrir le binaire dans GDB</span><br/>
+<span class="term-prompt">$ </span>gdb ./crackme_04<br/>
+<span class="term-green">pwndbg&gt; </span><br/>
+<br/>
+<span class="term-comment"># Poser un breakpoint sur une fonction</span><br/>
+<span class="term-green">pwndbg&gt; </span>b check_flag         <span class="term-comment"># par nom (si non stripped)</span><br/>
+<span class="term-green">pwndbg&gt; </span>b *0x00401280        <span class="term-comment"># par adresse exacte</span><br/>
+<span class="term-green">pwndbg&gt; </span>b *main+0x3a        <span class="term-comment"># relatif à main</span><br/>
+<span class="term-out"> Breakpoint 1 at 0x401280</span><br/>
+<br/>
+<span class="term-comment"># Lancer le programme avec des arguments</span><br/>
+<span class="term-green">pwndbg&gt; </span>run SOOPHA_test_flag<br/>
+<span class="term-out"> Starting program... Breakpoint 1 hit → PAUSE ici</span><br/>
+<br/>
+<span class="term-comment"># Voir tous les breakpoints</span><br/>
+<span class="term-green">pwndbg&gt; </span>info breakpoints     <span class="term-comment"># liste + status</span><br/>
+<span class="term-green">pwndbg&gt; </span>delete 1            <span class="term-comment"># supprimer BP #1</span><br/>
+<span class="term-green">pwndbg&gt; </span>disable 1          <span class="term-comment"># désactiver BP #1</span>
+</div>
+</div>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.5rem">⚡ Types de breakpoints</div>
+<ul class="bullets">
+<li><strong>b addr</strong> — software breakpoint (instruction INT3 injectée)</li>
+<li><strong>hb addr</strong> — hardware breakpoint (registre DR0-DR3 CPU)</li>
+<li><strong>tb addr</strong> — temporary breakpoint (se supprime après 1 hit)</li>
+<li><strong>condition</strong> — <code style="color:#aa44ff;font-family:var(--mono)">b check_flag if $rdi==5</code></li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.5rem">🔄 Commandes de contrôle</div>
+<ul class="bullets">
+<li><strong>c / continue</strong> — reprendre jusqu'au prochain BP</li>
+<li><strong>n / next</strong> — instruction suivante (step over)</li>
+<li><strong>s / step</strong> — entrer dans les fonctions (step into)</li>
+<li><strong>finish</strong> — exécuter jusqu'à la fin de la fonction courante</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- SLIDE 4 — INSPECTER REGISTRES & MÉMOIRE -->
+<div class="slide" data-index="4">
+<div class="slide-tag">// Slide 05 · Registres · Mémoire · x/ command</div>
+<h2>Inspecter Registres et Mémoire</h2>
+<h3>La commande x/ — l'outil le plus puissant de GDB pour lire la mémoire</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🔬 La commande x/ — syntaxe complète</div>
+<div class="terminal sm">
+<span class="term-comment"># Syntaxe : x/[N][f][u] ADDRESS</span><br/>
+<span class="term-comment"># N = nombre d'unités · f = format · u = unit size</span><br/>
+<br/>
+<span class="term-comment"># Lire une chaîne en clair (LE FORMAT LE PLUS UTILE)</span><br/>
+<span class="term-green">pwndbg&gt; </span>x/s $rdi<br/>
+<span class="term-out"> 0x7ffd...: "SOOPHA_test_flag"</span><br/>
+<span class="term-green">pwndbg&gt; </span>x/s $rsi<br/>
+<span class="term-out"> 0x404020: "SOOPHA{dynamic_rules_gdb}"</span> <span class="term-green">← LE FLAG !</span><br/>
+<br/>
+<span class="term-comment"># Lire des bytes hexadécimaux (dump mémoire)</span><br/>
+<span class="term-green">pwndbg&gt; </span>x/16xb $rsi<br/>
+<span class="term-out"> 0x404020: 0x53 0x4f 0x4f 0x50 0x48 0x41 0x7b ...</span><br/>
+<br/>
+<span class="term-comment"># Lire des qwords (64-bit) sur la stack</span><br/>
+<span class="term-green">pwndbg&gt; </span>x/8gx $rsp<br/>
+<span class="term-out"> 0x7ffd...: 0x00007ffd9a8b1234  0x0000000000000001</span><br/>
+<br/>
+<span class="term-comment"># Lire des instructions assembleur depuis une adresse</span><br/>
+<span class="term-green">pwndbg&gt; </span>x/10i $rip<br/>
+<span class="term-out"> =&gt; 0x401280: cmp eax, 0x1d</span>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment"># Format x/ — mémo complet</span><br/>
+<span class="term-green">x</span>=hex  <span class="term-green">d</span>=decimal  <span class="term-green">s</span>=string  <span class="term-green">i</span>=instruction  <span class="term-green">c</span>=char<br/>
+<span class="term-yellow">b</span>=byte  <span class="term-yellow">h</span>=halfword(2)  <span class="term-yellow">w</span>=word(4)  <span class="term-yellow">g</span>=giant(8)<br/>
+<span class="term-comment"># Exemple : x/16xb = 16 bytes en hexa · x/4gx = 4 qwords hexa</span>
+</div>
+</div>
+<!-- SLIDE 5 — QCM : BYPASS STRCMP -->
+<div class="slide" data-index="5">
+<div class="slide-tag">// Slide 06 · Bypass strcmp · Modifier registres · QCM requis</div>
+<h2>Bypass d'une Comparaison — La Technique Clé CTF</h2>
+<h3>Deux approches pour bypasser check_flag sans connaître le flag à l'avance</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🎯 Méthode 1 — Lire le flag dans les registres</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-comment"># Identifier l'appel à strcmp dans Ghidra</span><br/>
+<span class="term-comment"># call strcmp @ 0x40128e</span><br/>
+<br/>
+<span class="term-comment"># Mettre un BP juste avant</span><br/>
+<span class="term-green">pwndbg&gt; </span>b *0x40128e<br/>
+<span class="term-green">pwndbg&gt; </span>run mon_input<br/>
+<span class="term-out"> Breakpoint → juste avant strcmp</span><br/>
+<br/>
+<span class="term-comment"># RDI = s1 (mon input), RSI = s2 (le flag attendu)</span><br/>
+<span class="term-green">pwndbg&gt; </span>x/s $rdi<br/>
+<span class="term-out"> "mon_input"</span><br/>
+<span class="term-green">pwndbg&gt; </span>x/s $rsi<br/>
+<span class="term-green"> "SOOPHA{dynamic_gdb_master}"</span> ← FLAG !
+      </div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">⚡ Méthode 2 — Modifier EAX après cmp</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-comment"># BP après le retour de check_flag</span><br/>
+<span class="term-green">pwndbg&gt; </span>b *main+0x42<br/>
+<span class="term-green">pwndbg&gt; </span>run mauvais_flag<br/>
+<span class="term-out"> Breakpoint hit — EAX = 0 (false)</span><br/>
+<br/>
+<span class="term-comment"># Forcer EAX = 1 (true) → succès garanti</span><br/>
+<span class="term-green">pwndbg&gt; </span>set $eax = 1<br/>
+<span class="term-green">pwndbg&gt; </span>continue<br/>
+<span class="term-green"> "Congratulations! Access granted."</span><br/>
+<br/>
+<span class="term-comment"># Alternative : modifier le Zero Flag</span><br/>
+<span class="term-green">pwndbg&gt; </span>set $eflags = $eflags | 0x40 <span class="term-comment"># ZF=1</span>
+</div>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "La méthode 1 est préférable en CTF car elle donne le vrai flag. La méthode 2 bypass juste la vérification — tu passes, mais tu n'as pas le flag pour le soumettre. Toujours préférer lire le flag à bypasser."
+  </div>
+</div>
+<!-- SLIDE 6 — STEPPING -->
+<div class="slide" data-index="6">
+<div class="slide-tag">// Slide 07 · ni · si · finish · Stepping</div>
+<h2>Stepping — Avancer Instruction par Instruction</h2>
+<h3>Contrôler l'exécution avec précision — chaque instruction compte</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🚶 Les 4 modes de stepping</div>
+<ul class="bullets">
+<li><strong>ni (next instruction)</strong> — exécute une instruction, SANS entrer dans les fonctions appelées (step over)</li>
+<li><strong>si (step instruction)</strong> — exécute une instruction, ENTRE dans les fonctions appelées (step into)</li>
+<li><strong>finish</strong> — exécute jusqu'au RET de la fonction courante, s'arrête au retour</li>
+<li><strong>until *addr</strong> — exécute jusqu'à atteindre une adresse spécifique</li>
+<li class="ok">Règle : utiliser <strong>ni</strong> par défaut, <strong>si</strong> seulement pour entrer dans une fonction précise</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">⌨️ Workflow de stepping pratique</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-green">pwndbg&gt; </span>b main<br/>
+<span class="term-green">pwndbg&gt; </span>run input_test<br/>
+<span class="term-out"> Breakpoint 1 → main+0</span><br/>
+<br/>
+<span class="term-green">pwndbg&gt; </span>ni          <span class="term-comment"># avancer une instruction</span><br/>
+<span class="term-green">pwndbg&gt; </span>ni 5        <span class="term-comment"># avancer 5 instructions</span><br/>
+<span class="term-green">pwndbg&gt; </span>si          <span class="term-comment"># entrer dans check_flag</span><br/>
+<span class="term-green">pwndbg&gt; </span>finish      <span class="term-comment"># sortir de check_flag</span><br/>
+<span class="term-out"> Value returned is $rax = 0x0 (false)</span>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.6rem">💡 Inspecter les registres après chaque step</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent">
+<span class="term-green">pwndbg&gt; </span>info registers  <span class="term-comment"># tous les registres</span><br/>
+<span class="term-green">pwndbg&gt; </span>print $rax      <span class="term-comment"># valeur d'un registre précis</span><br/>
+<span class="term-green">pwndbg&gt; </span>regs           <span class="term-comment"># pwndbg : vue colorée compacte</span><br/>
+<span class="term-green">pwndbg&gt; </span>context        <span class="term-comment"># pwndbg : vue complète (regs+stack+code)</span>
+</div>
+</div>
+</div>
+<!-- SLIDE 7 — QCM : WATCHPOINTS -->
+<div class="slide" data-index="7">
+<div class="slide-tag">// Slide 08 · Watchpoints · Surveillance mémoire · QCM requis</div>
+<h2>Watchpoints — Surveiller la Mémoire</h2>
+<h3>Être alerté automatiquement quand une variable est lue ou modifiée</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">👁️ Watchpoints — commandes et usages</div>
+<div class="terminal sm">
+<span class="term-comment"># Watchpoint sur une variable — s'arrête quand elle change</span><br/>
+<span class="term-green">pwndbg&gt; </span>watch *0x404020       <span class="term-comment"># address du flag encodé</span><br/>
+<span class="term-out"> Hardware watchpoint 2: *0x404020</span><br/>
+<br/>
+<span class="term-comment"># Watchpoint en lecture (rwatch)</span><br/>
+<span class="term-green">pwndbg&gt; </span>rwatch *0x404020      <span class="term-comment"># s'arrête quand lue</span><br/>
+<br/>
+<span class="term-comment"># Watchpoint lecture+écriture (awatch)</span><br/>
+<span class="term-green">pwndbg&gt; </span>awatch *0x404020      <span class="term-comment"># les deux</span><br/>
+<br/>
+<span class="term-comment"># Exemple de sortie après déclenchement</span><br/>
+<span class="term-out"> Hardware watchpoint 2: *0x404020</span><br/>
+<span class="term-out"> Old value = 0x42</span><br/>
+<span class="term-out"> New value = 0x53            # 'S' de SOOPHA{...}</span><br/>
+<span class="term-out"> decrypt_flag () at check.c:42</span>
+</div>
+</div>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.5rem">🎯 Cas d'usage watchpoints</div>
+<ul class="bullets">
+<li>Binaire qui <strong>déchiffre le flag en mémoire</strong> au runtime → watch sur le buffer</li>
+<li>Identifier <strong>quelle fonction modifie</strong> une variable globale suspecte</li>
+<li>Suivre l'écriture d'une clé XOR générée dynamiquement</li>
+<li class="ok">Combiné avec x/s après déclenchement → voir le résultat déchiffré</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.5rem">⚠️ Limites des watchpoints</div>
+<ul class="bullets">
+<li class="warn">Maximum <strong>4 hardware watchpoints</strong> simultanés (limitation CPU)</li>
+<li class="warn">Les software watchpoints sont très lents (vérification à chaque instruction)</li>
+<li class="ok">Astuce : utiliser l'adresse du résultat de malloc() pour les buffers heap</li>
+<li class="ok"><code style="color:#aa44ff;font-family:var(--mono)">info watchpoints</code> pour voir l'état actuel</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- SLIDE 8 — LTRACE & STRACE -->
+<div class="slide" data-index="8">
+<div class="slide-tag">// Slide 09 · ltrace · strace · Tracer sans debugger</div>
+<h2>ltrace &amp; strace — Tracer sans Debugger</h2>
+<h3>Observer les appels de bibliothèques et système — souvent plus rapide que GDB</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📚 ltrace — Library calls</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-comment"># Tracer tous les appels de bibliothèques</span><br/>
+<span class="term-prompt">$ </span>ltrace ./crackme mauvais_flag<br/>
+<br/>
+<span class="term-out"> printf("Enter flag: ")</span><br/>
+<span class="term-out"> fgets(0x7fff..., 256, stdin) = 0x7fff...</span><br/>
+<span class="term-out"> <span class="term-green">strcmp("mauvais_flag\n", "SOOPHA{ltrace_wins}")</span> = -1</span><br/>
+<span class="term-out"> puts("Wrong flag, try again.")</span><br/>
+<br/>
+<span class="term-comment"># strcmp révèle : s1=input · s2=FLAG !</span><br/>
+<span class="term-prompt">$ </span>./crackme SOOPHA{ltrace_wins}<br/>
+<span class="term-green"> Congratulations! ✅</span>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">⚙️ strace — Syscalls</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-comment"># Tracer tous les appels système</span><br/>
+<span class="term-prompt">$ </span>strace ./crackme input_test<br/>
+<br/>
+<span class="term-out"> execve("./crackme", [...]) = 0</span><br/>
+<span class="term-out"> mmap(NULL, 4096, ...) = 0x7f...</span><br/>
+<span class="term-out"> <span class="term-yellow">open("/etc/flag.txt", O_RDONLY) = 3</span></span><br/>
+<span class="term-out"> read(3, "SOOPHA{file_based_flag}", 64)</span><br/>
+<span class="term-out"> write(1, "Wrong!", 6)</span><br/>
+<br/>
+<span class="term-comment"># strace révèle : flag lu depuis fichier !</span>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.6rem">⚡ Quand utiliser ltrace vs strace vs GDB ?</div>
+<div class="phase-row"><div class="phase-num">ltrace</div><div class="phase-name">strcmp visible</div><div class="phase-desc">Essayer en premier si le binaire compare des chaînes. Révèle les deux arguments de strcmp en clair. 30 secondes pour avoir le flag.</div></div>
+<div class="phase-row"><div class="phase-num">strace</div><div class="phase-name">I/O suspecte</div><div class="phase-desc">Le binaire lit des fichiers, fait des connexions réseau, utilise des variables d'environnement. strace montre tout le comportement système.</div></div>
+<div class="phase-row"><div class="phase-num">GDB</div><div class="phase-name">Logique complexe</div><div class="phase-desc">Chiffrement custom, algorithme non-trivial, anti-debug. GDB donne un contrôle total mais demande plus d'effort.</div></div>
+</div>
+</div>
+<!-- SLIDE 9 — QCM : GDB SCRIPTING -->
+<div class="slide" data-index="9">
+<div class="slide-tag">// Slide 10 · GDB Script · Python · Automatisation · QCM requis</div>
+<h2>Scripting GDB — Automatiser l'Analyse</h2>
+<h3>Python + GDB = analyse automatisée — aller au-delà des commandes manuelles</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🐍 Script GDB Python — extraire un flag XOR automatiquement</div>
+<div class="terminal sm">
+<span class="term-comment"># Fichier : solve.py — script GDB Python</span><br/>
+<span class="term-blue">import</span> gdb<br/>
+<br/>
+<span class="term-comment"># Définir une commande personnalisée</span><br/>
+<span class="term-blue">class</span> <span class="term-green">SolveFlag</span>(gdb.Command):<br/>
+        <span class="term-blue">def</span> __init__(self):<br/>
+          super().__init__(<span class="term-yellow">"solve"</span>, gdb.COMMAND_USER)<br/>
+<br/>
+        <span class="term-blue">def</span> invoke(self, arg, from_tty):<br/>
+          <span class="term-comment"># Mettre un BP sur check_flag</span><br/>
+          gdb.execute(<span class="term-yellow">"b check_flag"</span>)<br/>
+          gdb.execute(<span class="term-yellow">"run dummy_input"</span>)<br/>
+          <span class="term-comment"># Lire RSI (2e arg = flag attendu)</span><br/>
+          rsi = gdb.parse_and_eval(<span class="term-yellow">"$rsi"</span>)<br/>
+          flag = gdb.execute(<span class="term-yellow">"x/s $rsi"</span>, to_string=True)<br/>
+          print(<span class="term-green">f"[*] FLAG: {flag}"</span>)<br/>
+<br/>
+<span class="term-green">SolveFlag()</span><br/>
+<br/>
+<span class="term-comment"># Utilisation dans GDB</span><br/>
+<span class="term-green">pwndbg&gt; </span>source solve.py<br/>
+<span class="term-green">pwndbg&gt; </span>solve<br/>
+<span class="term-green"> [*] FLAG: SOOPHA{gdb_python_auto}</span>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment"># Autre usage : .gdbinit — commandes auto au démarrage</span><br/>
+<span class="term-prompt">$ </span>cat ~/.gdbinit<br/>
+<span class="term-out"> set disassembly-flavor intel     <span class="term-comment"># syntaxe Intel par défaut</span></span><br/>
+<span class="term-out"> set pagination off               <span class="term-comment"># pas de pause "more"</span></span><br/>
+<span class="term-out"> define hook-stop                 <span class="term-comment"># auto à chaque BP</span></span><br/>
+<span class="term-out">  regs                             <span class="term-comment"># afficher registres auto</span></span><br/>
+<span class="term-out"> end</span>
+</div>
+</div>
+<!-- SLIDE 10 — VMMAP & MÉMOIRE -->
+<div class="slide" data-index="10"><div class="slide-tag">// Slide 11 · Choisir le bon breakpoint · Checklist</div>
+<h2>Choisir le Bon Breakpoint</h2>
+<h3>Un bon breakpoint économise 20 minutes de stepping inutile</h3>
+<div class="grid2" style="margin-bottom:.9rem">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🎯 Breakpoints utiles</div>
+<ul class="bullets">
+<li><strong>break main</strong> — démarrer proprement et prendre le contrôle tôt</li>
+<li><strong>break *0xADDR</strong> — viser une adresse repérée dans Ghidra</li>
+<li><strong>break strcmp</strong> — intercepter une validation de flag ou mot de passe</li>
+<li><strong>catch syscall ptrace</strong> — idéal contre l'anti-debug Linux</li>
+<li><strong>break if</strong> conditionnel — s'arrêter seulement quand une valeur t'intéresse</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🧰 Checklist runtime</div>
+<ul class="bullets">
+<li><code>run</code> pour lancer</li>
+<li><code>ni</code> pour avancer sans entrer</li>
+<li><code>si</code> pour entrer dans l'appel</li>
+<li><code>info registers</code> pour lire l'état CPU</li>
+<li><code>x/s</code>, <code>x/20gx</code> pour lire la mémoire</li>
+<li><code>bt</code> pour comprendre la pile d'appels</li>
+</ul>
+</div>
+</div>
+<div class="quote">Ne pose pas des breakpoints “au hasard”. Pose-les là où une décision importante est prise : comparaison, déchiffrement, anti-debug, appel système.</div></div>
+<!-- SLIDE 11 — EXERCICE COMPLET CTF -->
+<div class="slide" data-index="11">
+<div class="slide-tag">// Slide 12 · Exercice CTF · GDB complet · Résolution</div>
+<h2>Exercice Complet — Crackme #4 avec GDB</h2>
+<h3>Du binaire inconnu au flag — workflow dynamique complet en 5 minutes</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🔬 Résolution pas à pas — crackme_04</div>
+<div class="terminal sm">
+<span class="term-comment">── ÉTAPE 1 : Triage rapide ──────────────────────────────────</span><br/>
+<span class="term-prompt">$ </span>ltrace ./crackme_04 test<br/>
+<span class="term-out"> strcmp("test", ????) → ltrace ne marche pas !</span><br/>
+<span class="term-comment">  → Strcmp custom ou anti-ltrace → GDB obligatoire</span><br/>
+<br/>
+<span class="term-comment">── ÉTAPE 2 : Trouver le point de comparaison ─────────────</span><br/>
+<span class="term-comment">  [Ghidra] → check_flag @ 0x401280 → compare byte par byte</span><br/>
+<span class="term-comment">  → encoded_flag @ 0x404020 → XOR 0x37 avant comparaison</span><br/>
+<br/>
+<span class="term-comment">── ÉTAPE 3 : GDB → extraire le flag brut ─────────────────</span><br/>
+<span class="term-green">pwndbg&gt; </span>b *0x401295              <span class="term-comment"># BP sur la comparaison</span><br/>
+<span class="term-green">pwndbg&gt; </span>run AAAAAAAAAAA<br/>
+<span class="term-green">pwndbg&gt; </span>x/16xb 0x404020           <span class="term-comment"># dump du tableau encodé</span><br/>
+<span class="term-out"> 64 5e 5e 47 5b 55 7b 47 ...    <span class="term-comment"># XOR 0x37 pour décoder</span></span><br/>
+<br/>
+<span class="term-comment">── ÉTAPE 4 : Décoder en Python ──────────────────────────</span><br/>
+<span class="term-prompt">$ </span>python3 -c "<br/>
+      enc=[0x64,0x5e,0x5e,0x47,0x5b,0x55,0x7b,0x47]<br/>
+      print(''.join(chr(b^0x37) for b in enc))"<br/>
+<span class="term-green">SOOPHA{dynamic_xor_decoded}</span>
+</div>
+</div>
+</div>
+<!-- SLIDE 12 — ANTI-DEBUG PREVIEW -->
+<div class="slide" data-index="12">
+<div class="slide-tag">// Slide 13 · Anti-debug · Problèmes courants · Solutions</div>
+<h2>Problèmes Courants en Analyse Dynamique</h2>
+<h3>Les obstacles typiques et comment les contourner</h3>
+<div class="cmd-grid" style="margin-bottom:.8rem">
+<div class="cmd-card" style="border-color:rgba(255,68,102,.35)">
+<div class="cmd-name" style="color:#ff4466">⛔ ASLR — Adresses aléatoires</div>
+<div class="cmd-desc">Address Space Layout Randomization randomise les adresses à chaque exécution. Les adresses Ghidra ne correspondent plus aux adresses GDB.</div>
+<div class="cmd-ex">pwndbg&gt; vmmap → adresse réelle<br/>offset = runtime - ghidra_base</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,68,102,.35)">
+<div class="cmd-name" style="color:#ff4466">⛔ Stripped — Pas de symboles</div>
+<div class="cmd-desc">Les fonctions n'ont pas de noms — GDB ne peut pas faire "b check_flag". Il faut utiliser les adresses exactes trouvées dans Ghidra.</div>
+<div class="cmd-ex">b *0x401280 → adresse absolue<br/>Ou : b *main+0x3a → relatif</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.3)">
+<div class="cmd-name" style="color:#ffd700">⚠️ ptrace anti-debug</div>
+<div class="cmd-desc">Le binaire détecte GDB via ptrace et se ferme. Solution : patcher l'appel ptrace dans Ghidra avant d'analyser dynamiquement.</div>
+<div class="cmd-ex">NOP les instructions ptrace<br/>catch syscall ptrace → nop</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.3)">
+<div class="cmd-name" style="color:#ffd700">⚠️ Segfault immédiat</div>
+<div class="cmd-desc">Le binaire crash avant d'atteindre le flag. Souvent un bug volontaire ou une dépendance manquante. Analyser le backtrace GDB.</div>
+<div class="cmd-ex">pwndbg&gt; bt → backtrace complet<br/>Vérifier ldd — bibliothèques manquantes</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,170,255,.2)">
+<div class="cmd-name" style="color:#00aaff">💡 ASLR désactiver (local)</div>
+<div class="cmd-desc">Pour faciliter l'analyse locale, désactiver l'ASLR. Attention : ne jamais faire ça sur une machine de prod.</div>
+<div class="cmd-ex">echo 0 | sudo tee /proc/sys/kernel/randomize_va_space</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+<div class="cmd-name" style="color:#00ff88">💡 PIE offset calcul</div>
+<div class="cmd-desc">Avec PIE activé, l'offset entre l'adresse Ghidra et l'adresse runtime est constant pour une session. vmmap donne la base.</div>
+<div class="cmd-ex">base = vmmap[0].start<br/>real_addr = ghidra_addr - 0x400000 + base</div>
+</div>
+</div>
+</div>
+<!-- SLIDE 13 — RÉCAP -->
+<div class="slide" data-index="13">
+<div class="slide-tag">// Slide 14 · Récap · RE·05 · Obfuscation</div>
+<h2>RE·04 Terminé — Maître du Debug Dynamique</h2>
+<h3>Bilan des compétences acquises et pont vers l'obfuscation</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">✅ Compétences Analyse Dynamique</div>
+<ul class="bullets">
+<li class="ok">Installer et configurer <strong>GDB + pwndbg</strong></li>
+<li class="ok">Poser des <strong>breakpoints</strong> par nom, adresse, offset</li>
+<li class="ok">Utiliser <strong>x/s $rsi</strong> pour lire le flag avant strcmp</li>
+<li class="ok">Modifier les registres (<strong>set $eax = 1</strong>) pour bypasser</li>
+<li class="ok">Utiliser <strong>ltrace</strong> pour voir les appels de bibliothèques</li>
+<li class="ok">Inspecter la mémoire avec <strong>vmmap</strong> et <strong>search</strong></li>
+<li class="ok">Écrire un <strong>script Python GDB</strong> pour automatiser</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">⏩ RE·05 — Obfuscation &amp; XOR</div>
+<ul class="bullets">
+<li>Pourquoi les auteurs de malwares obfusquent leurs binaires</li>
+<li><strong>XOR monobyte et multibyte</strong> — détecter et casser</li>
+<li><strong>Base64, ROT</strong> — identifier et décoder automatiquement</li>
+<li><strong>Stack strings</strong> — l'obfuscation préférée des malwares</li>
+<li><strong>CyberChef</strong> — l'outil ultime pour décoder rapidement</li>
+<li>Scripts Python de décodage automatique</li>
+<li class="ok">Identifier l'obfuscation avant d'attaquer le binaire</li>
+</ul>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "x/s $rsi avant le strcmp — c'est la commande la plus rentable du reverse engineering. Mémorise-la, tatoue-la si besoin. — SooPHA Learn"
+  </div>
+<div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-green">✅ RE·01</span>
+<span class="pill pill-green">✅ RE·02</span>
+<span class="pill pill-green">✅ RE·03</span>
+<span class="pill pill-green">✅ RE·04</span>
+<span class="pill pill-purple">⏩ RE·05 XOR</span>
+<span class="pill pill-blue">⏳ RE·06 Malware</span>
+</div>
+</div>
+</div><!-- /slides -->
+<div id="qcm-overlay">
+<div class="qcm-box">
+<div class="qcm-header">
+<span class="qcm-label">// QCM · RE·04 · Analyse Dynamique</span>
+<span class="qcm-prog" id="qcm-prog">QCM 1 / 5</span>
+</div>
+<div class="qcm-saving" id="qcm-saving">💾 Sauvegarde Supabase...</div>
+<div class="qcm-question" id="qcm-question"></div>
+<div class="qcm-options" id="qcm-options"></div>
+<div class="qcm-feedback" id="qcm-feedback"></div>
+<button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+</div>
+</div>
+<div id="completion-modal">
+<div class="completion-box">
+<div class="completion-icon" id="comp-icon">🔬</div>
+<div class="completion-score" id="comp-score">100%</div>
+<div class="completion-title" id="comp-title">RE·04 Terminé !</div>
+<div class="completion-sub" id="comp-sub"></div>
+<div class="completion-saved">✓ Résultat sauvegardé dans Supabase</div>
+<a class="completion-btn completion-btn-primary" href="re5_v2.html">RE·05 — Obfuscation &amp; XOR →</a>
+<a class="completion-btn completion-btn-secondary" href="formations.html">Retour aux formations</a>
+</div>
+</div>
+<div id="bottombar">
+<button class="nav-btn" disabled="" id="prev-btn" onclick="navigate(-1)">← PRÉC</button>
+<div style="display:flex;gap:1rem;align-items:center">
+<span class="qcm-indicator" id="qcm-ind"></span>
+<span id="slide-counter">01 / 14</span>
+</div>
+<button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIV →</button>
+</div>
+<script>
+var QCM = {
+  1: {
+    question: "Tu analyses un binaire qui semble chiffrer le flag en mémoire avant de le comparer. Quelle approche est la plus efficace ?",
+    options: [
+      "Analyse statique uniquement avec Ghidra — le décompilateur va automatiquement décrypter le flag et l'afficher en clair",
+      "Analyse dynamique avec GDB : mettre un breakpoint après la routine de déchiffrement, attendre que le flag soit en clair en mémoire, puis lire avec x/s ou un watchpoint sur le buffer",
+      "Utiliser strings sur le binaire — le flag chiffré apparaîtra toujours en clair dans la section .rodata",
+      "Exécuter le binaire normalement sans GDB et analyser les messages d'erreur — le flag chiffré sera révélé dans les logs"
+    ],
+    correct: 1,
+    explanation: "Quand un binaire chiffre le flag à runtime, la statique seule ne suffit pas — Ghidra voit le tableau d'octets chiffrés mais pas le résultat du déchiffrement. La dynamique est indispensable : (1) Identifier dans Ghidra la fonction de déchiffrement et l'adresse du buffer résultat. (2) Mettre un watchpoint GDB sur ce buffer (watch *addr). (3) Laisser le binaire s'exécuter — GDB stoppe quand le buffer est écrit. (4) x/s addr → le flag en clair. Alternativement : BP après la routine de déchiffrement + x/s sur le buffer résultat."
+  },
+  3: {
+    question: "Tu as posé un breakpoint sur check_flag. L'exécution est pausée. Quelle commande GDB utilises-tu pour lire la chaîne pointée par RDI (le 1er argument) ?",
+    options: [
+      "print $rdi — cette commande affiche la valeur hexadécimale du pointeur ET déréférence automatiquement pour afficher la chaîne",
+      "x/s $rdi — x/s déréférence le pointeur stocké dans RDI et affiche les bytes comme une chaîne de caractères jusqu'au byte nul",
+      "info registers rdi — cette commande affiche la chaîne pointée par RDI en ASCII automatiquement",
+      "display $rdi — display affiche automatiquement la valeur déréférencée comme une chaîne après chaque step"
+    ],
+    correct: 1,
+    explanation: "x/s est LA commande pour lire une chaîne en mémoire dans GDB. Syntaxe : x/s ADDRESS ou x/s $REGISTER. x = examine memory, s = format string (affiche les bytes jusqu'au \\0). Si RDI = 0x7fff1234 et que 0x7fff1234 contient 'SOOPHA{...}\\0' → x/s $rdi affiche \"SOOPHA{...}\". Comparaison : print $rdi affiche seulement la valeur hexadécimale du pointeur (0x7fff1234), pas la chaîne. x/s $rsi est LA commande la plus utilisée en CTF — juste avant strcmp, RSI = le flag attendu."
+  },
+  5: {
+    question: "Tu veux bypasser check_flag sans connaître le vrai flag. La fonction retourne 0 (faux) dans RAX. Comment modifier le résultat dans GDB pour forcer le succès ?",
+    options: [
+      "delete check_flag — supprimer la fonction dans GDB la rend inopérante et le programme continue comme si elle retournait true",
+      "Mettre un BP juste après le retour de check_flag, puis 'set $eax = 1' ou 'set $rax = 1' pour forcer la valeur de retour à true avant que le code appelant ne l'utilise",
+      "b check_flag ; condition 1 $eax == 0 — cette condition fait automatiquement retourner 1 quand GDB détecte que la fonction veut retourner 0",
+      "skip check_flag — la commande skip fait sauter complètement l'appel de la fonction et GDB génère automatiquement une valeur de retour de 1"
+    ],
+    correct: 1,
+    explanation: "set $eax = 1 est la méthode de bypass runtime par modification de registre. Workflow : (1) b *main+OFFSET (juste après le CALL check_flag — regarder dans Ghidra). (2) run mauvais_flag → BP hit. (3) check $eax = 0 (false). (4) set $eax = 1 (ou set $rax = 1). (5) continue → le code appelant voit 1 = succès → 'Congratulations'. Alternative : modifier le Zero Flag si la condition est 'test eax, eax / jz fail' → set $eflags = $eflags | 0x40. IMPORTANT : cette technique bypass la vérification mais ne donne pas le vrai flag pour le soumettre."
+  },
+  7: {
+    question: "ltrace ./crackme mon_input affiche : strcmp('mon_input', 'SOOPHA{ltrace_wins}') = -1. Que révèle cette sortie et quelle est la prochaine action ?",
+    options: [
+      "ltrace indique que le binaire est protégé contre les attaques par dictionnaire. Il faut utiliser GDB pour contourner cette protection",
+      "strcmp('mon_input', 'SOOPHA{ltrace_wins}') = -1 signifie que les deux chaînes sont différentes (-1 = s1 < s2 lexicographiquement). Le flag est 'SOOPHA{ltrace_wins}' — le deuxième argument de strcmp. La prochaine action : ./crackme SOOPHA{ltrace_wins}",
+      "ltrace montre que strcmp est appelé avec les bons arguments mais -1 signifie une erreur système — relancer avec sudo pour les permissions",
+      "La valeur de retour -1 indique que strcmp a été patché pour toujours retourner faux — il faut patcher le binaire avec Ghidra avant de continuer"
+    ],
+    correct: 1,
+    explanation: "strcmp(s1, s2) retourne 0 si égales, <0 si s1<s2, >0 si s1>s2. Dans ltrace, strcmp('mon_input', 'SOOPHA{ltrace_wins}') = -1 révèle : (1) s1 = ton input = 'mon_input'. (2) s2 = ce que le binaire attend = 'SOOPHA{ltrace_wins}'. (3) -1 = différentes → wrong. Action immédiate : ./crackme 'SOOPHA{ltrace_wins}' → Congratulations! ltrace est souvent la technique la plus rapide en CTF — 30 secondes pour avoir le flag sans ouvrir GDB. Attention : certains binaires anti-ltrace (via dlopen dynamique ou strcmp custom) — dans ce cas, GDB + x/s $rsi."
+  },
+  9: {
+    question: "Après 'vmmap' dans pwndbg, tu vois que l'adresse de base du binaire est 0x555555554000 mais dans Ghidra elle était 0x400000. Comment calculer l'adresse réelle dans GDB d'une instruction que Ghidra montre à 0x401280 ?",
+    options: [
+      "L'adresse réelle = 0x401280 directement — vmmap affiche toujours la même base que Ghidra, la différence est un bug d'affichage pwndbg",
+      "L'adresse réelle = 0x555555554000 + (0x401280 - 0x400000) = 0x555555555280. L'offset entre les deux bases est constant : (adresse Ghidra - base Ghidra) + base runtime",
+      "L'adresse réelle = 0x555555554000 + 0x401280 = 0x555555955280 — additionner directement les deux valeurs",
+      "Impossible de calculer avec PIE activé — désactiver ASLR et relancer le binaire pour que les adresses correspondent à Ghidra"
+    ],
+    correct: 1,
+    explanation: "Avec PIE (Position Independent Executable) activé, la base du binaire est randomisée (ASLR). Ghidra utilise 0x400000 par défaut. La formule : addr_runtime = base_runtime + (addr_ghidra - base_ghidra). Exemple : base_runtime = 0x555555554000 (vmmap), addr_ghidra = 0x401280, base_ghidra = 0x400000. addr_runtime = 0x555555554000 + (0x401280 - 0x400000) = 0x555555554000 + 0x1280 = 0x555555555280. Dans GDB : b *0x555555555280. Astuce pwndbg : pie b 0x1280 pour calculer automatiquement avec la base PIE."
+  }
+};
+
+var COURSE_ID = 're4';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){ document.getElementById('comp-icon').textContent='🐛'; document.getElementById('comp-title').textContent='GDB Master !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Tu maîtrises l\'analyse dynamique — en route pour l\'obfuscation !'; }
+  else if(pct>=60){ document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='RE·04 Terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Relis les sections breakpoints et bypass avant de continuer.'; }
+  else { document.getElementById('comp-icon').textContent='⚙️'; document.getElementById('comp-title').textContent='RE·04 Terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Reprends depuis les commandes GDB de base.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='01GDBBREAKPOINTRSIREGISTERSTEPXORWATCHNILTRACESTRACE',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(4,2,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#aa44ff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

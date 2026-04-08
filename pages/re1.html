@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="/favicon.ico" rel="icon" type="image/x-icon"/>
+<link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<title>RE·01 — Introduction au Reverse Engineering · SooPHA Learn</title>
+<link href="../css/global.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(4,2,12,.97);border-bottom:1px solid rgba(170,68,255,.15);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(170,68,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(170,68,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}
+.tb-back:hover{color:#aa44ff}
+.tb-dot{width:6px;height:6px;background:#aa44ff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(170,68,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#6622cc,#aa44ff);box-shadow:0 0 8px #aa44ff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#aa44ff;--acc-dim:rgba(170,68,255,.15);--acc-faint:rgba(170,68,255,.06);--acc-border:rgba(170,68,255,.2)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#aa44ff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(170,68,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(8,4,20,.88);border:1px solid var(--acc-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(220,200,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#aa44ff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}
+.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}
+.bullets li.danger::before{content:'🔴';font-size:.7rem}
+.bullets li.ok::before{content:'✅';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.terminal{background:rgba(4,0,12,.85);border:1px solid rgba(170,68,255,.12);border-left:3px solid #aa44ff;padding:.9rem 1.2rem;font-family:var(--mono);font-size:.75rem;color:rgba(200,170,255,.8);line-height:2;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.85}
+.term-prompt{color:#aa44ff}
+.term-out{color:rgba(200,170,255,.45)}
+.term-comment{color:rgba(170,68,255,.4);font-style:italic}
+.term-red{color:#ff4466}
+.term-yellow{color:#ffd700}
+.term-green{color:#00ff88}
+.term-blue{color:#00aaff}
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(170,68,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(170,68,255,.1)}
+.quote{border-left:3px solid #aa44ff;padding:.7rem 1rem;background:var(--acc-faint);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#e8d0ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #aa44ff,0 0 80px rgba(170,68,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #aa44ff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#aa44ff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#aa44ff;text-shadow:0 0 8px #aa44ff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(220,200,255,.85);line-height:1.5}
+.phase-row{display:flex;gap:.8rem;padding:.55rem .9rem;border-bottom:1px solid rgba(170,68,255,.07);align-items:flex-start}
+.phase-row:last-child{border-bottom:none}
+.phase-num{font-family:var(--mono);font-size:.68rem;color:#aa44ff;min-width:90px;flex-shrink:0}
+.phase-name{font-family:var(--display);font-size:.72rem;font-weight:700;color:#fff;min-width:100px;flex-shrink:0}
+.phase-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.65);line-height:1.4}
+/* QCM */
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(4,2,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(8,4,20,.97);border:1px solid rgba(170,68,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(170,68,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(170,68,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.35);margin-bottom:.5rem;display:none}
+.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(4,0,16,.3);border:1px solid rgba(170,68,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(210,190,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(170,68,255,.35);background:rgba(170,68,255,.06);color:rgba(220,200,255,.95)}
+.qcm-option.correct{border-color:#aa44ff!important;background:rgba(170,68,255,.12)!important;color:#aa44ff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#aa44ff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:rgba(220,200,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(170,68,255,.15);border:1px solid rgba(170,68,255,.4);color:#aa44ff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(170,68,255,.25);box-shadow:0 0 20px rgba(170,68,255,.2)}
+.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(4,2,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(170,68,255,.3);background:rgba(8,4,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#aa44ff;text-shadow:0 0 20px #aa44ff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,170,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#aa44ff;color:#0a0014}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(170,68,255,.4);color:#aa44ff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(4,2,12,.97);border-top:1px solid rgba(170,68,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(170,68,255,.2);color:rgba(170,68,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#aa44ff;color:#aa44ff}
+.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#aa44ff;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+<div class="tb-left">
+<a class="tb-back" href="formations.html">← Formations</a>
+<span><span class="tb-dot"></span>// RE·01 · Introduction · Reverse Engineering</span>
+</div>
+<div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+<div id="slides">
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+<div class="slide-tag">// RE·01 · Module 15 · SooPHA Learn</div>
+<h1 class="glitch">REVERSE<br/>ENGINEERING</h1>
+<div class="gabon-bar"><span></span><span></span><span></span></div>
+<h3>Introduction · ELF · Outils · Premiers Réflexes</h3>
+<div class="card" style="text-align:center;max-width:700px">
+<ul class="bullets" style="text-align:left">
+<li><strong>14 slides</strong> · 5 QCM obligatoires · ~55 min</li>
+<li><strong>Définition et légalité</strong> — ce qu'est le RE et ses cas d'usage éthiques</li>
+<li><strong>La chaîne de compilation</strong> — comment un programme C devient un binaire</li>
+<li><strong>Format ELF</strong> — anatomie d'un exécutable Linux section par section</li>
+<li><strong>Premiers réflexes</strong> — file, strings, readelf, ldd en pratique</li>
+<li><strong>Environnement de travail</strong> — VM, Ghidra, pwndbg, tout installer</li>
+<li class="ok">Prérequis : bases Linux (Module 02), notions de C recommandées</li>
+</ul>
+</div>
+<div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-purple">RE · Module 1/6</span>
+<span class="pill pill-blue">ELF · x86-64</span>
+<span class="pill pill-orange">strings · readelf · file</span>
+<span class="pill pill-yellow">CTF · Malware · VulnResearch</span>
+</div>
+</div>
+<!-- SLIDE 1 — QCM : DÉFINITION RE -->
+<div class="slide" data-index="1">
+<div class="slide-tag">// Slide 02 · Définition · Éthique · QCM requis</div>
+<h2>Qu'est-ce que le Reverse Engineering ?</h2>
+<h3>Comprendre sans le code source — L'art de lire les traces du compilateur</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🔍 Définition technique</div>
+<ul class="bullets">
+<li>Analyser un <strong>binaire compilé</strong> pour reconstruire sa logique interne sans son code source</li>
+<li>Le compilateur traduit le C/C++/Rust en <strong>instructions machine</strong> — le RE fait l'inverse</li>
+<li>On travaille sur l'<strong>assembleur brut</strong> et sur le pseudo-code produit par les décompilateurs</li>
+<li>Discipline au croisement entre <strong>programmation bas niveau, algorithmique et patience</strong></li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">⚖️ Cadre légal — toujours vérifier</div>
+<ul class="bullets">
+<li class="ok"><strong>CTF</strong> — toujours légal, c'est l'objectif du challenge</li>
+<li class="ok"><strong>Malware analysis</strong> — légal pour la défense et la recherche</li>
+<li class="ok"><strong>Interopérabilité</strong> — légal dans de nombreuses juridictions (directive UE)</li>
+<li class="ok"><strong>Bug bounty</strong> — légal dans le périmètre du programme</li>
+<li class="warn">Logiciels propriétaires sans autorisation — ILLÉGAL dans la plupart des pays</li>
+<li class="danger">DRM et protections anti-contournement — DMCA, directive EUCD</li>
+</ul>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "Le reverse engineering, c'est de l'archéologie numérique. Tu lis les traces laissées par le compilateur pour reconstruire l'intention originale du développeur — sans jamais avoir vu le plan d'origine."
+  </div>
+</div>
+<!-- SLIDE 2 — CAS D'USAGE -->
+<div class="slide" data-index="2">
+<div class="slide-tag">// Slide 03 · Cas d'usage · Pourquoi apprendre le RE</div>
+<h2>Pourquoi Faire du Reverse Engineering ?</h2>
+<h3>Les 6 raisons légitimes qui font du RE une compétence clé en cybersécurité</h3>
+<div class="cmd-grid">
+<div class="cmd-card" style="border-color:rgba(170,68,255,.35)">
+<div class="cmd-name">🏴 CTF — Capture The Flag</div>
+<div class="cmd-desc">Les challenges RE sont présents dans tous les CTF. Un crackme ou un binaire avec un flag caché — tu dois trouver comment il valide le mot de passe.</div>
+<div class="cmd-ex">picoCTF · HackTheBox · DEFCON CTF · NahamCon</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,68,102,.25)">
+<div class="cmd-name">🦠 Malware Analysis</div>
+<div class="cmd-desc">Comprendre ce que fait un ransomware, un RAT ou un spyware sans exécuter le code malveillant. Extraire les IOCs, le C2, les clés de chiffrement.</div>
+<div class="cmd-ex">Autopsie de WannaCry · Emotet · Cobalt Strike</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,136,0,.25)">
+<div class="cmd-name">🔍 Vulnerability Research</div>
+<div class="cmd-desc">Trouver des 0-day dans des logiciels dont le code source n'est pas disponible. Analyser les patches pour identifier les vulnérabilités corrigées.</div>
+<div class="cmd-ex">Patch diffing · N-day analysis · Bug bounty binaires</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,170,255,.25)">
+<div class="cmd-name">🔗 Interopérabilité</div>
+<div class="cmd-desc">Comprendre des protocoles propriétaires fermés pour les implémenter dans d'autres logiciels. Exemple : décompilation des pilotes hardware.</div>
+<div class="cmd-ex">Protocoles réseau propriétaires · Drivers obscurs</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+<div class="cmd-name">🩹 Patch Analysis</div>
+<div class="cmd-desc">Comparer un binaire avant et après un patch de sécurité pour identifier précisément quelle vulnérabilité a été corrigée — et créer un exploit avant la mise à jour.</div>
+<div class="cmd-ex">BinDiff · diaphora · patch Tuesday analysis</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+<div class="cmd-name">📱 Mobile Security</div>
+<div class="cmd-desc">Décompiler des APK Android (dalvik bytecode), analyser les applications iOS (ARM64), vérifier les données collectées et les transmissions réseau.</div>
+<div class="cmd-ex">jadx · apktool · Frida · MobSF</div>
+</div>
+</div>
+</div>
+<!-- SLIDE 3 — CHAÎNE DE COMPILATION -->
+<div class="slide" data-index="3">
+<div class="slide-tag">// Slide 04 · Compilation · C → Binaire · La transformation</div>
+<h2>La Chaîne de Compilation</h2>
+<h3>Comment ton code C devient un exécutable binaire — et pourquoi c'est réversible</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div style="display:flex;flex-direction:column;gap:.4rem">
+<div class="phase-row"><div class="phase-num">1. Code source</div><div class="phase-name" style="color:#00ff88">.c / .cpp</div><div class="phase-desc">Le code que le développeur écrit — lisible, haut niveau, avec des noms de variables explicites et des commentaires.</div></div>
+<div class="phase-row"><div class="phase-num">2. Préprocesseur</div><div class="phase-name" style="color:#00aaff">#include #define</div><div class="phase-desc">Résout les #include, remplace les macros #define, gère les #ifdef. Produit un fichier C "étendu" sans macros.</div></div>
+<div class="phase-row"><div class="phase-num">3. Compilateur</div><div class="phase-name" style="color:#aa44ff">gcc / clang</div><div class="phase-desc">Traduit le C en assembleur x86-64. Les optimisations (-O2, -O3) transforment radicalement la structure du code — les boucles disparaissent, les fonctions s'inlinent.</div></div>
+<div class="phase-row"><div class="phase-num">4. Assembleur</div><div class="phase-name" style="color:#ffd700">.o / objets</div><div class="phase-desc">Transforme l'assembleur textuel en code machine binaire — des octets. Chaque instruction devient 1 à 15 octets selon x86-64.</div></div>
+<div class="phase-row"><div class="phase-num">5. Linker</div><div class="phase-name" style="color:#ff8800">ELF final</div><div class="phase-desc">Combine tous les fichiers objets, résout les références croisées, lie les bibliothèques système (libc). Produit l'ELF exécutable final.</div></div>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment"># La chaîne complète en une commande</span><br/>
+<span class="term-prompt">$ </span>gcc -o challenge challenge.c  <span class="term-comment"># compile + link</span><br/>
+<span class="term-prompt">$ </span>gcc -S challenge.c            <span class="term-comment"># stopper après l'assembleur → .s</span><br/>
+<span class="term-prompt">$ </span>gcc -c challenge.c            <span class="term-comment"># stopper après assemblage → .o</span><br/>
+<span class="term-prompt">$ </span>gcc -O2 -o challenge challenge.c <span class="term-comment"># avec optimisations niveau 2</span>
+</div>
+</div>
+<!-- SLIDE 4 — FORMAT ELF -->
+<div class="slide" data-index="4">
+<div class="slide-tag">// Slide 05 · Format ELF · Executable and Linkable Format</div>
+<h2>Le Format ELF — Anatomie d'un Exécutable Linux</h2>
+<h3>Executable and Linkable Format — le format standard de Linux, Android et BSD</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📋 ELF Header — Les métadonnées</div>
+<ul class="bullets">
+<li><strong>Magic bytes</strong> : 0x7F 45 4C 46 (<code style="color:#aa44ff;font-family:var(--mono)">\x7FELF</code>) — identifier un ELF à l'œil</li>
+<li><strong>Class</strong> : ELF32 (32-bit) ou ELF64 (64-bit)</li>
+<li><strong>Type</strong> : ET_EXEC (exécutable), ET_DYN (library/PIE), ET_REL (objet)</li>
+<li><strong>Machine</strong> : x86-64 (0x3E), ARM (0x28), MIPS (0x08)</li>
+<li><strong>Entry point</strong> : adresse de la première instruction à exécuter</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📦 Sections principales</div>
+<ul class="bullets">
+<li><strong>.text</strong> — code exécutable (instructions machine) — r-x</li>
+<li><strong>.rodata</strong> — données en lecture seule (strings, constantes) — r--</li>
+<li><strong>.data</strong> — variables globales initialisées (tableaux XOR) — rw-</li>
+<li><strong>.bss</strong> — variables globales non initialisées, rempli de zéros — rw-</li>
+<li><strong>.plt / .got</strong> — résolution dynamique des fonctions externes (printf, strcmp)</li>
+<li><strong>.symtab / .strtab</strong> — table des symboles (noms de fonctions si non stripped)</li>
+</ul>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-prompt">$ </span>readelf -h ./challenge<br/>
+<span class="term-out">ELF Header:</span><br/>
+<span class="term-out">  Magic:  7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00</span><br/>
+<span class="term-out">  Class:                   ELF64</span><br/>
+<span class="term-out">  Type:                    DYN (Position-Independent Executable file)</span><br/>
+<span class="term-green">  Entry point address:    0x1060</span>
+</div>
+</div>
+<!-- SLIDE 5 — QCM : SECTIONS ELF -->
+<div class="slide" data-index="5">
+<div class="slide-tag">// Slide 06 · Sections ELF · QCM requis</div>
+<h2>Stripped vs Not Stripped — Impact sur l'Analyse</h2>
+<h3>La présence ou l'absence des symboles change tout à ton workflow</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card" style="border-color:rgba(0,255,136,.2)">
+<div class="cmd-name" style="color:#00ff88;margin-bottom:.7rem">✅ NOT STRIPPED — Le rêve du reverse engineer</div>
+<ul class="bullets">
+<li>Les <strong>noms de fonctions sont présents</strong> dans la table des symboles : <code style="color:#00ff88;font-family:var(--mono)">check_flag</code>, <code style="color:#00ff88;font-family:var(--mono)">validate_input</code>, <code style="color:#00ff88;font-family:var(--mono)">decode_xor</code></li>
+<li>Ghidra et GDB <strong>affichent les vrais noms</strong> → navigation immédiate</li>
+<li>Les noms de variables locales peuvent aussi être présents (avec -g pour les debug symbols)</li>
+<li class="ok">Très fréquent en CTF débutant et intermédiaire — volontaire pour faciliter l'apprentissage</li>
+</ul>
+</div>
+<div class="card" style="border-color:rgba(255,68,102,.2)">
+<div class="cmd-name" style="color:#ff4466;margin-bottom:.7rem">❌ STRIPPED — La réalité du monde réel</div>
+<ul class="bullets">
+<li>La section <strong>.symtab est supprimée</strong> avec <code style="color:#ff4466;font-family:var(--mono)">strip ./binary</code> ou <code style="color:#ff4466;font-family:var(--mono)">-s</code> à la compilation</li>
+<li>Ghidra nomme les fonctions <code style="color:#ff4466;font-family:var(--mono)">FUN_00401060</code>, <code style="color:#ff4466;font-family:var(--mono)">FUN_00401130</code>...</li>
+<li>Tu dois <strong>déduire le rôle</strong> de chaque fonction depuis son comportement</li>
+<li class="warn">Malwares, logiciels commerciaux, binaires release = toujours stripped</li>
+</ul>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-prompt">$ </span>file ./not_stripped<br/>
+<span class="term-green">not_stripped: ELF 64-bit LSB pie executable, x86-64, dynamically linked, <strong>not stripped</strong></span><br/>
+<span class="term-prompt">$ </span>file ./stripped_binary<br/>
+<span class="term-red">stripped_binary: ELF 64-bit LSB pie executable, x86-64, dynamically linked, <strong>stripped</strong></span><br/>
+<span class="term-prompt">$ </span>nm ./not_stripped | grep check<br/>
+<span class="term-green">0000000000001280 T check_flag</span>
+</div>
+</div>
+<!-- SLIDE 6 — PREMIERS RÉFLEXES -->
+<div class="slide" data-index="6">
+<div class="slide-tag">// Slide 07 · Premiers réflexes · Triage d'un binaire inconnu</div>
+<h2>Les Premiers Réflexes face à un Binaire Inconnu</h2>
+<h3>Le workflow de triage — 5 commandes avant toute analyse approfondie</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div style="display:flex;flex-direction:column;gap:.4rem">
+<div class="step"><div class="step-num">1</div><div class="step-content"><strong>file ./binary</strong> — identifier le type, l'architecture, stripped ou non, statique ou dynamique<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ ELF 64-bit LSB pie executable, x86-64, dynamically linked, not stripped</code></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><strong>strings ./binary | grep -i "flag\|key\|pass\|soopha\|secret"</strong> — chercher les données hardcodées immédiatement<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ strings révèle souvent le flag directement sur les challenges débutants</code></div></div>
+<div class="step"><div class="step-num">3</div><div class="step-content"><strong>readelf -s ./binary</strong> — lister les symboles (fonctions) si non stripped<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ chercher check_flag, validate, compare, verify dans la liste</code></div></div>
+<div class="step"><div class="step-num">4</div><div class="step-content"><strong>ldd ./binary</strong> — afficher les bibliothèques dynamiques requises<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ libcrypto.so = chiffrement · libssl.so = TLS · libpthread.so = threads</code></div></div>
+<div class="step"><div class="step-num">5</div><div class="step-content"><strong>./binary</strong> — exécuter et observer le comportement dans une VM isolée<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ "Enter the flag: " → indique qu'il y a une comparaison de chaîne à traquer</code></div></div>
+</div>
+</div>
+</div>
+<!-- SLIDE 7 — QCM : PREMIERS OUTILS -->
+<div class="slide" data-index="7">
+<div class="slide-tag">// Slide 08 · strings avancé · Options · QCM requis</div>
+<h2>strings — Plus Puissant qu'il n'y Paraît</h2>
+<h3>L'outil le plus sous-estimé du reverse engineer — maîtrise toutes ses options</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">⚙️ Options importantes</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-comment"># Longueur minimale (défaut : 4 chars)</span><br/>
+<span class="term-prompt">$ </span>strings -n 8 ./binary<br/>
+<br/>
+<span class="term-comment"># Afficher l'offset de chaque string</span><br/>
+<span class="term-prompt">$ </span>strings -t x ./binary<br/>
+<span class="term-out"> 0x2008 Enter the flag:</span><br/>
+<br/>
+<span class="term-comment"># Chercher dans une section spécifique</span><br/>
+<span class="term-prompt">$ </span>strings -d ./binary  <span class="term-comment"># .data uniquement</span><br/>
+<br/>
+<span class="term-comment"># Combiner avec grep pour filtrer</span><br/>
+<span class="term-prompt">$ </span>strings ./binary | grep -E "[A-Z]{6}\{" <span class="term-comment"># format flag</span>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🎯 Ce que strings peut révéler</div>
+<ul class="bullets">
+<li><strong>Flags hardcodés</strong> — directement lisibles dans .rodata ou .data</li>
+<li><strong>Messages d'erreur</strong> — "Wrong password", "Access denied" → logique du programme</li>
+<li><strong>URLs et IPs</strong> — serveurs C2 d'un malware, endpoints d'une API</li>
+<li><strong>Clés et secrets</strong> — clés XOR, seeds, parfois même des clés privées</li>
+<li><strong>Chemins de fichiers</strong> — /tmp/payload, /etc/passwd → comprendre les actions</li>
+<li class="warn">Limite : strings encodés (XOR, Base64) n'apparaissent pas en clair</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- SLIDE 8 — readelf & objdump -->
+<div class="slide" data-index="8">
+<div class="slide-tag">// Slide 09 · readelf · objdump · Inspection approfondie</div>
+<h2>readelf &amp; objdump — Inspecter l'ELF en Profondeur</h2>
+<h3>Les deux outils CLI natifs pour tout savoir sur un binaire sans l'ouvrir dans un GUI</h3>
+<div class="cmd-grid" style="margin-bottom:.8rem">
+<div class="cmd-card">
+<div class="cmd-name">readelf -h</div>
+<div class="cmd-desc">ELF Header — architecture, type, entry point, taille des sections</div>
+<div class="cmd-ex">readelf -h ./binary</div>
+</div>
+<div class="cmd-card">
+<div class="cmd-name">readelf -S</div>
+<div class="cmd-desc">Toutes les sections ELF avec leurs offsets, tailles et permissions (R/W/X)</div>
+<div class="cmd-ex">readelf -S ./binary | grep -E "\.text|\.data|\.rodata"</div>
+</div>
+<div class="cmd-card">
+<div class="cmd-name">readelf -s</div>
+<div class="cmd-desc">Table des symboles — noms de fonctions, types (FUNC/OBJECT), adresses</div>
+<div class="cmd-ex">readelf -s ./binary | grep FUNC</div>
+</div>
+<div class="cmd-card">
+<div class="cmd-name">readelf -d</div>
+<div class="cmd-desc">Section dynamic — bibliothèques requises (NEEDED), flags, RPATH</div>
+<div class="cmd-ex">readelf -d ./binary | grep NEEDED</div>
+</div>
+<div class="cmd-card">
+<div class="cmd-name">objdump -d</div>
+<div class="cmd-desc">Désassembler la section .text complète en syntaxe AT&amp;T (défaut) ou Intel (-M intel)</div>
+<div class="cmd-ex">objdump -d -M intel ./binary | less</div>
+</div>
+<div class="cmd-card">
+<div class="cmd-name">objdump -s -j .rodata</div>
+<div class="cmd-desc">Dump hexadécimal d'une section spécifique — voir les données brutes</div>
+<div class="cmd-ex">objdump -s -j .data ./binary</div>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-prompt">$ </span>readelf -s ./re_challenge_1 | grep FUNC<br/>
+<span class="term-out">  54: 0000000000001280  87 FUNC GLOBAL DEFAULT 14 <span class="term-green">check_flag</span></span><br/>
+<span class="term-out">  55: 0000000000001060  48 FUNC GLOBAL DEFAULT 14 main</span>
+</div>
+</div>
+<!-- SLIDE 9 — QCM : FORMATS BINAIRES -->
+<div class="slide" data-index="9">
+<div class="slide-tag">// Slide 10 · Formats binaires · ELF vs PE vs Mach-O · QCM requis</div>
+<h2>Formats Binaires — Au-delà de l'ELF</h2>
+<h3>Chaque OS a son format — le RE s'adapte à tous</h3>
+<div class="cmd-grid" style="margin-bottom:.8rem">
+<div class="cmd-card" style="border-color:rgba(170,68,255,.35)">
+<div class="cmd-name" style="color:#aa44ff">ELF — Linux / Android / BSD</div>
+<div class="cmd-desc">Executable and Linkable Format. Magic bytes : \x7FELF. Utilisé pour les exécutables Linux, les .so (shared objects), les fichiers .o.</div>
+<div class="cmd-ex">Outils : Ghidra, radare2, GDB, objdump, readelf</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,170,255,.25)">
+<div class="cmd-name" style="color:#00aaff">PE — Windows</div>
+<div class="cmd-desc">Portable Executable. Magic bytes : MZ (0x4D5A). Format des .exe, .dll, .sys Windows. Structure différente mais concepts similaires à ELF.</div>
+<div class="cmd-ex">Outils : Ghidra, IDA, x64dbg, PE-bear, CFF Explorer</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,136,0,.25)">
+<div class="cmd-name" style="color:#ff8800">Mach-O — macOS / iOS</div>
+<div class="cmd-desc">Mach Object. Magic bytes : 0xFEEDFACE (32-bit) ou 0xFEEDFACF (64-bit). Format des exécutables Apple, universal binaries (fat binary pour ARM64 + x86_64).</div>
+<div class="cmd-ex">Outils : Ghidra, Hopper, otool, nm</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+<div class="cmd-name" style="color:#00ff88">DEX / APK — Android</div>
+<div class="cmd-desc">Dalvik Executable. Magic bytes : dex\n. Les APK Android sont des ZIP contenant des .dex. Le code est compilé en bytecode Dalvik ou ART (non x86-64 natif).</div>
+<div class="cmd-ex">Outils : jadx, apktool, Bytecode Viewer, dex2jar</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+<div class="cmd-name" style="color:#ffd700">JAR / Class — Java</div>
+<div class="cmd-desc">Bytecode JVM. Magic bytes : 0xCAFEBABE. Plus facile à décompiler que l'assembleur natif — les noms de classes et méthodes souvent conservés (sauf obfuscation ProGuard).</div>
+<div class="cmd-ex">Outils : jadx, CFR, Procyon, JD-GUI</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,68,102,.2)">
+<div class="cmd-name" style="color:#ff4466">PYC — Python compilé</div>
+<div class="cmd-desc">Bytecode Python (.pyc). Magic bytes variables selon version Python. Décompilable quasi-parfaitement vers le Python source avec uncompyle6 ou decompile3.</div>
+<div class="cmd-ex">Outils : uncompyle6 · decompile3 · pycdas</div>
+</div>
+</div>
+</div>
+<!-- SLIDE 10 — ENVIRONNEMENT DE TRAVAIL -->
+<div class="slide" data-index="10">
+<div class="slide-tag">// Slide 11 · Setup · VM · Ghidra · pwndbg · Installation</div>
+<h2>Environnement de Travail — Tout Installer</h2>
+<h3>La bonne VM, les bons outils — ne jamais analyser un malware sur sa machine principale</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🖥️ VM recommandée</div>
+<ul class="bullets">
+<li><strong>REMnux</strong> — distribution Linux spécialisée RE et malware analysis, tous outils pré-installés</li>
+<li><strong>Kali Linux</strong> — Ghidra disponible via <code style="color:#aa44ff;font-family:var(--mono)">apt install ghidra</code></li>
+<li><strong>VirtualBox / VMware</strong> — snapshots avant chaque analyse malware</li>
+<li class="warn">Isoler la VM du réseau principal pour l'analyse malware</li>
+<li class="ok">Partager seulement le dossier /challenges entre hôte et VM</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🔧 Installer les outils essentiels</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-comment"># Sur Kali / Ubuntu</span><br/>
+<span class="term-prompt">$ </span>sudo apt install ghidra gdb python3<br/>
+<span class="term-prompt">$ </span>sudo apt install binutils file ltrace strace<br/>
+<br/>
+<span class="term-comment"># pwndbg (extension GDB recommandée)</span><br/>
+<span class="term-prompt">$ </span>git clone https://github.com/pwndbg/pwndbg<br/>
+<span class="term-prompt">$ </span>cd pwndbg &amp;&amp; ./setup.sh<br/>
+<br/>
+<span class="term-comment"># radare2</span><br/>
+<span class="term-prompt">$ </span>sudo apt install radare2
+      </div>
+</div>
+</div>
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-purple">Ghidra — gratuit NSA — ghidra-sre.org</span>
+<span class="pill pill-green">REMnux — remux.re — tout en un</span>
+<span class="pill pill-blue">pwndbg — github.com/pwndbg/pwndbg</span>
+</div>
+</div>
+<!-- SLIDE 11 — MAGIC BYTES -->
+<div class="slide" data-index="11">
+<div class="slide-tag">// Slide 12 · Magic bytes · Identifier les formats à l'oeil nu</div>
+<h2>Magic Bytes — Lire un Fichier Sans son Extension</h2>
+<h3>Les premiers octets de chaque format permettent de l'identifier immédiatement</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🔢 Table des magic bytes les plus courants</div>
+<div style="padding:.3rem 0">
+<div class="phase-row"><div class="phase-num" style="color:#aa44ff">7F 45 4C 46</div><div class="phase-name">\x7FELF</div><div class="phase-desc">ELF — exécutables Linux, shared objects, kernel modules</div></div>
+<div class="phase-row"><div class="phase-num" style="color:#00aaff">4D 5A</div><div class="phase-name">MZ</div><div class="phase-desc">PE — exécutables Windows (.exe), librairies (.dll), drivers (.sys)</div></div>
+<div class="phase-row"><div class="phase-num" style="color:#ff8800">FE ED FA CE</div><div class="phase-name">Mach-O 32</div><div class="phase-desc">Mach-O 32-bit — exécutables macOS/iOS anciens</div></div>
+<div class="phase-row"><div class="phase-num" style="color:#ff8800">CF FA ED FE</div><div class="phase-name">Mach-O 64</div><div class="phase-desc">Mach-O 64-bit little endian — exécutables macOS Intel/ARM modernes</div></div>
+<div class="phase-row"><div class="phase-num" style="color:#00ff88">64 65 78 0A</div><div class="phase-name">dex\n</div><div class="phase-desc">Dalvik Executable — APK Android (fichiers classes.dex)</div></div>
+<div class="phase-row"><div class="phase-num" style="color:#ffd700">CA FE BA BE</div><div class="phase-name">CAFEBABE</div><div class="phase-desc">Java Class — bytecode JVM, aussi magic bytes FAT Mach-O</div></div>
+<div class="phase-row"><div class="phase-num" style="color:#ff4466">50 4B 03 04</div><div class="phase-name">PK</div><div class="phase-desc">ZIP — mais aussi APK, JAR, docx, xlsx — inspecter le contenu</div></div>
+<div class="phase-row"><div class="phase-num" style="color:#00aaff">75 70 78 21</div><div class="phase-name">upx!</div><div class="phase-desc">UPX — binaire compressé avec UPX (packer) — voir Module RE·06</div></div>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-prompt">$ </span>xxd ./binary | head -2<br/>
+<span class="term-green">00000000: 7f45 4c46 0201 0100 0000 0000 0000 0000  .ELF............</span><br/>
+<span class="term-out">00000010: 0300 3e00 0100 0000 6010 0000 0000 0000  ..&gt;.....</span>
+</div>
+</div>
+<!-- SLIDE 12 — PLAN DU PARCOURS RE -->
+<div class="slide" data-index="12"><div class="slide-tag">// Slide 13 · Workflow RE · Méthode · Fil rouge</div>
+<h2>Méthodologie de Triage — Le Workflow du Reverse Engineer</h2>
+<h3>Avant Ghidra, avant GDB : prendre de bonnes décisions dans le bon ordre</h3>
+<div class="card" style="margin-bottom:.9rem">
+<div class="phase-row"><div class="phase-num">PHASE 01</div><div class="phase-name">Identifier</div><div class="phase-desc">Type de binaire, architecture, stripping, dépendances, hash, contexte de récupération.</div></div>
+<div class="phase-row"><div class="phase-num">PHASE 02</div><div class="phase-name">Trier</div><div class="phase-desc">Chercher les signaux rapides : strings utiles, sections anormales, imports suspects, présence d'obfuscation.</div></div>
+<div class="phase-row"><div class="phase-num">PHASE 03</div><div class="phase-name">Formuler</div><div class="phase-desc">Poser 2 ou 3 hypothèses de travail : crackme simple, packer, loader, malware réseau, validateur de licence.</div></div>
+<div class="phase-row"><div class="phase-num">PHASE 04</div><div class="phase-name">Choisir</div><div class="phase-desc">Statique d'abord si possible ; dynamique si le sample se révèle au runtime, se déchiffre en mémoire, ou résiste à la lecture seule.</div></div>
+<div class="phase-row"><div class="phase-num">PHASE 05</div><div class="phase-name">Documenter</div><div class="phase-desc">Noter les offsets, fonctions, hypothèses et indices dès le début. Le RE sans notes devient vite chaotique.</div></div>
+</div>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🎯 Réflexe à ancrer</div>
+<ul class="bullets">
+<li>Ne lance pas un binaire inconnu juste “pour voir”.</li>
+<li>Ne t'arrête pas à <strong>strings</strong> : absence de résultat ≠ absence de logique.</li>
+<li>Commence toujours par un <strong>triage minimum reproductible</strong>.</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🧪 Fil rouge du parcours</div>
+<ul class="bullets">
+<li>Imagine un sample nommé <strong>lockbox</strong> : tu vas d'abord l'identifier ici…</li>
+<li>…lire ses fonctions en asm dans <strong>RE·02</strong>…</li>
+<li>…le cartographier dans <strong>Ghidra</strong>, puis l'exécuter dans <strong>GDB</strong>.</li>
+</ul>
+</div>
+</div></div>
+<!-- SLIDE 13 — QCM FINAL + CONCLUSION -->
+<div class="slide" data-index="13"><div class="slide-tag">// Slide 14 · Conclusion · Mise en pratique · QCM final</div>
+<h2>Ce que tu dois retenir avant RE·02</h2>
+<h3>Un bon reverse engineer ne commence pas par cliquer — il commence par cadrer</h3>
+<div class="grid2" style="margin-bottom:1rem">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">✅ Compétences acquises</div>
+<ul class="bullets">
+<li>Tu sais définir le reverse engineering et son cadre d'usage légitime.</li>
+<li>Tu comprends la chaîne <strong>source → compilation → binaire</strong>.</li>
+<li>Tu sais faire un triage initial propre avec <strong>file, strings, readelf, ldd</strong>.</li>
+<li>Tu sais quand basculer vers la statique ou la dynamique.</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">⚠️ Erreurs fréquentes</div>
+<ul class="bullets">
+<li class="warn">Lancer trop tôt un binaire inconnu sur son poste principal.</li>
+<li class="warn">Croire que <strong>not stripped</strong> veut dire “facile”.</li>
+<li class="warn">Confondre encodage, chiffrement, packing et simple absence de chaînes lisibles.</li>
+</ul>
+</div>
+</div>
+<div class="quote">La suite logique, c'est RE·02 : apprendre à lire ce que le compilateur a vraiment produit. Sans assembleur, Ghidra ne sera jamais qu'un GPS flou.</div></div>
+</div><!-- /slides -->
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+<div class="qcm-box">
+<div class="qcm-header">
+<span class="qcm-label">// QCM — Vérification</span>
+<span class="qcm-prog" id="qcm-prog"></span>
+</div>
+<div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+<div class="qcm-question" id="qcm-question"></div>
+<div class="qcm-options" id="qcm-options"></div>
+<div class="qcm-feedback" id="qcm-feedback"></div>
+<button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+</div>
+</div>
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+<div class="completion-box">
+<div class="completion-icon" id="comp-icon">🔬</div>
+<div class="completion-title" id="comp-title">RE·01 terminé !</div>
+<div class="completion-score" id="comp-score">--%</div>
+<div class="completion-sub" id="comp-sub"></div>
+<div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+<div>
+<a class="completion-btn completion-btn-primary" href="re2_v2.html">RE·02 : Assembleur →</a>
+<button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+</div>
+</div>
+</div>
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+<button class="nav-btn" disabled="" id="prev-btn" onclick="navigate(-1)">← PRÉCÉDENT</button>
+<div style="display:flex;align-items:center;gap:1.5rem">
+<span class="qcm-indicator" id="qcm-ind"></span>
+<span id="slide-counter">01 / 14</span>
+</div>
+<button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+<script>
+var QCM = {
+  1: {
+    question: "Tu analyses un malware pour un client. Quelle activité de reverse engineering est légalement justifiée dans ce contexte ?",
+    options: [
+      "Décompiler et redistribuer le code source retrouvé du malware pour aider la communauté",
+      "Analyser le comportement du malware, extraire les IOCs (IP C2, clés de chiffrement, signatures YARA) pour protéger le client",
+      "Chercher des 0-day dans des logiciels tiers propriétaires trouvés sur le système infecté",
+      "Envoyer le malware analysé à d'autres chercheurs sans chiffrement ni accord de confidentialité"
+    ],
+    correct: 1,
+    explanation: "L'analyse malware défensive est légalement justifiée — c'est le cœur du travail en DFIR et threat intelligence. Extraire les IOCs (adresses IP C2, clés XOR, hashes), créer des signatures YARA, comprendre les TTPs du malware pour protéger le réseau : tout cela est légal et attendu. La redistribution du code source retrouvé (A) pourrait violer des droits, l'exploitation de 0-day tiers (C) sort du périmètre, et l'envoi non sécurisé (D) est une faute professionnelle grave."
+  },
+  5: {
+    question: "Tu fais un 'file ./challenge' sur un binaire CTF. La réponse est : 'ELF 64-bit LSB pie executable, x86-64, dynamically linked, not stripped'. Qu'est-ce que 'not stripped' signifie concrètement pour ton analyse ?",
+    options: [
+      "Le binaire n'a pas été compressé avec UPX — tu peux l'analyser directement sans unpacking",
+      "La section .symtab est présente — les noms des fonctions (check_flag, main, validate) sont lisibles dans Ghidra et GDB sans travail supplémentaire",
+      "Le binaire n'utilise pas de chiffrement — les strings sont toutes en clair dans .rodata",
+      "Le PIE (Position Independent Executable) est désactivé — les adresses mémoire sont fixes et prédictibles"
+    ],
+    correct: 1,
+    explanation: "'Not stripped' signifie que la table des symboles (.symtab) est présente dans le binaire. Concrètement, quand tu ouvres le binaire dans Ghidra ou GDB, les fonctions s'appellent 'check_flag', 'validate_input', 'decode_xor' au lieu de 'FUN_00401060'. La navigation est immédiate — tu vois directement quelle fonction fait quoi. C'est volontairement laissé par les créateurs de CTF débutant. Dans le monde réel (malwares, logiciels commerciaux), les binaires sont toujours stripped."
+  },
+  7: {
+    question: "Avec 'strings ./binary', tu cherches le flag mais tu ne trouves rien correspondant à 'SOOPHA{...}'. Quelle est la conclusion la plus probable et la bonne prochaine étape ?",
+    options: [
+      "Le binaire ne contient aucun flag — il s'agit peut-être d'un faux challenge",
+      "Le flag est probablement encodé (XOR, Base64, ROT) ou dans une section non inspectée par strings. Prochaine étape : Ghidra pour chercher la logique de validation",
+      "strings ne fonctionne pas sur les ELF 64-bit — utiliser objdump -s à la place",
+      "Il faut utiliser strings avec l'option -a pour inclure toutes les sections incluant .text"
+    ],
+    correct: 1,
+    explanation: "L'absence du flag dans strings est un indice très important : le flag est presque certainement encodé ou obfusqué. Les challenges intermédiaires et avancés utilisent XOR, Base64, ROT, ou des combinaisons. La prochaine étape logique est l'analyse statique dans Ghidra : chercher la fonction de vérification du flag, identifier si elle utilise une boucle de comparaison octet par octet, repérer les tableaux dans .data qui pourraient être les données encodées. C'est exactement ce qu'on fait dans RE·03 et RE·05."
+  },
+  9: {
+    question: "Tu reçois un fichier sans extension. 'xxd ./fichier | head -1' affiche '4d5a 9000 0300 0000...'. De quel format s'agit-il et sur quel OS s'exécute-t-il ?",
+    options: [
+      "ELF — un exécutable Linux, les magic bytes 4D5A correspondent à l'en-tête ELF",
+      "Mach-O — un exécutable macOS, les magic bytes 4D5A identifient le format Apple",
+      "PE (Portable Executable) — un exécutable Windows, 4D5A correspond aux lettres 'MZ', initiales de Mark Zbikowski créateur du format",
+      "UPX — un binaire Linux compressé, les magic bytes 4D5A identifient la compression UPX"
+    ],
+    correct: 2,
+    explanation: "0x4D5A = 'MZ' en ASCII — ce sont les magic bytes du format PE (Portable Executable), le format des exécutables Windows (.exe, .dll, .sys). 'MZ' sont les initiales de Mark Zbikowski, ingénieur Microsoft qui a conçu le format. Si tu vois MZ, tu es face à un binaire Windows. Les outils appropriés sont Ghidra (multiplateforme), x64dbg (debugger Windows), PE-bear ou CFF Explorer pour l'inspection de l'en-tête PE. Pour l'ELF, les magic bytes sont 0x7F454C46 (\x7FELF)."
+  },
+  13: {
+    question: "Pour analyser un malware inconnu en toute sécurité, quelle est la meilleure configuration d'environnement ?",
+    options: [
+      "Analyser directement sur sa machine principale Linux avec Ghidra — les malwares Linux sont rares et le risque est faible",
+      "Utiliser un container Docker isolé — les containers partagent le kernel mais offrent suffisamment d'isolation pour l'analyse malware",
+      "Utiliser une VM dédiée (REMnux ou Kali) avec un snapshot pris avant l'analyse, réseau isolé ou désactivé, et partage de fichiers minimal entre hôte et VM",
+      "Analyser dans un navigateur en ligne comme VirusTotal — suffisant pour comprendre le comportement complet du malware"
+    ],
+    correct: 2,
+    explanation: "La VM dédiée avec snapshot est le gold standard pour l'analyse malware. (1) Snapshot avant = pouvoir revenir à l'état propre si le malware s'échappe. (2) VM dédiée REMnux = tous les outils pré-installés, environnement renforcé. (3) Réseau isolé = empêcher le malware de contacter son C2 ou de se propager. (4) Partage minimal = éviter que le malware accède aux fichiers de l'hôte. La machine principale (A) est irresponsable. Les containers Docker (B) partagent le kernel Linux = risque d'exploit kernel. VirusTotal (D) donne des infos mais pas d'analyse comportementale complète."
+  }
+};
+
+var COURSE_ID = 're1';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){ document.getElementById('comp-icon').textContent='🔬'; document.getElementById('comp-title').textContent='Bases solides !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Tu maîtrises les fondations — en route pour l\'assembleur !'; }
+  else if(pct>=60){ document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='RE·01 terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Quelques points à consolider — revois les sections ELF et les magic bytes.'; }
+  else { document.getElementById('comp-icon').textContent='⚙️'; document.getElementById('comp-title').textContent='RE·01 terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Relis les slides sur le format ELF et les premiers réflexes avant de continuer.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='01ELFXORASM{}[]READELFSTRINGSFILEMAGICBYTESPIEDYNAMIC',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(4,2,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#aa44ff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+
+init();
+</script>
+</body>
+</html>

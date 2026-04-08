@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="/favicon.ico" rel="icon" type="image/x-icon"/>
+<link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<title>RE·03 — Analyse Statique &amp; Ghidra · SooPHA Learn</title>
+<link href="../css/global.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(4,2,12,.97);border-bottom:1px solid rgba(170,68,255,.15);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(170,68,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(170,68,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}
+.tb-back:hover{color:#aa44ff}
+.tb-dot{width:6px;height:6px;background:#aa44ff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(170,68,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#6622cc,#aa44ff);box-shadow:0 0 8px #aa44ff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#aa44ff;--acc-dim:rgba(170,68,255,.15);--acc-faint:rgba(170,68,255,.06);--acc-border:rgba(170,68,255,.2)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#aa44ff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(170,68,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(8,4,20,.88);border:1px solid var(--acc-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(220,200,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#aa44ff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}
+.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}
+.bullets li.danger::before{content:'🔴';font-size:.7rem}
+.bullets li.ok::before{content:'✅';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.terminal{background:rgba(4,0,12,.85);border:1px solid rgba(170,68,255,.12);border-left:3px solid #aa44ff;padding:.9rem 1.2rem;font-family:var(--mono);font-size:.75rem;color:rgba(200,170,255,.8);line-height:2;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.85}
+.term-prompt{color:#aa44ff}
+.term-out{color:rgba(200,170,255,.45)}
+.term-comment{color:rgba(170,68,255,.4);font-style:italic}
+.term-red{color:#ff4466}
+.term-yellow{color:#ffd700}
+.term-green{color:#00ff88}
+.term-blue{color:#00aaff}
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(170,68,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(170,68,255,.1)}
+.quote{border-left:3px solid #aa44ff;padding:.7rem 1rem;background:var(--acc-faint);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#e8d0ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #aa44ff,0 0 80px rgba(170,68,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #aa44ff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#aa44ff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#aa44ff;text-shadow:0 0 8px #aa44ff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(220,200,255,.85);line-height:1.5}
+.phase-row{display:flex;gap:.8rem;padding:.55rem .9rem;border-bottom:1px solid rgba(170,68,255,.07);align-items:flex-start}
+.phase-row:last-child{border-bottom:none}
+.phase-num{font-family:var(--mono);font-size:.68rem;color:#aa44ff;min-width:90px;flex-shrink:0}
+.phase-name{font-family:var(--display);font-size:.72rem;font-weight:700;color:#fff;min-width:100px;flex-shrink:0}
+.phase-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.65);line-height:1.4}
+/* QCM */
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(4,2,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(8,4,20,.97);border:1px solid rgba(170,68,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(170,68,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(170,68,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.35);margin-bottom:.5rem;display:none}
+.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(4,0,16,.3);border:1px solid rgba(170,68,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(210,190,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(170,68,255,.35);background:rgba(170,68,255,.06);color:rgba(220,200,255,.95)}
+.qcm-option.correct{border-color:#aa44ff!important;background:rgba(170,68,255,.12)!important;color:#aa44ff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#aa44ff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:rgba(220,200,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(170,68,255,.15);border:1px solid rgba(170,68,255,.4);color:#aa44ff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(170,68,255,.25);box-shadow:0 0 20px rgba(170,68,255,.2)}
+.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(4,2,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(170,68,255,.3);background:rgba(8,4,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#aa44ff;text-shadow:0 0 20px #aa44ff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,170,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#aa44ff;color:#0a0014}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(170,68,255,.4);color:#aa44ff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(4,2,12,.97);border-top:1px solid rgba(170,68,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(170,68,255,.2);color:rgba(170,68,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#aa44ff;color:#aa44ff}
+.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#aa44ff;letter-spacing:.06em}
+.ghidra-panel{background:rgba(12,4,28,.9);border:1px solid rgba(170,68,255,.2);border-radius:2px;font-family:var(--mono);font-size:.7rem;max-width:880px;width:100%}
+.ghidra-titlebar{background:rgba(170,68,255,.08);border-bottom:1px solid rgba(170,68,255,.15);padding:.4rem .8rem;display:flex;gap:.5rem;align-items:center}
+.ghidra-tab{padding:.25rem .7rem;font-size:.62rem;background:rgba(170,68,255,.15);border:1px solid rgba(170,68,255,.25);color:#aa44ff;border-radius:1px}
+.ghidra-tab.active{background:rgba(170,68,255,.25)}
+.ghidra-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.ghidra-pane{padding:.7rem;border-right:1px solid rgba(170,68,255,.08)}
+.ghidra-pane:last-child{border-right:none}
+.ghidra-pane-title{font-size:.58rem;letter-spacing:.2em;color:rgba(170,68,255,.35);text-transform:uppercase;margin-bottom:.5rem;padding-bottom:.3rem;border-bottom:1px solid rgba(170,68,255,.07)}
+.g-addr{color:rgba(170,68,255,.4)}
+.g-instr{color:#00aaff}
+.g-reg{color:#00ff88}
+.g-imm{color:#ffd700}
+.g-comment{color:rgba(170,68,255,.4);font-style:italic}
+.g-pseudo{color:rgba(220,200,255,.8)}
+.g-type{color:#ff8800}
+.g-func{color:#aa44ff}
+.g-renamed{color:#00ff88;font-weight:bold}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+<div class="tb-left">
+<a class="tb-back" href="formations.html">← Formations</a>
+<span><span class="tb-dot"></span>// RE·03 · Analyse Statique · Ghidra</span>
+</div>
+<div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+<div id="slides">
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+<div class="slide-tag">// RE·03 · Module 17 · SooPHA Learn</div>
+<h1 class="glitch">ANALYSE<br/>STATIQUE</h1>
+<div class="gabon-bar"><span></span><span></span><span></span></div>
+<h3>Ghidra · Décompilation · Renommage · Patching</h3>
+<div class="card" style="text-align:center;max-width:700px">
+<ul class="bullets" style="text-align:left">
+<li><strong>14 slides</strong> · 5 QCM obligatoires · ~60 min</li>
+<li><strong>Analyse statique</strong> — lire un binaire sans l'exécuter, en toute sécurité</li>
+<li><strong>Ghidra</strong> — maîtriser l'outil NSA : projet, CodeBrowser, décompilateur</li>
+<li><strong>Renommage &amp; Types</strong> — transformer du pseudo-code illisible en C propre</li>
+<li><strong>Cross-références (XREF)</strong> — retrouver qui appelle qui dans un binaire</li>
+<li><strong>Patching</strong> — modifier les instructions directement dans Ghidra</li>
+<li class="ok">Prérequis : RE·01 (ELF, outils) + RE·02 (assembleur x86-64) validés</li>
+</ul>
+</div>
+<div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-purple">RE · Module 3/6</span>
+<span class="pill pill-blue">Ghidra · NSA</span>
+<span class="pill pill-orange">Décompilation · XREF</span>
+<span class="pill pill-green">Statique · Sans exécution</span>
+</div>
+</div>
+<!-- SLIDE 1 — QCM : ANALYSE STATIQUE vs DYNAMIQUE -->
+<div class="slide" data-index="1">
+<div class="slide-tag">// Slide 02 · Statique vs Dynamique · QCM requis</div>
+<h2>Analyse Statique — Comprendre Sans Exécuter</h2>
+<h3>La première phase de toute analyse RE — examiner le binaire au repos</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🔍 Analyse Statique</div>
+<ul class="bullets">
+<li>Examiner le binaire <strong>sans jamais l'exécuter</strong> — sécurité maximale pour les malwares</li>
+<li>Lire le code assembleur, identifier les fonctions, reconstruire la logique</li>
+<li>Outils : <strong>Ghidra, IDA Pro, radare2, Binary Ninja</strong></li>
+<li>Avantage : <strong>vue globale complète</strong> — accès à tout le code d'un coup</li>
+<li class="warn">Limite : ne voit pas les comportements runtime (déchiffrement, réseau, packing)</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">⚡ Analyse Dynamique</div>
+<ul class="bullets">
+<li>Exécuter le binaire dans un <strong>environnement contrôlé</strong> (VM isolée)</li>
+<li>Observer les comportements en temps réel : mémoire, réseau, fichiers</li>
+<li>Outils : <strong>GDB, pwndbg, ltrace, strace, Wireshark</strong></li>
+<li>Avantage : <strong>valeurs réelles</strong> — voir ce qui se passe vraiment à runtime</li>
+<li class="warn">Limite : ne voit que ce qui est exécuté — branches non prises ignorées</li>
+</ul>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "La règle d'or : toujours commencer par l'analyse statique. Si elle ne suffit pas (packing, chiffrement runtime), on passe à la dynamique. Les deux se complètent — le pro maîtrise les deux."
+  </div>
+</div>
+<!-- SLIDE 2 — GHIDRA PRÉSENTATION -->
+<div class="slide" data-index="2">
+<div class="slide-tag">// Slide 03 · Ghidra · NSA · Installation</div>
+<h2>Ghidra — L'Outil Libre de la NSA</h2>
+<h3>Le décompilateur open-source le plus puissant — gratuit, multi-plateforme</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📖 Qu'est-ce que Ghidra ?</div>
+<ul class="bullets">
+<li>Développé par la <strong>NSA (National Security Agency)</strong>, open-sourcé en 2019</li>
+<li>Supporte : <strong>x86, x86-64, ARM, MIPS, PowerPC, RISC-V</strong> et des dizaines d'autres architectures</li>
+<li>Formats : <strong>ELF, PE (Windows), Mach-O, DEX (Android)</strong>, firmware binaires</li>
+<li>Moteur de décompilation <strong>Sleigh</strong> → génère du pseudo-code C lisible</li>
+<li>Extensible via des <strong>scripts Java/Python</strong> (Jython)</li>
+<li class="ok">Remplace IDA Pro (propriétaire, ~700$/an) pour la plupart des usages</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">⚙️ Installation</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-comment"># Prérequis : Java 17+</span><br/>
+<span class="term-prompt">$ </span>sudo apt install openjdk-17-jdk<br/>
+<span class="term-prompt">$ </span>java --version<br/>
+<span class="term-out"> openjdk 17.0.9 2023-10-17</span><br/>
+<br/>
+<span class="term-comment"># Télécharger Ghidra</span><br/>
+<span class="term-prompt">$ </span>wget https://github.com/NationalSecurityAgency<br/>
+            /ghidra/releases/download/...<br/>
+<br/>
+<span class="term-comment"># Lancer Ghidra</span><br/>
+<span class="term-prompt">$ </span>cd ghidra_11.x<br/>
+<span class="term-prompt">$ </span>./ghidraRun<br/>
+<span class="term-out"> [Ghidra Project Manager démarre]</span>
+</div>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment"># Alternative : REMnux (distribution Linux spécialisée RE/Malware)</span><br/>
+<span class="term-prompt">$ </span>sudo apt install remnux-default-config<br/>
+<span class="term-out"> → Ghidra, radare2, YARA, Volatility, et 100+ outils RE préconfigurés</span>
+</div>
+</div>
+<!-- SLIDE 3 — QCM : PROJET GHIDRA -->
+<div class="slide" data-index="3">
+<div class="slide-tag">// Slide 04 · Projet Ghidra · Workflow · QCM requis</div>
+<h2>Créer un Projet Ghidra — Pas à Pas</h2>
+<h3>Le workflow complet pour analyser ton premier binaire dans Ghidra</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🚀 Workflow de démarrage — 7 étapes</div>
+<div style="display:flex;flex-direction:column;gap:.4rem">
+<div class="step"><div class="step-num">1</div><div class="step-content"><strong>File → New Project</strong> — choisir "Non-Shared Project" (local)<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ Nommer le projet : re_challenge_3</code></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><strong>File → Import File</strong> — glisser le binaire dans le projet<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ Ghidra détecte : ELF 64-bit x86-64</code></div></div>
+<div class="step"><div class="step-num">3</div><div class="step-content"><strong>Double-clic sur le fichier</strong> → CodeBrowser s'ouvre, Ghidra propose d'analyser<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ Cliquer "Yes" → Analysis Options → "Analyze"</code></div></div>
+<div class="step"><div class="step-num">4</div><div class="step-content"><strong>Analyse automatique</strong> — Ghidra identifie fonctions, types, références (~10-30s)<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ Barre de progression en bas à droite</code></div></div>
+<div class="step"><div class="step-num">5</div><div class="step-content"><strong>Symbol Tree</strong> (gauche) → Functions → chercher <code style="color:#aa44ff;font-family:var(--mono)">main</code> ou <code style="color:#aa44ff;font-family:var(--mono)">check_flag</code><br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ Double-clic → navigate vers la fonction</code></div></div>
+<div class="step"><div class="step-num">6</div><div class="step-content"><strong>Decompiler pane</strong> (droite) — pseudo-code C généré automatiquement<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ C'est ici que la magie opère</code></div></div>
+<div class="step"><div class="step-num">7</div><div class="step-content"><strong>Sauvegarder</strong> : Ctrl+S régulièrement — Ghidra garde tes annotations dans le projet<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ Tout ton travail de renommage est persistant</code></div></div>
+</div>
+</div>
+</div>
+<!-- SLIDE 4 — INTERFACE CODEBROWSER -->
+<div class="slide" data-index="4">
+<div class="slide-tag">// Slide 05 · Interface · CodeBrowser · Navigation</div>
+<h2>Interface Ghidra — Maîtriser le CodeBrowser</h2>
+<h3>Les 6 panneaux essentiels et leur rôle dans l'analyse</h3>
+<div class="cmd-grid" style="margin-bottom:.8rem">
+<div class="cmd-card" style="border-color:rgba(170,68,255,.35)">
+<div class="cmd-name">📋 Symbol Tree</div>
+<div class="cmd-desc">Gauche — Liste de toutes les fonctions, labels, imports, exports. Point d'entrée pour naviguer. Chercher une fonction par nom.</div>
+<div class="cmd-ex">Raccourci : G → "Go to address/function"</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,170,255,.25)">
+<div class="cmd-name">🔧 Listing (Assembleur)</div>
+<div class="cmd-desc">Centre — Vue désassemblée instruction par instruction. Adresses, opcodes, mnémoniques, commentaires. C'est ta référence absolue.</div>
+<div class="cmd-ex">; → ajouter un commentaire sur la ligne</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+<div class="cmd-name">🧩 Decompiler</div>
+<div class="cmd-desc">Droite — Pseudo-code C généré par le moteur Sleigh. Synchronisé avec le Listing. Cliquer sur une variable = highlight dans les 2 vues.</div>
+<div class="cmd-ex">Raccourci : Ctrl+Shift+E → exporter le C</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+<div class="cmd-name">📊 Data Type Manager</div>
+<div class="cmd-desc">Droite — Tous les types de données disponibles : structs, enums, typedefs. Importer des types depuis Windows API, POSIX, etc.</div>
+<div class="cmd-ex">Glisser un type sur une variable pour la caster</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,136,0,.2)">
+<div class="cmd-name">🗺️ Function Graph</div>
+<div class="cmd-desc">Window → Function Graph — Vue graphique du Control Flow Graph (CFG). Chaque bloc de base est un nœud, branches = arêtes. Indispensable pour les conditions.</div>
+<div class="cmd-ex">Raccourci : V pour basculer Listing/Graph</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,68,102,.2)">
+<div class="cmd-name">🔗 References (XREF)</div>
+<div class="cmd-desc">Clic droit → References → Show References → listes tous les endroits qui appellent ou accèdent à une fonction/variable.</div>
+<div class="cmd-ex">Ctrl+Shift+F → trouver toutes les références</div>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment"># Navigation rapide dans Ghidra</span><br/>
+<span class="term-green">G</span>        → Go to address       | <span class="term-green">L</span>        → Rename (label)<br/>
+<span class="term-green">T</span>        → Retype variable      | <span class="term-yellow">Ctrl+Z</span> → Undo annotation<br/>
+<span class="term-green">Alt+←</span>  → Back in history    | <span class="term-green">Alt+→</span>  → Forward in history
+  </div>
+</div>
+<!-- SLIDE 5 — QCM : DÉCOMPILATEUR -->
+<div class="slide" data-index="5">
+<div class="slide-tag">// Slide 06 · Décompilateur · Pseudo-code · QCM requis</div>
+<h2>Le Décompilateur Ghidra — Lire le Pseudo-code C</h2>
+<h3>Transformer l'assembleur brut en code C lisible — l'art de la rétro-ingénierie</h3>
+<div class="ghidra-panel" style="margin-bottom:.8rem">
+<div class="ghidra-titlebar">
+<span class="ghidra-tab">📋 Listing (ASM)</span>
+<span class="ghidra-tab active">🧩 Decompiler (C)</span>
+</div>
+<div class="ghidra-body">
+<div class="ghidra-pane">
+<div class="ghidra-pane-title">Assembleur brut</div>
+<span class="g-addr">00101280</span> <span class="g-instr">push</span> <span class="g-reg">rbp</span><br/>
+<span class="g-addr">00101281</span> <span class="g-instr">mov</span> <span class="g-reg">rbp</span>,<span class="g-reg">rsp</span><br/>
+<span class="g-addr">00101284</span> <span class="g-instr">sub</span> <span class="g-reg">rsp</span>,<span class="g-imm">0x10</span><br/>
+<span class="g-addr">00101288</span> <span class="g-instr">mov</span> [<span class="g-reg">rbp</span>-<span class="g-imm">0x8</span>],<span class="g-reg">rdi</span><br/>
+<span class="g-addr">0010128c</span> <span class="g-instr">xor</span> <span class="g-reg">eax</span>,<span class="g-reg">eax</span><br/>
+<span class="g-addr">0010128e</span> <span class="g-comment">LAB_loop:</span><br/>
+<span class="g-addr">0010128e</span> <span class="g-instr">cmp</span> <span class="g-reg">eax</span>,<span class="g-imm">0x1d</span><br/>
+<span class="g-addr">00101291</span> <span class="g-instr">jge</span> <span class="g-comment">LAB_done</span><br/>
+<span class="g-addr">00101293</span> <span class="g-instr">movzx</span> <span class="g-reg">ecx</span>,byte [<span class="g-reg">rdi</span>+<span class="g-reg">rax</span>*<span class="g-imm">1</span>]<br/>
+<span class="g-addr">00101297</span> <span class="g-instr">xor</span> <span class="g-reg">ecx</span>,<span class="g-imm">0x42</span><br/>
+<span class="g-addr">0010129a</span> <span class="g-instr">cmp</span> <span class="g-reg">ecx</span>,byte [<span class="g-reg">rip</span>+<span class="g-imm">0x2e0f</span>+<span class="g-reg">rax</span>]<br/>
+<span class="g-addr">001012a0</span> <span class="g-instr">jne</span> <span class="g-comment">LAB_fail</span><br/>
+<span class="g-addr">001012a2</span> <span class="g-instr">inc</span> <span class="g-reg">eax</span><br/>
+<span class="g-addr">001012a4</span> <span class="g-instr">jmp</span> <span class="g-comment">LAB_loop</span>
+</div>
+<div class="ghidra-pane">
+<div class="ghidra-pane-title">Pseudo-code C (décompilé)</div>
+<span class="g-type">bool</span> <span class="g-renamed">check_flag</span>(<span class="g-type">char</span> *<span class="g-renamed">input</span>)<br/>
+        {<br/>
+          <span class="g-type">int</span> <span class="g-renamed">i</span>;<br/>
+<br/>
+          <span class="g-renamed">i</span> = <span class="g-imm">0</span>;<br/>
+          <span class="g-instr">while</span> (<span class="g-renamed">i</span> &lt; <span class="g-imm">29</span>) {<br/>
+            <span class="g-instr">if</span> ((<span class="g-renamed">input</span>[<span class="g-renamed">i</span>] ^ <span class="g-imm">0x42</span>) !=<br/>
+                <span class="g-renamed">encoded</span>[<span class="g-renamed">i</span>]) {<br/>
+              <span class="g-instr">return</span> <span class="g-imm">false</span>;<br/>
+            }<br/>
+            <span class="g-renamed">i</span> = <span class="g-renamed">i</span> + <span class="g-imm">1</span>;<br/>
+          }<br/>
+          <span class="g-instr">return</span> <span class="g-imm">true</span>;<br/>
+        }
+      </div>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "Le pseudo-code Ghidra n'est pas du C parfait — c'est une approximation. Certains types seront faux, certaines variables manqueront de sens. Ton rôle : corriger progressivement en renommant et en retypant."
+  </div>
+</div>
+<!-- SLIDE 6 — RENOMMAGE & TYPES -->
+<div class="slide" data-index="6">
+<div class="slide-tag">// Slide 07 · Renommage · Types · Annotation</div>
+<h2>Renommer Variables &amp; Fonctions — La Compétence Clé</h2>
+<h3>Transformer un binaire illisible en code documenté — l'art du reverse engineer</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🏷️ Renommer (L)</div>
+<ul class="bullets">
+<li>Clic sur variable → <strong>L</strong> → taper le nouveau nom → Enter</li>
+<li><code style="color:#ff4466;font-family:var(--mono)">DAT_00104020</code> → <strong>encoded_flag</strong></li>
+<li><code style="color:#ff4466;font-family:var(--mono)">FUN_00101280</code> → <strong>check_flag</strong></li>
+<li><code style="color:#ff4466;font-family:var(--mono)">param_1</code> → <strong>user_input</strong></li>
+<li>Le renommage se propage dans <strong>tout le projet</strong> automatiquement</li>
+<li class="ok">Toujours renommer <code>main</code> en premier → lit les appels de fonctions</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📐 Retypier (T)</div>
+<ul class="bullets">
+<li>Clic sur variable → <strong>T</strong> → choisir le type correct</li>
+<li><code style="color:#ff4466;font-family:var(--mono)">undefined8</code> → <strong>char *</strong> (pointeur de chaîne)</li>
+<li><code style="color:#ff4466;font-family:var(--mono)">undefined4</code> → <strong>int</strong> (entier 32-bit)</li>
+<li>Clic droit → <strong>Edit Function Signature</strong> → corriger le prototype</li>
+<li>Importer des types Windows : File → Parse C Headers → windows.h</li>
+<li class="ok">Le bon type = le bon comportement dans le décompilateur</li>
+</ul>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.6rem">💡 Stratégie de renommage — ordre optimal</div>
+<div class="phase-row"><div class="phase-num">ÉTAPE 1</div><div class="phase-name">main()</div><div class="phase-desc">Identifier la structure globale, les appels de fonctions importantes, les constantes visibles</div></div>
+<div class="phase-row"><div class="phase-num">ÉTAPE 2</div><div class="phase-name">Fonctions filles</div><div class="phase-desc">Suivre les appels depuis main → renommer chaque fonction selon son rôle apparent</div></div>
+<div class="phase-row"><div class="phase-num">ÉTAPE 3</div><div class="phase-name">Variables</div><div class="phase-desc">Dans chaque fonction : param_1 → rôle réel, local_10 → counter/buffer/key selon l'usage</div></div>
+<div class="phase-row"><div class="phase-num">ÉTAPE 4</div><div class="phase-name">Constantes</div><div class="phase-desc">Les magic numbers : 0x1d → FLAG_LENGTH, 0x42 → XOR_KEY — les nommer rend le code évident</div></div>
+</div>
+</div>
+<!-- SLIDE 7 — QCM : XREF -->
+<div class="slide" data-index="7">
+<div class="slide-tag">// Slide 08 · Cross-References · XREF · QCM requis</div>
+<h2>Cross-Références (XREF) — Cartographier les Appels</h2>
+<h3>Comprendre qui appelle quoi — la carte routière d'un binaire inconnu</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🔗 Comment utiliser les XREF dans Ghidra</div>
+<div style="display:flex;flex-direction:column;gap:.4rem">
+<div class="step"><div class="step-num">1</div><div class="step-content"><strong>Clic droit sur une fonction</strong> → References → Show References to → liste tous les appelants<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ check_flag appelée depuis : main (1 référence)</code></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><strong>Clic droit sur une donnée globale</strong> → References → Show References → accès en lecture/écriture<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ encoded_flag lue depuis : check_flag (29 références)</code></div></div>
+<div class="step"><div class="step-num">3</div><div class="step-content"><strong>Dans le Listing</strong>, les XREF s'affichent au-dessus de chaque label : <code style="color:#aa44ff;font-family:var(--mono)">; XREF[1]: main:001010a2(c)</code><br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ (c) = call · (r) = read · (w) = write · (d) = data</code></div></div>
+<div class="step"><div class="step-num">4</div><div class="step-content"><strong>Window → Call Trees</strong> → graphe complet des appels entrants ET sortants d'une fonction<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ Indispensable pour les binaires complexes avec 100+ fonctions</code></div></div>
+</div>
+</div>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.6rem">🎯 Cas d'usage CTF</div>
+<ul class="bullets">
+<li>Chercher <code style="color:#aa44ff;font-family:var(--mono)">strcmp</code> → voir quelles strings sont comparées</li>
+<li>Chercher <code style="color:#aa44ff;font-family:var(--mono)">printf</code> → trouver les messages d'erreur/succès</li>
+<li>Fonctions sans XREF entrant = code mort ou entry points alternatifs</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.6rem">⚡ Raccourcis XREF</div>
+<ul class="bullets">
+<li><strong>Ctrl+Shift+F</strong> — Find References (toutes)</li>
+<li><strong>Flèche haut</strong> sur un XREF label — naviguer vers l'appelant</li>
+<li><strong>Alt+←</strong> — revenir au point de départ après navigation</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- SLIDE 8 — TYPES & STRUCTURES -->
+<div class="slide" data-index="8">
+<div class="slide-tag">// Slide 09 · Types · Structures · Data</div>
+<h2>Structures de Données dans Ghidra</h2>
+<h3>Reconstruire les structs, unions et tableaux pour rendre le code lisible</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📦 Créer une Structure</div>
+<ul class="bullets">
+<li>Data Type Manager → clic droit → <strong>New → Structure</strong></li>
+<li>Ajouter les champs : nom + type + taille</li>
+<li>Exemple : struct <strong>User</strong> { char name[32]; int id; int role; }</li>
+<li>Appliquer la struct sur un pointeur dans le décompilateur → <strong>T</strong> → User *</li>
+<li class="ok">Le code devient : <code style="color:#00ff88;font-family:var(--mono)">user→name, user→role</code> au lieu de <code style="color:#ff4466;font-family:var(--mono)">*(ptr+0x20)</code></li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📊 Types courants à corriger</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.2rem 0">
+<span class="term-comment">// Avant renommage</span><br/>
+<span class="term-red">undefined8 param_1</span><br/>
+<span class="term-red">undefined4 local_10</span><br/>
+<span class="term-red">undefined1 *puVar1</span><br/>
+<br/>
+<span class="term-comment">// Après retypation</span><br/>
+<span class="term-green">char *user_input</span><br/>
+<span class="term-green">int flag_length</span><br/>
+<span class="term-green">byte *encoded_ptr</span>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🔍 Identifier les tableaux — Array Definition</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent">
+<span class="term-comment">; Dans le Listing, une donnée à l'adresse 0x00104020 :</span><br/>
+<span class="g-addr">00104020</span> <span class="term-yellow">23 31 26 33 20 26 21 3b 26 2e</span> <span class="term-comment">; bytes bruts</span><br/>
+<br/>
+<span class="term-comment">; Clic droit → Data → Create Array → byte[10]</span><br/>
+<span class="g-addr">00104020</span> <span class="term-green">byte[10] encoded_flag</span> <span class="term-comment">; bien plus lisible !</span><br/>
+<br/>
+<span class="term-comment">; Dans le décompilateur :</span><br/>
+<span class="term-out">if (input[i] ^ <span class="term-yellow">0x42</span>) != <span class="term-green">encoded_flag</span>[i])</span>
+</div>
+</div>
+</div>
+<!-- SLIDE 9 — QCM : PATCHING -->
+<div class="slide" data-index="9">
+<div class="slide-tag">// Slide 10 · Patching · Modifier un binaire · QCM requis</div>
+<h2>Patcher un Binaire dans Ghidra</h2>
+<h3>Modifier les instructions d'un binaire pour changer son comportement — technique CTF fondamentale</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">⚡ Workflow de patching — bypass d'une condition</div>
+<div style="display:flex;flex-direction:column;gap:.4rem">
+<div class="step"><div class="step-num">1</div><div class="step-content"><strong>Identifier la condition à bypasser</strong> — ex: <code style="color:#aa44ff;font-family:var(--mono)">JNE LAB_fail</code> après la comparaison du flag<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ Si wrong = JNE saute vers fail · On veut forcer le saut vers done</code></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><strong>Clic droit sur l'instruction JNE</strong> → Patch Instruction → remplacer <code style="color:#ff4466;font-family:var(--mono)">JNE</code> par <code style="color:#00ff88;font-family:var(--mono)">JE</code> ou <code style="color:#00ff88;font-family:var(--mono)">NOP</code><br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ NOP (0x90) = No Operation = l'instruction est ignorée</code></div></div>
+<div class="step"><div class="step-num">3</div><div class="step-content"><strong>File → Export Program</strong> → Format : <code style="color:#aa44ff;font-family:var(--mono)">Original File</code> → sauvegarder le binaire patché<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ Le binaire exporté aura tes modifications appliquées</code></div></div>
+<div class="step"><div class="step-num">4</div><div class="step-content"><strong>chmod +x binary_patched &amp;&amp; ./binary_patched</strong> — tester le binaire modifié<br/><code style="color:#aa44ff;font-family:var(--mono);font-size:.72rem">→ "Congratulations! Flag: SOOPHA{...}" — patching réussi ✅</code></div></div>
+</div>
+</div>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.5rem">🔄 Patches courants CTF</div>
+<ul class="bullets">
+<li><code style="color:#ff4466;font-family:var(--mono)">JNE → JE</code> — inverser une condition</li>
+<li><code style="color:#ff4466;font-family:var(--mono)">JNE → NOP NOP</code> — supprimer le saut (2 NOP car JNE = 2 bytes)</li>
+<li><code style="color:#ff4466;font-family:var(--mono)">JMP SHORT</code> — forcer un saut inconditionnel</li>
+<li><code style="color:#ff4466;font-family:var(--mono)">MOV EAX,0 → MOV EAX,1</code> — forcer un return true</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.5rem">⚠️ Limites du patching</div>
+<ul class="bullets">
+<li class="warn">Checksums d'intégrité — le binaire vérifie son propre hash</li>
+<li class="warn">Signatures cryptographiques — le binaire est signé</li>
+<li class="warn">Anti-tampering — détection de modification en mémoire</li>
+<li class="ok">Dans un CTF → patching fonctionne 90% du temps sur les challenges basiques</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- SLIDE 10 — WORKFLOW STATIQUE COMPLET -->
+<div class="slide" data-index="10"><div class="slide-tag">// Slide 11 · Workflow Ghidra · Méthode terrain</div>
+<h2>Workflow Ghidra en 7 Étapes</h2>
+<h3>Une méthode simple pour éviter de te noyer dans 500 fonctions anonymes</h3>
+<div class="card" style="margin-bottom:.9rem">
+<div class="phase-row"><div class="phase-num">STEP 01</div><div class="phase-name">Importer</div><div class="phase-desc">Créer un projet propre, lancer l'auto-analysis, vérifier l'architecture et les options détectées.</div></div>
+<div class="phase-row"><div class="phase-num">STEP 02</div><div class="phase-name">Repérer main</div><div class="phase-desc">Trouver l'entrée logique : <strong>main</strong>, init, start, ou une fonction orchestratrice équivalente.</div></div>
+<div class="phase-row"><div class="phase-num">STEP 03</div><div class="phase-name">Scanner les strings</div><div class="phase-desc">Chercher les messages d'erreur, prompts, URLs, noms de fichiers, mutex, indices fonctionnels.</div></div>
+<div class="phase-row"><div class="phase-num">STEP 04</div><div class="phase-name">Suivre les XREF</div><div class="phase-desc">Remonter des indices vers les fonctions qui les utilisent réellement.</div></div>
+<div class="phase-row"><div class="phase-num">STEP 05</div><div class="phase-name">Renommer</div><div class="phase-desc">Nommer fonctions, variables, buffers, structures. Le renommage est une partie de l'analyse.</div></div>
+<div class="phase-row"><div class="phase-num">STEP 06</div><div class="phase-name">Comparer asm/C</div><div class="phase-desc">Valider le pseudo-code avec la vue assembleur quand un détail paraît suspect.</div></div>
+<div class="phase-row"><div class="phase-num">STEP 07</div><div class="phase-name">Préparer GDB</div><div class="phase-desc">Noter les adresses, offsets et hypothèses à confirmer dynamiquement.</div></div>
+</div>
+<div class="quote">Ghidra n'est pas juste un lecteur de pseudo-code : c'est un outil de cartographie. Ton job est de réduire l'inconnu.</div></div>
+<!-- SLIDE 11 — EXERCICE CTF COMPLET -->
+<div class="slide" data-index="11">
+<div class="slide-tag">// Slide 12 · Exercice CTF · Crackme · Analyse complète</div>
+<h2>Exercice Complet — Crackme SooPHA #3</h2>
+<h3>Appliquer tout ce qu'on a vu — de l'import Ghidra à l'extraction du flag</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🔬 Analyse du crackme_03 — step by step</div>
+<div class="terminal sm">
+<span class="term-comment">── PHASE 1 : Triage CLI ──────────────────────────────────────</span><br/>
+<span class="term-prompt">$ </span>file crackme_03<br/>
+<span class="term-out"> ELF 64-bit LSB executable, x86-64, not stripped</span><br/>
+<span class="term-prompt">$ </span>strings crackme_03 | grep -i "flag\|soopha\|correct"<br/>
+<span class="term-out"> "Wrong flag, try again."</span><br/>
+<span class="term-out"> "Congratulations! Flag: %s\n"</span><br/>
+<br/>
+<span class="term-comment">── PHASE 2 : Ghidra — main() ────────────────────────────────</span><br/>
+<span class="term-comment">// Décompilateur → main appelle check_flag(input, 0x1e)</span><br/>
+<span class="term-comment">// 0x1e = 30 → flag de 30 caractères</span><br/>
+<br/>
+<span class="term-comment">── PHASE 3 : check_flag() → 2 opérations ────────────────────</span><br/>
+<span class="term-comment">// 1) input[i] - 3       → César shift de -3</span><br/>
+<span class="term-comment">// 2) résultat ^ 0x1f  → XOR avec clé 0x1f</span><br/>
+<span class="term-comment">// comparé à : encoded[30] = { 0x51, 0x50, 0x42, ... }</span><br/>
+<br/>
+<span class="term-comment">── PHASE 4 : Script Python de décodage ──────────────────────</span><br/>
+<span class="term-prompt">$ </span>python3 -c "<br/>
+      encoded = [0x51,0x50,0x42,0x54,0x43,0x48,0x55,<span class="term-comment">...]</span><br/>
+      flag = ''.join(chr((b ^ 0x1f) + 3) for b in encoded)<br/>
+      print('Flag:', flag)"<br/>
+<span class="term-green">Flag: SOOPHA{ghidra_static_master_0x1f}</span>
+</div>
+</div>
+</div>
+<!-- SLIDE 12 — ASTUCES AVANCÉES -->
+<div class="slide" data-index="12"><div class="slide-tag">// Slide 13 · Quand le décompilateur ment · Validation</div>
+<h2>Quand le Décompilateur Te Trompe</h2>
+<h3>Le pseudo-code est pratique, mais il ne remplace jamais la vue assembleur</h3>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🚨 Signaux de pseudo-code douteux</div>
+<ul class="bullets">
+<li>Variables au type absurde ou tailles incohérentes</li>
+<li>Tableaux transformés en pointeurs incompréhensibles</li>
+<li>Conditions simplifiées à l'excès</li>
+<li>Fonctions inconnues mal interprétées par les signatures</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">✅ Réaction professionnelle</div>
+<ul class="bullets">
+<li>Revenir au listing assembleur</li>
+<li>Vérifier les appels, registres et tailles mémoire</li>
+<li>Corriger les types manuellement</li>
+<li>Documenter ce qui reste incertain avant de passer en dynamique</li>
+</ul>
+</div>
+</div>
+<div class="terminal sm"><span class="term-comment"># Règle d'or</span><br/>
+<span class="term-prompt">pseudo-code</span> = accélérateur de lecture<br/>
+<span class="term-prompt">assembleur</span> = source de vérité<br/>
+<span class="term-prompt">GDB</span> = arbitre final à runtime</div></div>
+<!-- SLIDE 13 — RÉCAP + NEXT STEPS -->
+<div class="slide" data-index="13">
+<div class="slide-tag">// Slide 14 · Récap · RE·04 · Analyse Dynamique</div>
+<h2>RE·03 Terminé — Ce que tu Sais Faire</h2>
+<h3>Bilan des compétences acquises et pont vers l'analyse dynamique</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">✅ Compétences RE Statique</div>
+<ul class="bullets">
+<li class="ok">Importer et analyser un binaire ELF dans <strong>Ghidra</strong></li>
+<li class="ok">Naviguer dans le CodeBrowser : Symbol Tree, Listing, Decompiler</li>
+<li class="ok">Lire et interpréter le <strong>pseudo-code C</strong> du décompilateur</li>
+<li class="ok">Renommer variables/fonctions et retypier pour rendre le code lisible</li>
+<li class="ok">Utiliser les <strong>XREF</strong> pour cartographier les appels</li>
+<li class="ok"><strong>Patcher</strong> un binaire (NOP, inverser conditions) et l'exporter</li>
+<li class="ok">Écrire un script Python pour décoder un tableau XOR</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">⏩ RE·04 — Analyse Dynamique</div>
+<ul class="bullets">
+<li><strong>GDB + pwndbg</strong> — debugger avec une interface moderne</li>
+<li>Breakpoints, watchpoints, stepping — contrôler l'exécution</li>
+<li>Inspecter registres et mémoire en temps réel</li>
+<li>Bypass d'une comparaison en modifiant les registres à runtime</li>
+<li>ltrace / strace — tracer les appels système et bibliothèques</li>
+<li class="ok">La dynamique complète ce que la statique ne peut pas voir</li>
+</ul>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "La statique te donne la carte, la dynamique te donne la boussole. Ensemble, tu ne peux plus te perdre dans un binaire, aussi complexe soit-il. — SooPHA Learn"
+  </div>
+<div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-green">✅ RE·01 ELF</span>
+<span class="pill pill-green">✅ RE·02 ASM</span>
+<span class="pill pill-green">✅ RE·03 Ghidra</span>
+<span class="pill pill-purple">⏩ RE·04 GDB</span>
+<span class="pill pill-blue">⏳ RE·05 XOR</span>
+<span class="pill pill-orange">⏳ RE·06 Malware</span>
+</div>
+</div>
+</div><!-- /slides -->
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+<div class="qcm-box">
+<div class="qcm-header">
+<span class="qcm-label">// QCM · RE·03 · Analyse Statique</span>
+<span class="qcm-prog" id="qcm-prog">QCM 1 / 5</span>
+</div>
+<div class="qcm-saving" id="qcm-saving">💾 Sauvegarde Supabase...</div>
+<div class="qcm-question" id="qcm-question"></div>
+<div class="qcm-options" id="qcm-options"></div>
+<div class="qcm-feedback" id="qcm-feedback"></div>
+<button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+</div>
+</div>
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+<div class="completion-box">
+<div class="completion-icon" id="comp-icon">🔬</div>
+<div class="completion-score" id="comp-score">100%</div>
+<div class="completion-title" id="comp-title">RE·03 Terminé !</div>
+<div class="completion-sub" id="comp-sub"></div>
+<div class="completion-saved">✓ Résultat sauvegardé dans Supabase</div>
+<a class="completion-btn completion-btn-primary" href="re4_v2.html">RE·04 — Analyse Dynamique →</a>
+<a class="completion-btn completion-btn-secondary" href="formations.html">Retour aux formations</a>
+</div>
+</div>
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+<button class="nav-btn" disabled="" id="prev-btn" onclick="navigate(-1)">← PRÉC</button>
+<div style="display:flex;gap:1rem;align-items:center">
+<span class="qcm-indicator" id="qcm-ind"></span>
+<span id="slide-counter">01 / 14</span>
+</div>
+<button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIV →</button>
+</div>
+<script>
+var QCM = {
+  1: {
+    question: "Quelle est la principale différence entre l'analyse statique et l'analyse dynamique en reverse engineering ?",
+    options: [
+      "L'analyse statique utilise GDB, l'analyse dynamique utilise Ghidra — ce sont simplement deux outils différents pour la même tâche",
+      "L'analyse statique examine le binaire sans l'exécuter (safe pour les malwares), l'analyse dynamique exécute le binaire dans un environnement contrôlé pour observer le comportement runtime",
+      "L'analyse statique est réservée aux fichiers ELF Linux, l'analyse dynamique fonctionne uniquement sur les fichiers PE Windows",
+      "L'analyse statique est plus rapide car elle n'a pas besoin d'outil, l'analyse dynamique nécessite obligatoirement une VM dédiée"
+    ],
+    correct: 1,
+    explanation: "La distinction fondamentale est l'exécution. Statique = binaire au repos, examiné sans l'exécuter (Ghidra, IDA, radare2). Avantage majeur : on peut analyser des malwares dangereux sans risque d'infection. Dynamique = binaire en cours d'exécution (GDB, ltrace, strace). Avantage : on voit les valeurs réelles à runtime (déchiffrement, comportements conditionnels). La règle d'or : toujours commencer par la statique, passer à la dynamique si nécessaire."
+  },
+  3: {
+    question: "Dans Ghidra, quelle est la séquence correcte pour analyser un nouveau binaire ELF ?",
+    options: [
+      "Ouvrir directement le fichier ELF avec File → Open → lancer l'analyse → le décompilateur est immédiatement disponible sans étape intermédiaire",
+      "File → New Project → File → Import File → double-clic sur le binaire → 'Yes' pour analyser → Analysis Options → 'Analyze' → attendre la fin → naviguer dans Symbol Tree",
+      "Glisser le binaire dans le terminal Ghidra → taper 'analyze all' → exporter le code C décompilé en un seul fichier texte",
+      "Window → CodeBrowser → Import → analyser → les fonctions apparaissent automatiquement dans l'onglet Functions sans action supplémentaire"
+    ],
+    correct: 1,
+    explanation: "Le workflow Ghidra en 4 temps : (1) New Project → créer un espace de travail persistant qui conserve tes annotations. (2) Import File → Ghidra détecte le format et l'architecture automatiquement. (3) Double-clic → propose d'analyser → TOUJOURS accepter — cette phase identifie fonctions, types, références (10-30s). (4) Symbol Tree → Functions → main ou check_flag → voir le décompilateur à droite. IMPORTANT : sans l'analyse, Ghidra ne génère pas de pseudo-code."
+  },
+  5: {
+    question: "Dans le Decompiler Ghidra, tu vois 'undefined8 param_1'. Que signifie ce type et quelle action dois-tu faire ?",
+    options: [
+      "undefined8 = entier de 8 bits (1 byte) — appuyer sur T et choisir 'byte' pour corriger",
+      "undefined8 = Ghidra ne sait pas quel type a ce paramètre de 8 bytes (64-bit) — appuyer sur T pour retypier : char* si c'est un pointeur de chaîne, int si c'est un entier, long si c'est un 64-bit",
+      "undefined8 = variable non définie de 8 caractères — c'est normal, ne pas modifier car Ghidra gère automatiquement",
+      "undefined8 = tableaux de 8 octets — appuyer sur L pour renommer, Ghidra corrige le type seul"
+    ],
+    correct: 1,
+    explanation: "Ghidra utilise 'undefinedN' quand il ne peut pas inférer le type d'une valeur de N bytes : undefined1=byte, undefined4=int/float, undefined8=long/pointer (64-bit). La procédure : appuyer sur T (retype) et choisir le bon type selon le contexte. Si param_1 est passé à strlen() → c'est char*. Si utilisé dans une addition → probablement int ou long. Si stocké dans rdi (1er arg Linux) → souvent char* ou void*. Un bon retypïage transforme *(long *)((long)param_1 + 8) en user->id — lisibilité maximale."
+  },
+  7: {
+    question: "Tu cherches 'qui appelle la fonction check_flag' dans Ghidra. Quelle est la méthode correcte pour trouver toutes les références à cette fonction ?",
+    options: [
+      "Search → Find Text → taper 'check_flag' → Ghidra liste toutes les lignes de code qui mentionnent ce nom",
+      "Clic droit sur la fonction check_flag (dans le Listing ou Symbol Tree) → References → Show References to 'check_flag' → Ghidra liste tous les appelants avec leurs adresses",
+      "Window → Call Trees → taper l'adresse mémoire exacte → Ghidra affiche les références",
+      "Ctrl+F dans le décompilateur → chercher 'check_flag' dans le texte → copier les adresses manuellement"
+    ],
+    correct: 1,
+    explanation: "Les XREF (Cross-References) sont la fonctionnalité centrale de Ghidra pour cartographier les appels. Clic droit → References → Show References affiche : (c) = call references, (r) = read, (w) = write, (d) = data. Raccourci : Ctrl+Shift+F. Dans le Listing, les XREF apparaissent automatiquement au-dessus des labels : '; XREF[2]: main:0010109a(c), validate:001011b2(c)'. Window → Call Trees donne une vue graphique complète des appels entrants ET sortants. Indispensable pour comprendre le flux d'un gros binaire."
+  },
+  9: {
+    question: "Tu veux patcher un binaire pour bypasser la vérification du flag. La condition à bypasser est 'JNE LAB_fail' (si la comparaison échoue → saute vers fail). Que faire ?",
+    options: [
+      "Supprimer le fichier LAB_fail dans le Symbol Tree de Ghidra — si la destination n'existe plus, le saut ne peut pas s'effectuer",
+      "Clic droit sur l'instruction JNE → Patch Instruction → remplacer par NOP NOP (0x90 0x90) pour supprimer le saut, ou par JE pour l'inverser → File → Export Program → Original File pour sauvegarder",
+      "Modifier le fichier source C dans Ghidra et recompiler depuis l'interface — Ghidra gère la recompilation automatiquement",
+      "Changer la valeur de retour de check_flag de 0 à 1 dans le Data Type Manager — Ghidra applique la modification au binaire"
+    ],
+    correct: 1,
+    explanation: "Le patching Ghidra se fait en 3 étapes : (1) Clic droit sur l'instruction cible → Patch Instruction → modifier l'opcode/mnémonique. Pour bypasser JNE (2 bytes = EB xx ou 75 xx) : option A = 2x NOP (0x90 0x90) → l'instruction est ignorée, on continue vers le succès. Option B = JE (inverse la logique). (2) File → Export Program → Original File → choisir le nom du binaire patché. (3) chmod +x et tester. ATTENTION : JNE = 2 bytes donc il faut 2 NOP. Un seul NOP corrompt l'instruction suivante."
+  }
+};
+
+var COURSE_ID = 're3';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){ document.getElementById('comp-icon').textContent='🔬'; document.getElementById('comp-title').textContent='Ghidra Maîtrisé !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Tu sais analyser statiquement un binaire — direction l\'analyse dynamique avec GDB !'; }
+  else if(pct>=60){ document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='RE·03 Terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Relis les sections XREF et Patching avant de continuer.'; }
+  else { document.getElementById('comp-icon').textContent='⚙️'; document.getElementById('comp-title').textContent='RE·03 Terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Reprends depuis le workflow Ghidra et la lecture du décompilateur.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='01GHIDRASTATICXREFDECOMPILERPATCHELFSYMBOLXORTYPEBYTE',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(4,2,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#aa44ff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

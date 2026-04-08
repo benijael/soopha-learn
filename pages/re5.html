@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="/favicon.ico" rel="icon" type="image/x-icon"/>
+<link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<title>RE·05 — Obfuscation &amp; XOR · SooPHA Learn</title>
+<link href="../css/global.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(4,2,12,.97);border-bottom:1px solid rgba(170,68,255,.15);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(170,68,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(170,68,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}
+.tb-back:hover{color:#aa44ff}
+.tb-dot{width:6px;height:6px;background:#aa44ff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(170,68,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#6622cc,#aa44ff);box-shadow:0 0 8px #aa44ff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#aa44ff;--acc-dim:rgba(170,68,255,.15);--acc-faint:rgba(170,68,255,.06);--acc-border:rgba(170,68,255,.2)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#aa44ff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(170,68,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(8,4,20,.88);border:1px solid var(--acc-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(220,200,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#aa44ff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}
+.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}
+.bullets li.danger::before{content:'🔴';font-size:.7rem}
+.bullets li.ok::before{content:'✅';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.terminal{background:rgba(4,0,12,.85);border:1px solid rgba(170,68,255,.12);border-left:3px solid #aa44ff;padding:.9rem 1.2rem;font-family:var(--mono);font-size:.75rem;color:rgba(200,170,255,.8);line-height:2;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.85}
+.term-prompt{color:#aa44ff}
+.term-out{color:rgba(200,170,255,.45)}
+.term-comment{color:rgba(170,68,255,.4);font-style:italic}
+.term-red{color:#ff4466}
+.term-yellow{color:#ffd700}
+.term-green{color:#00ff88}
+.term-blue{color:#00aaff}
+.quote{border-left:3px solid #aa44ff;padding:.7rem 1rem;background:var(--acc-faint);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#e8d0ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #aa44ff,0 0 80px rgba(170,68,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #aa44ff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#aa44ff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#aa44ff;text-shadow:0 0 8px #aa44ff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(220,200,255,.85);line-height:1.5}
+.phase-row{display:flex;gap:.8rem;padding:.55rem .9rem;border-bottom:1px solid rgba(170,68,255,.07);align-items:flex-start}
+.phase-row:last-child{border-bottom:none}
+.phase-num{font-family:var(--mono);font-size:.68rem;color:#aa44ff;min-width:90px;flex-shrink:0}
+.phase-name{font-family:var(--display);font-size:.72rem;font-weight:700;color:#fff;min-width:120px;flex-shrink:0}
+.phase-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.65);line-height:1.4}
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(4,2,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(8,4,20,.97);border:1px solid rgba(170,68,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(170,68,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(170,68,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.35);margin-bottom:.5rem;display:none}
+.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(4,0,16,.3);border:1px solid rgba(170,68,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(210,190,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(170,68,255,.35);background:rgba(170,68,255,.06);color:rgba(220,200,255,.95)}
+.qcm-option.correct{border-color:#aa44ff!important;background:rgba(170,68,255,.12)!important;color:#aa44ff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#aa44ff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:rgba(220,200,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(170,68,255,.15);border:1px solid rgba(170,68,255,.4);color:#aa44ff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(170,68,255,.25);box-shadow:0 0 20px rgba(170,68,255,.2)}
+.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(4,2,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(170,68,255,.3);background:rgba(8,4,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#aa44ff;text-shadow:0 0 20px #aa44ff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,170,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#aa44ff;color:#0a0014}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(170,68,255,.4);color:#aa44ff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(4,2,12,.97);border-top:1px solid rgba(170,68,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(170,68,255,.2);color:rgba(170,68,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#aa44ff;color:#aa44ff}
+.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#aa44ff;letter-spacing:.06em}
+.xor-table{font-family:var(--mono);font-size:.7rem;border-collapse:collapse;max-width:880px;width:100%}
+.xor-table th{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.2);padding:.4rem .8rem;color:#aa44ff;text-align:left;font-size:.65rem;letter-spacing:.1em}
+.xor-table td{border:1px solid rgba(170,68,255,.07);padding:.35rem .8rem;color:rgba(200,170,255,.7);font-size:.68rem}
+.xor-table tr:nth-child(even) td{background:rgba(170,68,255,.02)}
+.xor-result{color:#00ff88;font-weight:bold}
+.xor-enc{color:#ff4466}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+<div class="tb-left">
+<a class="tb-back" href="formations.html">← Formations</a>
+<span><span class="tb-dot"></span>// RE·05 · Obfuscation · XOR · Décodage</span>
+</div>
+<div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+<div id="slides">
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+<div class="slide-tag">// RE·05 · Module 19 · SooPHA Learn</div>
+<h1 class="glitch">OBFUSCATION<br/>&amp; XOR</h1>
+<div class="gabon-bar"><span></span><span></span><span></span></div>
+<h3>XOR · Base64 · Stack Strings · CyberChef · Décodage Auto</h3>
+<div class="card" style="text-align:center;max-width:700px">
+<ul class="bullets" style="text-align:left">
+<li><strong>14 slides</strong> · 5 QCM obligatoires · ~60 min</li>
+<li><strong>Détecter l'obfuscation</strong> — identifier les techniques sans exécuter le binaire</li>
+<li><strong>XOR monobyte &amp; multibyte</strong> — casser la clé par brute force et known-plaintext</li>
+<li><strong>Rolling XOR</strong> — la variante avancée des malwares modernes</li>
+<li><strong>Base64, ROT, substitution</strong> — identifier et décoder en 30 secondes</li>
+<li><strong>Stack strings</strong> — l'obfuscation anti-strings des malwares</li>
+<li class="ok">Prérequis : RE·01 à RE·04 (ASM, Ghidra, GDB) validés</li>
+</ul>
+</div>
+<div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-purple">RE · Module 5/6</span>
+<span class="pill pill-yellow">XOR · Base64 · ROT</span>
+<span class="pill pill-orange">CyberChef · Python</span>
+<span class="pill pill-red">Stack Strings · Malware</span>
+</div>
+</div>
+<!-- SLIDE 1 — QCM : OBFUSCATION DETECTION -->
+<div class="slide" data-index="1">
+<div class="slide-tag">// Slide 02 · Obfuscation · Pourquoi · Détecter · QCM requis</div>
+<h2>L'Obfuscation — Rendre le Binaire Illisible</h2>
+<h3>Comprendre les motivations et apprendre à détecter les signaux d'alerte</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🎭 Pourquoi obfusquer ?</div>
+<ul class="bullets">
+<li><strong>Malwares</strong> — cacher URLs C2, clés de chiffrement, payloads pour éviter l'AV</li>
+<li><strong>Licences logiciels</strong> — protéger les algorithmes de validation anti-crack</li>
+<li><strong>CTF</strong> — empêcher la résolution triviale par strings ou ltrace</li>
+<li><strong>DRM</strong> — protection anti-copie dans jeux et médias</li>
+<li class="warn">L'obfuscation ralentit, elle n'arrête pas — c'est de la sécurité par l'obscurité</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🔍 Signaux d'alerte obfuscation</div>
+<ul class="bullets">
+<li><strong>strings presque vide</strong> — peu de chaînes lisibles dans le binaire → obfuscation certaine</li>
+<li><strong>Haute entropie Ghidra</strong> — zones &gt; 7.5 bits/byte → données chiffrées ou packées</li>
+<li><strong>Tableaux de bytes dans .rodata</strong> — longues séquences de bytes sans sens apparent</li>
+<li><strong>Boucle XOR/ADD/SUB sur tableau</strong> — routine de déchiffrement inline</li>
+<li class="ok">Premier réflexe : Ghidra → Analysis → Entropy → localiser les zones suspectes</li>
+</ul>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "L'obfuscation, c'est un coffre-fort avec la serrure visible. Tu sais qu'il y a quelque chose dedans, tu vois le mécanisme, et avec les bons outils, tu l'ouvres. La question n'est pas <em>si</em>, mais <em>combien de temps</em>."
+  </div>
+</div>
+<!-- SLIDE 2 — XOR FONDAMENTAUX -->
+<div class="slide" data-index="2">
+<div class="slide-tag">// Slide 03 · XOR · Propriétés mathématiques · Réversibilité</div>
+<h2>XOR — Propriétés Fondamentales</h2>
+<h3>Pourquoi XOR est l'opération préférée des auteurs de malwares depuis 40 ans</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">⚡ Les 4 propriétés clés</div>
+<ul class="bullets">
+<li><strong>Réversible avec la même clé</strong> — A ^ K = B → B ^ K = A. Encode ET décode avec la même opération et la même clé</li>
+<li><strong>A ^ A = 0</strong> — XOR d'une valeur avec elle-même vaut toujours 0</li>
+<li><strong>A ^ 0 = A</strong> — XOR avec 0 est une identité, la valeur ne change pas</li>
+<li><strong>Commutativité</strong> — A ^ B = B ^ A, ordre indifférent</li>
+<li class="ok">Un seul algoritme suffit pour encoder ET décoder → code compact et discret</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🔬 Exemple : "SOOPHA" XOR 0x42</div>
+<table class="xor-table">
+<tr><th>Char</th><th>ASCII hex</th><th>XOR 0x42</th><th>Encodé</th></tr>
+<tr><td>'S'</td><td>0x53</td><td>0x53 ^ 0x42</td><td class="xor-enc">0x11</td></tr>
+<tr><td>'O'</td><td>0x4F</td><td>0x4F ^ 0x42</td><td class="xor-enc">0x0D</td></tr>
+<tr><td>'O'</td><td>0x4F</td><td>0x4F ^ 0x42</td><td class="xor-enc">0x0D</td></tr>
+<tr><td>'P'</td><td>0x50</td><td>0x50 ^ 0x42</td><td class="xor-enc">0x12</td></tr>
+<tr><td>'H'</td><td>0x48</td><td>0x48 ^ 0x42</td><td class="xor-enc">0x0A</td></tr>
+<tr><td>'A'</td><td>0x41</td><td>0x41 ^ 0x42</td><td class="xor-enc">0x03</td></tr>
+</table>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment"># Python — encode puis décode avec la même fonction</span><br/>
+<span class="term-prompt">$ </span>python3 -c "k=0x42;s='SOOPHA';e=[c^k for c in s.encode()];d=[c^k for c in e];print(bytes(e),bytes(d))"<br/>
+<span class="term-red">b'\x11\r\r\x12\n\x03'</span>  <span class="term-green">b'SOOPHA'</span>  <span class="term-comment">← même fonction, XOR K deux fois = identité</span>
+</div>
+</div>
+<!-- SLIDE 3 — QCM : CASSER XOR MONOBYTE -->
+<div class="slide" data-index="3">
+<div class="slide-tag">// Slide 04 · Brute force · Known-plaintext · QCM requis</div>
+<h2>Casser le XOR Monobyte — 3 Techniques</h2>
+<h3>La clé fait 1 byte = 256 possibilités max. Aucun XOR monobyte ne résiste plus de 5 secondes</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🔓 Trois méthodes du plus rapide au plus robuste</div>
+<div class="terminal sm">
+<span class="term-comment">── MÉTHODE 1 : Known-plaintext (la plus rapide) ─────────────</span><br/>
+<span class="term-comment"># Si le flag commence par "SOOPHA{" → on connaît les 7 premiers bytes</span><br/>
+      encoded = [<span class="term-yellow">0x11, 0x0d, 0x0d, 0x12, 0x0a, 0x03, 0x79</span>]<br/>
+      key = encoded[<span class="term-yellow">0</span>] ^ ord(<span class="term-yellow">'S'</span>)  <span class="term-comment"># 0x11 ^ 0x53 = 0x42</span><br/>
+      print(<span class="term-green">f"Clé trouvée : 0x{key:02x}"</span>)           <span class="term-green"># 0x42 !</span><br/>
+<br/>
+<span class="term-comment">── MÉTHODE 2 : Brute force 256 clés ────────────────────────</span><br/>
+      for key in range(<span class="term-yellow">256</span>):<br/>
+        decoded = bytes([b ^ key for b in encoded])<br/>
+        if <span class="term-yellow">b'SOOPHA'</span> in decoded or decoded.isascii():<br/>
+          print(<span class="term-green">f"KEY=0x{key:02x}: {decoded}"</span>)<br/>
+<br/>
+<span class="term-comment">── MÉTHODE 3 : Frequency analysis ──────────────────────────</span><br/>
+<span class="term-comment"># Le byte le plus fréquent ≈ chiffrement de l'espace (0x20)</span><br/>
+      most_common = max(set(encoded), key=encoded.count)<br/>
+      key = most_common ^ <span class="term-yellow">0x20</span>  <span class="term-comment"># hypothèse : texte anglais/ASCII</span>
+</div>
+</div>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.5rem">⚡ xortool — automatique</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-prompt">$ </span>pip install xortool<br/>
+<span class="term-prompt">$ </span>xortool -c 20 encoded.bin<br/>
+<span class="term-out"> Key: 0x42 (length: 1)<br/> Decrypted: SOOPHA{...}</span>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.5rem">🎯 Indices dans Ghidra</div>
+<ul class="bullets">
+<li>Repérer l'instruction <code style="color:#aa44ff;font-family:var(--mono)">XOR reg, 0x42</code> dans une boucle</li>
+<li>La constante dans l'instruction XOR = la clé</li>
+<li>L'adresse du tableau = position dans .rodata</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- SLIDE 4 — XOR MULTIBYTE & ROLLING -->
+<div class="slide" data-index="4">
+<div class="slide-tag">// Slide 05 · Multibyte XOR · Rolling XOR · Malwares</div>
+<h2>XOR Multibyte &amp; Rolling XOR</h2>
+<h3>Les variantes avancées — plus difficiles à casser, très présentes dans les malwares réels</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🔑 XOR Multibyte — clé de N bytes</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.2rem 0">
+<span class="term-comment"># La clé se répète cycliquement</span><br/>
+<span class="term-comment"># Clé = "Base" = [0x42, 0x61, 0x73, 0x65]</span><br/>
+<br/>
+        key = [<span class="term-yellow">0x42, 0x61, 0x73, 0x65</span>]<br/>
+        decoded = bytes([<br/>
+          b ^ key[i % len(key)]<br/>
+          for i, b in enumerate(encoded)<br/>
+        ])<br/>
+<br/>
+<span class="term-comment"># i%4 → cycle 0,1,2,3,0,1,2,3...</span><br/>
+<span class="term-comment"># Clé visible dans Ghidra : tableau de 4 bytes</span>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🔄 Rolling XOR — clé évolutive</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.2rem 0">
+<span class="term-comment"># La clé change à chaque byte !</span><br/>
+<span class="term-comment"># Nouvelle clé = byte chiffré précédent</span><br/>
+<br/>
+        key = <span class="term-yellow">0x42</span>  <span class="term-comment"># clé initiale seed</span><br/>
+        result = []<br/>
+        for b in encoded:<br/>
+          decoded_byte = b ^ key<br/>
+          result.append(decoded_byte)<br/>
+          key = b  <span class="term-comment"># nouvelle clé = ciphertext</span><br/>
+        print(<span class="term-green">bytes(result)</span>)
+      </div>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.6rem">🔬 Comment détecter multibyte vs monobyte dans Ghidra</div>
+<div style="display:flex;flex-direction:column;gap:.4rem">
+<div class="step"><div class="step-num">1</div><div class="step-content"><strong>Monobyte</strong> : instruction <code style="color:#aa44ff;font-family:var(--mono)">XOR byte [rdi+rax], 0x42</code> — constante immédiate dans l'instruction</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content"><strong>Multibyte</strong> : <code style="color:#aa44ff;font-family:var(--mono)">MOVZX ecx, byte [key_array+rax%N]</code> puis <code style="color:#aa44ff;font-family:var(--mono)">XOR [data+rax], ecx</code> — accès à un tableau de clés</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-content"><strong>Rolling</strong> : après le XOR, <code style="color:#aa44ff;font-family:var(--mono)">MOV [key], byte [data+rax]</code> — la clé est mise à jour avec le ciphertext</div></div>
+</div>
+</div>
+</div>
+<!-- SLIDE 5 — QCM : BASE64 & ENCODAGES -->
+<div class="slide" data-index="5">
+<div class="slide-tag">// Slide 06 · Base64 · ROT13 · Caesar · QCM requis</div>
+<h2>Base64, ROT &amp; Caesar — Identifier et Décoder</h2>
+<h3>Les encodages classiques présents dans CTF et malwares — les reconnaître au premier coup d'œil</h3>
+<div class="cmd-grid" style="margin-bottom:.8rem">
+<div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+<div class="cmd-name" style="color:#00aaff">Base64</div>
+<div class="cmd-desc">Alphabet A-Z a-z 0-9 +/=. Toujours un multiple de 4 chars. Se termine par 0, 1 ou 2 '='. Entropie ~6 bits/char.</div>
+<div class="cmd-ex">U09PUEJB → "SOOPHA" (base64)<br/>echo "U09PUEJB" | base64 -d</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.3)">
+<div class="cmd-name" style="color:#ffd700">ROT13</div>
+<div class="cmd-desc">Rotation de 13 lettres. Idempotent : ROT13(ROT13(x)) = x. Fréquent dans les CTF basiques et les easter eggs de développeurs.</div>
+<div class="cmd-ex">FBBUUN → "SOOPHA" (rot13)<br/>echo "FBBUUN" | tr 'A-Za-z' 'N-ZA-Mn-za-m'</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+<div class="cmd-name" style="color:#00ff88">Caesar (ROT-N)</div>
+<div class="cmd-desc">Décalage alphabétique de N positions. Brute force : tester 25 possibilités. Très facile à casser avec CyberChef → ROT Brute Force.</div>
+<div class="cmd-ex">VRRGOB → "SOOPHA" (rot-3 inverse)<br/>CyberChef → ROT13 → Amount: 3</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,136,0,.3)">
+<div class="cmd-name" style="color:#ff8800">Hex encoding</div>
+<div class="cmd-desc">Données représentées en hexadécimal. Toujours des paires 0-9 a-f. Parfois avec préfixe 0x ou séparateurs : ou espace.</div>
+<div class="cmd-ex">53 4f 4f 50 48 41 → "SOOPHA"<br/>python3 -c "print(bytes.fromhex('534f4f504841'))"</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(170,68,255,.35)">
+<div class="cmd-name" style="color:#aa44ff">URL encoding</div>
+<div class="cmd-desc">Caractères encodés en %XX. Commun dans les malwares qui communiquent via HTTP et dans les challenges web + RE hybrides.</div>
+<div class="cmd-ex">%53%4F%4F%50%48%41 → "SOOPHA"<br/>python3 -c "from urllib.parse import unquote; print(unquote('%53%4F...'))"</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,68,102,.2)">
+<div class="cmd-name" style="color:#ff4466">Base32</div>
+<div class="cmd-desc">Alphabet A-Z 2-7 uniquement. Toujours majuscule. Padding avec =. Moins courant que Base64 mais présent dans certains malwares.</div>
+<div class="cmd-ex">KNQXI2LT → "SOOPHA" (approx)<br/>python3 -c "import base64; print(base64.b32decode('...'))"</div>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment"># CyberChef en ligne — https://gchq.github.io/CyberChef/</span><br/>
+<span class="term-comment"># Glisser les données → "Magic" → détecte automatiquement l'encodage</span><br/>
+<span class="term-prompt">$ </span>echo "U09PUEJBX3Rlc3Q=" | base64 -d<br/>
+<span class="term-green">SOOPHA_test</span>
+</div>
+</div>
+<!-- SLIDE 6 — CYBERCHEF -->
+<div class="slide" data-index="6">
+<div class="slide-tag">// Slide 07 · CyberChef · Recettes · Décodage rapide</div>
+<h2>CyberChef — L'Outil de Décodage Ultime</h2>
+<h3>L'outil en ligne de la GCHQ — indispensable dans toute analyse RE</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🍳 Recettes CyberChef essentielles RE</div>
+<ul class="bullets">
+<li><strong>Magic</strong> — détecte automatiquement l'encodage et propose des décodages. Point de départ pour tout challenge</li>
+<li><strong>XOR</strong> — spécifier la clé en hex, choisir le mode (Standard, Differential, Cascade)</li>
+<li><strong>From Base64 → XOR</strong> — chaîner les opérations en une seule recette</li>
+<li><strong>ROT13 Brute Force</strong> — teste les 25 rotations et affiche celles qui contiennent des mots</li>
+<li><strong>Entropy</strong> — calculer l'entropie d'une section de données</li>
+<li class="ok">URL : <strong>gchq.github.io/CyberChef</strong> — entièrement en ligne, aucune installation</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">⚡ Workflow CyberChef CTF</div>
+<div style="display:flex;flex-direction:column;gap:.4rem">
+<div class="step"><div class="step-num">1</div><div class="step-content">Coller les bytes/données dans l'Input</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-content">Opération <strong>Magic</strong> → analyser les suggestions</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-content">Ajuster les paramètres (clé XOR, amount ROT…)</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-content">Chaîner les opérations si multi-couches</div></div>
+<div class="step"><div class="step-num">5</div><div class="step-content">Sauvegarder la recette (bouton Save) pour la réutiliser</div></div>
+</div>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment"># Alternative CLI — cyberchef-cli (Node.js)</span><br/>
+<span class="term-prompt">$ </span>npm install -g @gchq/cyberchef<br/>
+<span class="term-prompt">$ </span>cat encoded.bin | cyberchef -r '[{"op":"XOR","args":[{"option":"Hex","string":"42"},"Standard",false]}]'<br/>
+<span class="term-green">SOOPHA{cyberchef_decoded}</span>
+</div>
+</div>
+<!-- SLIDE 7 — QCM : STACK STRINGS -->
+<div class="slide" data-index="7">
+<div class="slide-tag">// Slide 08 · Stack Strings · Anti-strings · QCM requis</div>
+<h2>Stack Strings — L'Obfuscation Anti-strings</h2>
+<h3>La technique préférée des malwares modernes pour cacher les chaînes de caractères</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🧩 Qu'est-ce qu'une stack string ?</div>
+<div class="grid2" style="margin:0;gap:.8rem">
+<div>
+<div style="font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);margin-bottom:.4rem">// Code C original</div>
+<div class="terminal sm" style="margin:0">
+<span class="term-blue">char</span> *url = <span class="term-yellow">"http://c2.evil.io"</span>;<br/>
+<span class="term-comment">// string visible dans .rodata</span><br/>
+<span class="term-comment">// strings ./malware → révèle l'URL</span>
+</div>
+</div>
+<div>
+<div style="font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);margin-bottom:.4rem">// Stack string obfusquée</div>
+<div class="terminal sm" style="margin:0">
+<span class="term-blue">mov</span> byte [<span class="term-green">rsp</span>+0], <span class="term-yellow">0x68</span> <span class="term-comment">; 'h'</span><br/>
+<span class="term-blue">mov</span> byte [<span class="term-green">rsp</span>+1], <span class="term-yellow">0x74</span> <span class="term-comment">; 't'</span><br/>
+<span class="term-blue">mov</span> byte [<span class="term-green">rsp</span>+2], <span class="term-yellow">0x74</span> <span class="term-comment">; 't'</span><br/>
+<span class="term-blue">mov</span> byte [<span class="term-green">rsp</span>+3], <span class="term-yellow">0x70</span> <span class="term-comment">; 'p'</span><br/>
+<span class="term-comment">; strings → RIEN !</span>
+</div>
+</div>
+</div>
+</div>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.6rem">🔍 Détecter les stack strings</div>
+<ul class="bullets">
+<li>Dans Ghidra : longue séquence de <code style="color:#aa44ff;font-family:var(--mono)">MOV byte [rbp-N], IMM</code> consécutifs</li>
+<li>Chaque constante correspond à un caractère ASCII (0x20 à 0x7E)</li>
+<li>Flare-IDA plugin <strong>FLOSS</strong> (outil gratuit de FireEye) : extrait automatiquement les stack strings</li>
+<li class="ok">GDB : BP après la construction → x/s $rsp révèle la string assemblée</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.6rem">🛠️ FLOSS — extraction automatique</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-prompt">$ </span>pip install flare-floss<br/>
+<span class="term-prompt">$ </span>floss ./malware.exe<br/>
+<span class="term-out"> FLOSS extracted strings:</span><br/>
+<span class="term-green"> http://c2.evil.io/gate.php</span><br/>
+<span class="term-green"> Mozilla/5.0 (Windows NT)</span><br/>
+<span class="term-green"> SOOPHA{stack_strings_found}</span>
+</div>
+</div>
+</div>
+</div>
+<!-- SLIDE 8 — IDENTIFIER XOR DANS GHIDRA -->
+<div class="slide" data-index="8">
+<div class="slide-tag">// Slide 09 · Ghidra · XOR detection · Pattern recognition</div>
+<h2>Identifier XOR dans Ghidra — Patterns Visuels</h2>
+<h3>Reconnaître une routine de déchiffrement XOR au premier coup d'œil dans le décompilateur</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🔬 Les 3 patterns XOR à reconnaître dans Ghidra</div>
+<div class="terminal sm">
+<span class="term-comment">── PATTERN 1 : XOR monobyte inline ─────────────────────────</span><br/>
+<span class="term-comment">// Décompilateur Ghidra :</span><br/>
+      local_len = <span class="term-yellow">0x1e</span>;                   <span class="term-comment">// longueur = 30</span><br/>
+      i = <span class="term-yellow">0</span>;<br/>
+      while (i &lt; local_len) {<br/>
+        DAT_00104020[i] = DAT_00104020[i] ^ <span class="term-yellow">0x42</span>;<br/>
+        i++;<br/>
+      }                                    <span class="term-comment">// clé visible = 0x42</span><br/>
+<br/>
+<span class="term-comment">── PATTERN 2 : XOR fonction dédiée ─────────────────────────</span><br/>
+      decrypt_payload(DAT_00104020, <span class="term-yellow">0x1e</span>, key_array, <span class="term-yellow">4</span>);<br/>
+<span class="term-comment">// → suivre decrypt_payload → voir l'algo XOR à l'intérieur</span><br/>
+<br/>
+<span class="term-comment">── PATTERN 3 : Comparaison après XOR ───────────────────────</span><br/>
+      if ((input[i] ^ <span class="term-yellow">0x42</span>) != expected[i]) { return <span class="term-yellow">0</span>; }<br/>
+<span class="term-comment">// → XOR appliqué à l'input avant comparaison → clé = 0x42</span>
+</div>
+</div>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.5rem">📍 Localiser le tableau encodé</div>
+<ul class="bullets">
+<li>Note l'adresse du tableau (ex: <code style="color:#aa44ff;font-family:var(--mono)">DAT_00104020</code>)</li>
+<li>Ghidra → Data → Create Array → byte[N] → rend la mémoire lisible</li>
+<li>Script Ghidra Python → extraire les bytes et décoder automatiquement</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.5rem">🐍 Script extraction Ghidra</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-prompt">&gt;&gt;&gt; </span>addr = toAddr(<span class="term-yellow">0x00104020</span>)<br/>
+<span class="term-prompt">&gt;&gt;&gt; </span>raw = [getByte(addr.add(i))&amp;<span class="term-yellow">0xff</span> for i in range(<span class="term-yellow">30</span>)]<br/>
+<span class="term-prompt">&gt;&gt;&gt; </span>flag = ''.join(chr(b^<span class="term-yellow">0x42</span>) for b in raw)<br/>
+<span class="term-green">&gt;&gt;&gt; print(flag)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- SLIDE 9 — QCM : PACKING & ENTROPIE -->
+<div class="slide" data-index="9">
+<div class="slide-tag">// Slide 10 · Packing · UPX · Entropie · QCM requis</div>
+<h2>Packing &amp; Entropie — Le Niveau Supérieur</h2>
+<h3>Quand XOR ne suffit plus — les packers compressent et chiffrent tout le binaire</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">📦 Qu'est-ce qu'un packer ?</div>
+<ul class="bullets">
+<li>Un packer <strong>compresse ET chiffre</strong> le binaire original → le vrai code n'existe qu'en mémoire au runtime</li>
+<li>Le stub (déchiffreur) décompresse le vrai code → l'exécute → analyse statique ne voit que le stub</li>
+<li><strong>UPX</strong> — le packer le plus courant (open source, utilisé par legit apps ET malwares)</li>
+<li><strong>Themida, VMProtect, Enigma</strong> — packers commerciaux anti-RE avancés</li>
+<li class="warn">Binaire packé : strings vide + entropie très haute + taille anormalement petite</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">📊 Mesurer l'entropie</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.2rem 0">
+<span class="term-comment"># Avec file + binwalk</span><br/>
+<span class="term-prompt">$ </span>binwalk -E ./crackme<br/>
+<span class="term-out"> ENTROPY (8 bits/byte) → packé !</span><br/>
+<span class="term-out"> ENTROPY (6 bits/byte) → code normal</span><br/>
+<br/>
+<span class="term-comment"># Détecter UPX</span><br/>
+<span class="term-prompt">$ </span>upx -t ./crackme<br/>
+<span class="term-out"> Testing ./crackme [OK] → UPX détecté</span><br/>
+<br/>
+<span class="term-comment"># Décompresser UPX</span><br/>
+<span class="term-prompt">$ </span>upx -d ./crackme -o unpacked<br/>
+<span class="term-green"> Unpacked 1 file → analyse normale !</span>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.6rem">🎯 Stratégie face à un binaire packé</div>
+<div class="phase-row"><div class="phase-num">OPTION A</div><div class="phase-name">UPX → dépack</div><div class="phase-desc">Si c'est UPX (détecté par upx -t ou strings "UPX" dans le binaire) → upx -d → le binaire original est récupéré → analyse normale avec Ghidra + GDB</div></div>
+<div class="phase-row"><div class="phase-num">OPTION B</div><div class="phase-name">Dump mémoire</div><div class="phase-desc">Pour les packers custom : GDB → laisser le stub se déchiffrer → breakpoint sur l'OEP (Original Entry Point) → dump de la mémoire avec process_dump ou pmap + dd</div></div>
+<div class="phase-row"><div class="phase-num">OPTION C</div><div class="phase-name">Sandbox</div><div class="phase-desc">Soumettre à Any.run, Cuckoo, REMnux → observer le comportement sans analyser le packer. Les IOCs (URLs, fichiers créés) sont souvent suffisants</div></div>
+</div>
+</div>
+<!-- SLIDE 10 — EXERCICE XOR COMPLET -->
+<div class="slide" data-index="10">
+<div class="slide-tag">// Slide 11 · Exercice · XOR challenge · Résolution complète</div>
+<h2>Exercice Complet — XOR Challenge SooPHA #5</h2>
+<h3>Du binaire au flag en utilisant Ghidra, Python et CyberChef</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🔬 Résolution pas à pas</div>
+<div class="terminal sm">
+<span class="term-comment">── PHASE 1 : Triage ────────────────────────────────────────</span><br/>
+<span class="term-prompt">$ </span>strings crackme_05 | grep -i "flag\|soopha"<br/>
+<span class="term-out"> [RIEN] → obfuscation confirmée</span><br/>
+<span class="term-prompt">$ </span>binwalk -E crackme_05<br/>
+<span class="term-out"> Max entropy 6.1 → pas packé, XOR probable</span><br/>
+<br/>
+<span class="term-comment">── PHASE 2 : Ghidra → trouver la routine ───────────────────</span><br/>
+<span class="term-comment">// check_flag() décompilé :</span><br/>
+<span class="term-comment">// for(i=0; i&lt;32; i++) { if((input[i]^0x37) != enc[i]) return 0; }</span><br/>
+<span class="term-comment">// enc @ 0x00404020, longueur 32, clé 0x37</span><br/>
+<br/>
+<span class="term-comment">── PHASE 3 : Extraire les bytes encodés ─────────────────────</span><br/>
+<span class="term-comment">// Script Ghidra ou GDB :</span><br/>
+<span class="term-prompt">$ </span>python3 -c "<br/>
+      import struct<br/>
+      with open('crackme_05','rb') as f:<br/>
+        f.seek(0x3020)   <span class="term-comment"># offset dans le fichier</span><br/>
+        raw = list(f.read(32))<br/>
+      flag = ''.join(chr(b^0x37) for b in raw)<br/>
+      print(flag)"<br/>
+<span class="term-green">SOOPHA{xor_0x37_decoded_nice}</span><br/>
+<br/>
+<span class="term-comment">── PHASE 4 : Vérification CyberChef ────────────────────────</span><br/>
+<span class="term-comment"># Input: 64 55 50 42 47 56 → XOR Key=37 → SOOPHA ✅</span>
+</div>
+</div>
+</div>
+<!-- SLIDE 11 — OBFUSCATION AVANCÉE -->
+<div class="slide" data-index="11">
+<div class="slide-tag">// Slide 12 · Techniques avancées · Polymorphisme · Chiffrement</div>
+<h2>Techniques d'Obfuscation Avancées</h2>
+<h3>Au-delà du XOR — les méthodes des malwares de niveau APT</h3>
+<div class="cmd-grid" style="margin-bottom:.8rem">
+<div class="cmd-card" style="border-color:rgba(255,68,102,.35)">
+<div class="cmd-name" style="color:#ff4466">🔁 Code polymorphe</div>
+<div class="cmd-desc">Le code se réécrit lui-même à chaque exécution. Les octets des instructions changent mais la sémantique reste identique. Rend la signature AV impossible.</div>
+<div class="cmd-ex">Approche RE : analyser le comportement (dynamique), pas les octets</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,136,0,.3)">
+<div class="cmd-name" style="color:#ff8800">🪃 Junk code insertion</div>
+<div class="cmd-desc">Instructions inutiles insérées entre le vrai code : NOP, MOV rax, rax, PUSH/POP. Gonfle le binaire et rend la lecture difficile. Très courant dans les crackmes CTF.</div>
+<div class="cmd-ex">Ghidra : Function Graph → identifier les blocs sans effets</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.3)">
+<div class="cmd-name" style="color:#ffd700">🔀 Control flow flattening</div>
+<div class="cmd-desc">Le flux de contrôle normal (if/while/for) est aplati via une dispatch table. Toutes les branches passent par un état central. LLVM-obfuscator utilise cette technique.</div>
+<div class="cmd-ex">Reconnaître : switch géant avec états → tracer chaque état</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,170,255,.2)">
+<div class="cmd-name" style="color:#00aaff">🔢 Arithmetic substitution</div>
+<div class="cmd-desc">Remplacer les opérations simples par des équivalents complexes : x+y → x - (~y) - 1, NOT x → -x - 1. Le compilateur ne peut pas simplifier ces formes obfusquées.</div>
+<div class="cmd-ex">Identifier : opérations arithmétiques sur des masques étranges</div>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "Face à l'obfuscation avancée, la dynamique prime : peu importe comment le code est écrit, ce qui arrive en mémoire à runtime est toujours le vrai texte. Un breakpoint au bon endroit vaut mieux que 3 heures de lecture de code obfusqué."
+  </div>
+</div>
+<!-- SLIDE 12 — OUTILS & RÉCAP PRATIQUE -->
+<div class="slide" data-index="12"><div class="slide-tag">// Slide 13 · Diagnostic rapide · Méthode obfuscation</div>
+<h2>Diagnostiquer une Obfuscation en 60 Secondes</h2>
+<h3>Le bon réflexe n'est pas de tout casser — c'est d'abord de reconnaître le motif</h3>
+<div class="cmd-grid" style="margin-bottom:.9rem">
+<div class="cmd-card"><div class="cmd-name">strings quasi vide</div><div class="cmd-desc">Souvent stack strings, XOR, chiffrement ou packing.</div><div class="cmd-ex">Indice : peu de texte lisible ≠ programme vide</div></div>
+<div class="cmd-card"><div class="cmd-name">Boucle + clé fixe</div><div class="cmd-desc">Signature classique d'un XOR simple.</div><div class="cmd-ex">buf[i] ^= 0x37</div></div>
+<div class="cmd-card"><div class="cmd-name">Tableau d'octets opaque</div><div class="cmd-desc">Probable payload encodé ou configuration cachée.</div><div class="cmd-ex">db 0x11,0x72,0x5A...</div></div>
+<div class="cmd-card"><div class="cmd-name">Construction caractère par caractère</div><div class="cmd-desc">Très souvent stack strings anti-strings.</div><div class="cmd-ex">mov byte ptr [rbp-0x20], 0x68</div></div>
+</div>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">✅ Méthode d'attaque</div>
+<ul class="bullets">
+<li>Identifier la famille : encodage, XOR, stack strings, packing.</li>
+<li>Choisir l'outil : Python, CyberChef, Ghidra, GDB, entropie.</li>
+<li>Valider vite sur un petit extrait avant d'automatiser tout le flux.</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">⚠️ Pièges</div>
+<ul class="bullets">
+<li class="warn">Confondre Base64 et chiffrement.</li>
+<li class="warn">Brute-forcer trop tôt alors qu'un known-plaintext suffit.</li>
+<li class="warn">Oublier que la vraie valeur n'apparaît parfois qu'au runtime.</li>
+</ul>
+</div>
+</div></div>
+<!-- SLIDE 13 — RÉCAP + NEXT -->
+<div class="slide" data-index="13">
+<div class="slide-tag">// Slide 14 · Récap · RE·06 · Anti-Debug &amp; Malware</div>
+<h2>RE·05 Terminé — Maître du Décodage</h2>
+<h3>Bilan des compétences et pont vers l'analyse malware</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">✅ Compétences Obfuscation &amp; XOR</div>
+<ul class="bullets">
+<li class="ok">Détecter l'obfuscation via entropie et absence de strings</li>
+<li class="ok">Comprendre et appliquer les <strong>propriétés XOR</strong></li>
+<li class="ok">Casser XOR monobyte : brute force, known-plaintext, frequency</li>
+<li class="ok">Déchiffrer XOR multibyte et rolling XOR en Python</li>
+<li class="ok">Reconnaître Base64, ROT13, Hex au premier coup d'œil</li>
+<li class="ok">Utiliser <strong>CyberChef</strong> et <strong>xortool</strong> pour automatiser</li>
+<li class="ok">Identifier et extraire les <strong>stack strings</strong> avec FLOSS</li>
+<li class="ok">Détecter et décompresser un binaire <strong>UPX</strong></li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">⏩ RE·06 — Anti-Debug &amp; Malware</div>
+<ul class="bullets">
+<li><strong>Anti-debug techniques</strong> — ptrace, timing, IsDebuggerPresent</li>
+<li>Contourner les protections anti-RE dans les malwares</li>
+<li><strong>Analyse malware statique</strong> — IOCs, YARA, classification</li>
+<li><strong>Sandbox</strong> vs analyse manuelle — quand utiliser quoi</li>
+<li><strong>Persistance et C2</strong> — comprendre l'architecture des malwares</li>
+<li>Rédiger un <strong>rapport d'analyse</strong> professionnel</li>
+<li class="ok">Le module final — synthèse de tout le parcours RE</li>
+</ul>
+</div>
+</div>
+<div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-green">✅ RE·01</span>
+<span class="pill pill-green">✅ RE·02</span>
+<span class="pill pill-green">✅ RE·03</span>
+<span class="pill pill-green">✅ RE·04</span>
+<span class="pill pill-green">✅ RE·05</span>
+<span class="pill pill-purple">⏩ RE·06 Malware</span>
+</div>
+</div>
+</div><!-- /slides -->
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+<div class="qcm-box">
+<div class="qcm-header">
+<span class="qcm-label">// QCM · RE·05 · Obfuscation &amp; XOR</span>
+<span class="qcm-prog" id="qcm-prog">QCM 1 / 5</span>
+</div>
+<div class="qcm-saving" id="qcm-saving">💾 Sauvegarde Supabase...</div>
+<div class="qcm-question" id="qcm-question"></div>
+<div class="qcm-options" id="qcm-options"></div>
+<div class="qcm-feedback" id="qcm-feedback"></div>
+<button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+</div>
+</div>
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+<div class="completion-box">
+<div class="completion-icon" id="comp-icon">🔐</div>
+<div class="completion-score" id="comp-score">100%</div>
+<div class="completion-title" id="comp-title">RE·05 Terminé !</div>
+<div class="completion-sub" id="comp-sub"></div>
+<div class="completion-saved">✓ Résultat sauvegardé dans Supabase</div>
+<a class="completion-btn completion-btn-primary" href="re6_v2.html">RE·06 — Anti-Debug &amp; Malware →</a>
+<a class="completion-btn completion-btn-secondary" href="formations.html">Retour aux formations</a>
+</div>
+</div>
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+<button class="nav-btn" disabled="" id="prev-btn" onclick="navigate(-1)">← PRÉC</button>
+<div style="display:flex;gap:1rem;align-items:center">
+<span class="qcm-indicator" id="qcm-ind"></span>
+<span id="slide-counter">01 / 14</span>
+</div>
+<button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIV →</button>
+</div>
+<script>
+var QCM = {
+  1: {
+    question: "Tu analyses un binaire avec 'strings' et tu obtiens presque rien de lisible. Quelle est la prochaine étape logique pour comprendre pourquoi et identifier la technique d'obfuscation utilisée ?",
+    options: [
+      "Relancer strings avec sudo — les permissions limitent les résultats par défaut, l'exécution en root révèle les strings cachées dans les sections protégées",
+      "Vérifier l'entropie avec 'binwalk -E' et chercher dans Ghidra une boucle avec XOR/ADD/SUB sur un tableau de bytes — haute entropie = packing, boucle XOR = obfuscation custom",
+      "Le binaire ne contient simplement pas de strings — c'est normal pour les programmes qui ne font pas d'affichage. Passer directement à l'analyse du flux principal",
+      "Utiliser un antivirus pour détecter le type d'obfuscation — les moteurs AV identifient précisément la technique et fournissent le nom de l'algorithme de déchiffrement"
+    ],
+    correct: 1,
+    explanation: "L'absence de strings lisibles est le signal d'alarme principal de l'obfuscation. Workflow diagnostic : (1) binwalk -E : entropie > 7.5 bits/byte = packing (UPX, etc.), entropie 5-6 = XOR simple. (2) Ghidra : chercher dans les fonctions une boucle qui accède à un tableau de bytes avec une opération XOR/ADD/SUB et une constante ou un tableau de clés. (3) Ghidra Entropy plugin → visualiser les zones denses. La combinaison strings vide + entropie modérée + boucle XOR dans le code = XOR obfuscation classique."
+  },
+  3: {
+    question: "Tu trouves dans Ghidra : encoded = [0x11, 0x0d, 0x0d, 0x12, 0x0a, 0x03] et la boucle 'if (input[i] ^ 0x42) != encoded[i]'. Tu sais que le flag commence par 'SOOPHA'. Quelle est la technique la plus rapide pour trouver la clé XOR ?",
+    options: [
+      "Brute force Python : tester les 256 clés possibles et chercher la sortie qui contient uniquement des caractères ASCII imprimables",
+      "Known-plaintext attack : calculer 'encoded[0] XOR ord(S)' = 0x11 XOR 0x53 = 0x42 — la clé est immédiatement trouvée avec un seul calcul",
+      "Frequency analysis : compter la fréquence de chaque byte dans encoded et supposer que le plus fréquent correspond à l'espace (0x20)",
+      "Inspecter la section .rodata dans Ghidra — la clé XOR est toujours stockée dans un label nommé 'xor_key' ou 'cipher_key' adjacent au tableau encodé"
+    ],
+    correct: 1,
+    explanation: "Known-plaintext attack : si tu connais une partie du plaintext (ici le préfixe de flag 'SOOPHA{'), tu peux calculer la clé directement. Formule : key = ciphertext[i] XOR plaintext[i]. Exemple : encoded[0]=0x11, plaintext[0]='S'=0x53 → key = 0x11 XOR 0x53 = 0x42. Vérification : 0x0d XOR 0x42 = 0x4F = 'O' ✓. C'est la méthode la plus rapide car elle ne nécessite qu'un seul calcul au lieu de 256. Dans Ghidra, la clé est souvent visible directement dans l'instruction : XOR byte [rbp-0x8], 0x42 — la constante 0x42 IS la clé."
+  },
+  5: {
+    question: "Dans CyberChef, tu colles des données suspectes et tu cliques sur 'Magic'. CyberChef suggère 'From Base64 then XOR with key 0x42'. Comment valider et affiner ce résultat ?",
+    options: [
+      "CyberChef Magic est toujours correct — accepter directement le résultat sans vérification supplémentaire, il utilise l'IA pour décoder",
+      "Ajouter les opérations manuellement : 'From Base64' puis 'XOR' avec 0x42 en mode Standard. Vérifier que le résultat contient du texte ASCII lisible ou le format du flag attendu (SOOPHA{...}). Si incorrect, tester d'autres modes XOR (Differential, Cascade)",
+      "Magic ne fonctionne que pour Base64 pur — il faut d'abord décoder le Base64 dans un terminal, puis coller le résultat dans un nouveau CyberChef pour le XOR",
+      "Copier la recette générée par Magic et la soumettre à un service tiers pour validation — CyberChef ne peut pas valider ses propres résultats"
+    ],
+    correct: 1,
+    explanation: "CyberChef Magic est un excellent point de départ mais pas infaillible — il propose des candidats, pas une certitude. Workflow correct : (1) Magic propose 'From Base64 → XOR 0x42'. (2) Ajouter manuellement ces deux recettes dans l'ordre. (3) Vérifier que l'Output contient du texte lisible ou le format du flag. (4) Si le résultat est du garbage → tester différents modes XOR (Standard = XOR simple byte par byte, Differential = chaque byte XOR avec le précédent, Cascade = XOR cumulatif). (5) Si toujours incorrect → Magic s'est trompé sur l'ordre ou la clé → essayer 'XOR then From Base64'. CyberChef est un outil, pas un oracle."
+  },
+  7: {
+    question: "Ghidra ne trouve pas de strings lisibles dans un malware. Dans la fonction init(), tu vois 30 instructions 'MOV byte [rbp-N], 0xXX' consécutives. Que fait ce code et comment récupérer la string ?",
+    options: [
+      "Ce sont des initialisations de variables locales pour des calculs arithmétiques — le malware prépare une opération mathématique, pas une string",
+      "C'est une stack string — la chaîne est construite caractère par caractère sur la pile pour éviter qu'elle apparaisse dans .rodata. Pour la récupérer : GDB breakpoint après la dernière instruction MOV + x/s $rbp-30, ou utiliser FLOSS qui extrait automatiquement les stack strings",
+      "C'est du junk code inséré par l'obfuscateur — les instructions MOV consécutives sans logique sont ignorées par le CPU à l'exécution grâce à une optimisation branch predictor",
+      "Le compilateur a généré du code non optimisé — ces MOV byte répétitifs correspondent à une memset() que l'optimiseur n'a pas su simplifier, sans impact sur la logique"
+    ],
+    correct: 1,
+    explanation: "Les stack strings sont LA technique d'obfuscation anti-strings numéro 1 dans les malwares modernes. Principe : au lieu de stocker 'http://c2.evil.io' dans .rodata (visible par strings), chaque caractère est assigné individuellement sur la stack avec MOV byte [rbp-N], ASCII_VALUE. L'outil strings ne peut pas détecter ça car la string n'existe jamais en mémoire statique. Solutions : (1) FLOSS (flare-floss) → extrait automatiquement les stack strings en émulant l'exécution. (2) GDB : breakpoint après le dernier MOV → x/s $rsp → la string est assemblée en mémoire. (3) Ghidra Script : identifier les blocs de MOV byte consécutifs et reconstituer la string."
+  },
+  9: {
+    question: "binwalk -E montre une entropie de 7.9 bits/byte sur tout le binaire. strings ne trouve rien. upx -t dit 'not packed with UPX'. Que suspectes-tu et quelle est la stratégie ?",
+    options: [
+      "L'entropie de 7.9 est normale — tous les binaires compilés avec O2 optimization ont cette entropie car la compression des instructions augmente la densité d'information",
+      "Le binaire est probablement packé avec un packer custom (pas UPX). Stratégie : GDB → laisser le stub se décompresser → breakpoint sur l'OEP (chercher un JMP vers une zone mémoire exécutable allouée dynamiquement) → process_dump pour récupérer le binaire décompressé en mémoire",
+      "L'entropie de 7.9 indique une corruption du fichier — le binaire doit être retéléchargé, les données corrompues génèrent toujours une entropie proche de 8",
+      "strings ne trouve rien car les strings sont encodées en UTF-16 — relancer avec 'strings -e l' pour les wide chars, l'entropie élevée est due au format Unicode"
+    ],
+    correct: 1,
+    explanation: "Entropie 7.9 + strings vide + pas UPX = packer custom ou chiffrement fort. Workflow pour les packers non-UPX : (1) GDB : lancer le binaire, laisser le stub s'exécuter. (2) Mettre un breakpoint sur les nouvelles allocations mémoire : 'catch syscall mmap' → chercher les zones rwx (readable + writable + executable = le stub écrit et exécute du code). (3) Stepper jusqu'à voir un JMP vers cette zone → c'est l'OEP du binaire original. (4) Dump : pmap PID pour voir la carte mémoire → dd ou process_dump pour extraire. (5) Analyser le dump avec Ghidra comme un binaire normal. Alternatives : Any.run sandbox, Cuckoo, REMnux — pour les malwares, la sandbox est souvent plus rapide."
+  }
+};
+
+var COURSE_ID = 're5';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active'); current = next; updateUI();
+}
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){ document.getElementById('comp-icon').textContent='🔐'; document.getElementById('comp-title').textContent='XOR Cracker !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Aucun XOR ne te résiste — en route pour l\'analyse malware !'; }
+  else if(pct>=60){ document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='RE·05 Terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Relis les sections XOR multibyte et stack strings avant de continuer.'; }
+  else { document.getElementById('comp-icon').textContent='⚙️'; document.getElementById('comp-title').textContent='RE·05 Terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Reprends depuis les propriétés XOR et la méthode known-plaintext.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='01XORBASE64STACKSTRINGOBFUSCATEENCODEDECODEKEYCIPHER',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(4,2,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#aa44ff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

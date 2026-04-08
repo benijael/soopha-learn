@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="/favicon.ico" rel="icon" type="image/x-icon"/>
+<title>RE·02 — Assembleur x86-64 · SooPHA Learn</title>
+<link href="../css/global.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(4,2,12,.97);border-bottom:1px solid rgba(170,68,255,.15);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(170,68,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(170,68,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}
+.tb-back:hover{color:#aa44ff}
+.tb-dot{width:6px;height:6px;background:#aa44ff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(170,68,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#6622cc,#aa44ff);box-shadow:0 0 8px #aa44ff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#aa44ff;--acc-dim:rgba(170,68,255,.15);--acc-faint:rgba(170,68,255,.06);--acc-border:rgba(170,68,255,.2)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#aa44ff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(170,68,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(8,4,20,.88);border:1px solid var(--acc-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(220,200,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#aa44ff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}
+.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}
+.bullets li.ok::before{content:'✅';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.terminal{background:rgba(4,0,12,.85);border:1px solid rgba(170,68,255,.12);border-left:3px solid #aa44ff;padding:.9rem 1.2rem;font-family:var(--mono);font-size:.75rem;color:rgba(200,170,255,.8);line-height:2;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.85}
+.term-prompt{color:#aa44ff}
+.term-out{color:rgba(200,170,255,.45)}
+.term-comment{color:rgba(170,68,255,.4);font-style:italic}
+.term-red{color:#ff4466}
+.term-yellow{color:#ffd700}
+.term-green{color:#00ff88}
+.term-blue{color:#00aaff}
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(170,68,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(170,68,255,.1)}
+.quote{border-left:3px solid #aa44ff;padding:.7rem 1rem;background:var(--acc-faint);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#e8d0ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #aa44ff,0 0 80px rgba(170,68,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #aa44ff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#aa44ff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,170,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(170,68,255,.12);background:var(--acc-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#aa44ff;text-shadow:0 0 8px #aa44ff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(220,200,255,.85);line-height:1.5}
+.reg-table{width:100%;border-collapse:collapse;max-width:880px}
+.reg-table th{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.5);letter-spacing:.15em;padding:.5rem .8rem;border-bottom:1px solid rgba(170,68,255,.15);text-align:left}
+.reg-table td{font-family:var(--mono);font-size:.72rem;padding:.45rem .8rem;border-bottom:1px solid rgba(170,68,255,.06)}
+.reg-table tr:last-child td{border-bottom:none}
+.reg-name-col{color:#aa44ff}
+.reg-alt-col{color:rgba(170,68,255,.5)}
+.reg-role-col{color:rgba(200,170,255,.7);font-family:var(--body)!important;font-size:.75rem!important}
+.reg-note-col{color:rgba(255,215,0,.6);font-size:.65rem!important}
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(4,2,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(8,4,20,.97);border:1px solid rgba(170,68,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(170,68,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(170,68,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.35);margin-bottom:.5rem;display:none}
+.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(4,0,16,.3);border:1px solid rgba(170,68,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(210,190,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(170,68,255,.35);background:rgba(170,68,255,.06);color:rgba(220,200,255,.95)}
+.qcm-option.correct{border-color:#aa44ff!important;background:rgba(170,68,255,.12)!important;color:#aa44ff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#aa44ff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:rgba(220,200,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(170,68,255,.15);border:1px solid rgba(170,68,255,.4);color:#aa44ff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(170,68,255,.25);box-shadow:0 0 20px rgba(170,68,255,.2)}
+.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(4,2,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(170,68,255,.3);background:rgba(8,4,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #aa44ff;border-left:2px solid #aa44ff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #aa44ff;border-right:2px solid #aa44ff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#aa44ff;text-shadow:0 0 20px #aa44ff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,170,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#aa44ff;color:#0a0014}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(170,68,255,.4);color:#aa44ff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(4,2,12,.97);border-top:1px solid rgba(170,68,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(170,68,255,.2);color:rgba(170,68,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#aa44ff;color:#aa44ff}
+.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(170,68,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#aa44ff;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+<div class="tb-left">
+<a class="tb-back" href="formations.html">← Formations</a>
+<span><span class="tb-dot"></span>// RE·02 · Assembleur x86-64</span>
+</div>
+<div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+<div id="slides">
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+<div class="slide-tag">// RE·02 · Module 16 · SooPHA Learn</div>
+<h1 class="glitch">ASSEMBLEUR<br/>x86-64</h1>
+<div class="gabon-bar"><span></span><span></span><span></span></div>
+<h3>Registres · Instructions · Pile · Calling Convention</h3>
+<div class="card" style="text-align:center;max-width:700px">
+<ul class="bullets" style="text-align:left">
+<li><strong>14 slides</strong> · 5 QCM obligatoires · ~60 min</li>
+<li><strong>Registres x86-64</strong> — les 16 registres généraux et leur rôle précis</li>
+<li><strong>Instructions clés</strong> — MOV, LEA, PUSH, POP, ADD, XOR, CMP, JE, CALL, RET</li>
+<li><strong>La pile (stack)</strong> — comment les fonctions gèrent leur espace mémoire</li>
+<li><strong>Prologue &amp; épilogue</strong> — les patterns universels de toute fonction compilée</li>
+<li><strong>Calling convention</strong> — System V AMD64 ABI, passage des arguments</li>
+<li><strong>Lire une fonction complète</strong> — patterns de boucles, conditions, switches</li>
+<li class="ok">Prérequis : RE·01 — Introduction (ELF, outils, environnement)</li>
+</ul>
+</div>
+<div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-purple">RE · Module 2/6</span>
+<span class="pill pill-blue">x86-64 · Intel Syntax</span>
+<span class="pill pill-orange">MOV · PUSH · CALL · JE</span>
+<span class="pill pill-yellow">System V AMD64 ABI</span>
+</div>
+</div>
+<!-- SLIDE 1 — QCM : POURQUOI APPRENDRE L'ASM -->
+<div class="slide" data-index="1">
+<div class="slide-tag">// Slide 02 · Pourquoi l'assembleur · QCM requis</div>
+<h2>Pourquoi Apprendre l'Assembleur en 2026 ?</h2>
+<h3>Le compilateur ne ment pas — l'assembleur montre ce qui se passe vraiment</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🎯 Sans asm, tu es aveugle</div>
+<ul class="bullets">
+<li>Ghidra produit un <strong>pseudo-code approximatif</strong> — l'asm est la vérité absolue</li>
+<li>Les <strong>optimisations du compilateur</strong> (-O2, -O3) transforment radicalement le code C — seul l'asm dit ce qui s'exécute vraiment</li>
+<li>Les <strong>vulnérabilités bas niveau</strong> (buffer overflow, format string, UAF) ne se voient qu'en asm</li>
+<li>En CTF, <strong>la logique de validation</strong> du flag est toujours dans l'asm — le décompilateur peut se tromper</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">✅ Ce que tu peux faire après ce module</div>
+<ul class="bullets">
+<li>Lire et comprendre n'importe quelle fonction désassemblée</li>
+<li>Identifier immédiatement les boucles, conditions et appels de fonction</li>
+<li>Suivre le flux de données entre les registres et la mémoire</li>
+<li>Poser un breakpoint GDB au bon endroit grâce à l'adresse asm</li>
+<li>Comprendre pourquoi le décompilateur Ghidra affiche parfois du code étrange</li>
+</ul>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "L'assembleur, c'est la langue maternelle du CPU. Tout ce qui s'exécute sur ta machine parle assembleur. En l'apprenant, tu parles directement au processeur — sans intermédiaire, sans mensonge."
+  </div>
+</div>
+<!-- SLIDE 2 — REGISTRES GÉNÉRAUX -->
+<div class="slide" data-index="2">
+<div class="slide-tag">// Slide 03 · Registres généraux · 64/32/16/8 bits</div>
+<h2>Les Registres x86-64 — La Mémoire Ultra-Rapide du CPU</h2>
+<h3>16 registres généraux de 64 bits — chacun avec un rôle précis en RE</h3>
+<div class="card" style="padding:.8rem 0;margin-bottom:.8rem">
+<table class="reg-table">
+<tr><th>64-bit</th><th>32-bit</th><th>16-bit</th><th>8-bit</th><th>Rôle principal</th><th>Note RE</th></tr>
+<tr><td class="reg-name-col">RAX</td><td class="reg-alt-col">EAX</td><td class="reg-alt-col">AX</td><td class="reg-alt-col">AL</td><td class="reg-role-col">Accumulateur — valeur de retour des fonctions</td><td class="reg-note-col">Toujours checker RAX après un CALL</td></tr>
+<tr><td class="reg-name-col">RBX</td><td class="reg-alt-col">EBX</td><td class="reg-alt-col">BX</td><td class="reg-alt-col">BL</td><td class="reg-role-col">Registre préservé — souvent pointeur vers des données</td><td class="reg-note-col">Callee-saved</td></tr>
+<tr><td class="reg-name-col">RCX</td><td class="reg-alt-col">ECX</td><td class="reg-alt-col">CX</td><td class="reg-alt-col">CL</td><td class="reg-role-col">Compteur — 4e argument de fonction</td><td class="reg-note-col">Souvent le compteur de boucles</td></tr>
+<tr><td class="reg-name-col">RDX</td><td class="reg-alt-col">EDX</td><td class="reg-alt-col">DX</td><td class="reg-alt-col">DL</td><td class="reg-role-col">3e argument — données I/O, quotient/reste</td><td class="reg-note-col">3e arg (après RDI, RSI)</td></tr>
+<tr><td class="reg-name-col">RSI</td><td class="reg-alt-col">ESI</td><td class="reg-alt-col">SI</td><td class="reg-alt-col">SIL</td><td class="reg-role-col">Source Index — 2e argument de fonction</td><td class="reg-note-col">2e arg — souvent un pointeur string</td></tr>
+<tr><td class="reg-name-col">RDI</td><td class="reg-alt-col">EDI</td><td class="reg-alt-col">DI</td><td class="reg-alt-col">DIL</td><td class="reg-role-col">Destination Index — 1er argument de fonction</td><td class="reg-note-col">1er arg — très important en RE</td></tr>
+<tr><td class="reg-name-col">R8–R15</td><td class="reg-alt-col">R8d–R15d</td><td class="reg-alt-col">R8w–R15w</td><td class="reg-alt-col">R8b–R15b</td><td class="reg-role-col">5e–12e arguments et registres généraux</td><td class="reg-note-col">R8=5e arg, R9=6e arg</td></tr>
+</table>
+</div>
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center">
+<span class="pill pill-yellow">Règle mémo : RDI RSI RDX RCX R8 R9 = ordre des 6 premiers arguments</span>
+</div>
+</div>
+<!-- SLIDE 3 — REGISTRES SPÉCIAUX -->
+<div class="slide" data-index="3">
+<div class="slide-tag">// Slide 04 · RSP · RBP · RIP · RFLAGS</div>
+<h2>Registres Spéciaux — Le Chef d'Orchestre du CPU</h2>
+<h3>Ces registres contrôlent le flux d'exécution — les plus importants en RE</h3>
+<div class="cmd-grid" style="margin-bottom:.8rem">
+<div class="cmd-card" style="border-color:rgba(255,68,102,.3)">
+<div class="cmd-name" style="color:#ff4466">RSP — Stack Pointer</div>
+<div class="cmd-desc">Pointe toujours vers le sommet de la pile (stack). Décrémenté par PUSH, incrémenté par POP. RSP - offset = accès aux variables locales. Ne jamais modifier directement sans raison.</div>
+<div class="cmd-ex">x/8xg $rsp → voir le sommet de la pile dans GDB</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+<div class="cmd-name" style="color:#00aaff">RBP — Base Pointer</div>
+<div class="cmd-desc">Base du stack frame courant. Les variables locales sont à RBP-offset (ex: [rbp-0x8]) et les arguments anciens à RBP+offset. Sert de référence stable dans la fonction.</div>
+<div class="cmd-ex">[rbp-0x8] = variable locale 1 · [rbp-0x10] = variable locale 2</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(170,68,255,.4)">
+<div class="cmd-name" style="color:#aa44ff">RIP — Instruction Pointer</div>
+<div class="cmd-desc">Adresse de la prochaine instruction à exécuter. Ne peut pas être modifié directement en x86-64 (contrairement à x86-32). Modifié par JMP, CALL, RET, conditions.</div>
+<div class="cmd-ex">p $rip → adresse actuelle · set $rip = 0x1234 dans GDB</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,215,0,.3)">
+<div class="cmd-name" style="color:#ffd700">RFLAGS — Registre de drapeaux</div>
+<div class="cmd-desc">Bits qui enregistrent le résultat d'une comparaison. ZF (Zero Flag) = résultat nul. CF (Carry) = débordement non signé. SF (Sign) = résultat négatif. OF (Overflow) = débordement signé.</div>
+<div class="cmd-ex">CMP rax, 0 → si rax=0 : ZF=1 → JE saute</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+<div class="cmd-name" style="color:#00ff88">XMM0–XMM15 — Registres SIMD</div>
+<div class="cmd-desc">Registres 128-bit pour les opérations SIMD (Single Instruction Multiple Data). Utilisés par les fonctions mathématiques, les chaînes optimisées, et parfois le chiffrement.</div>
+<div class="cmd-ex">memcpy et strcmp optimisés utilisent souvent XMM0</div>
+</div>
+<div class="cmd-card" style="border-color:rgba(255,136,0,.2)">
+<div class="cmd-name" style="color:#ff8800">Taille des registres</div>
+<div class="cmd-desc">Un même registre physique selon la taille utilisée : RAX (64-bit) → EAX (32-bit, efface les 32 bits hauts) → AX (16-bit) → AL/AH (8-bit). Crucial pour comprendre les mouvements de données.</div>
+<div class="cmd-ex">mov eax, 1 → RAX = 0x0000000000000001</div>
+</div>
+</div>
+</div>
+<!-- SLIDE 4 — QCM : INSTRUCTIONS -->
+<div class="slide" data-index="4">
+<div class="slide-tag">// Slide 05 · Instructions clés · MOV LEA ADD XOR · QCM requis</div>
+<h2>Instructions Fondamentales — Le Vocabulaire de l'Assembleur</h2>
+<h3>Les 10 instructions que tu verras dans CHAQUE fonction désassemblée</h3>
+<div class="cmd-grid" style="margin-bottom:.8rem">
+<div class="cmd-card">
+<div class="cmd-name">MOV dst, src</div>
+<div class="cmd-desc">Déplace une valeur d'une source vers une destination. Registre → registre, mémoire → registre, immédiat → registre. L'instruction la plus fréquente de l'assembleur.</div>
+<div class="cmd-ex">mov rax, rdi   ; rax = rdi<br/>mov [rbp-8], rax ; écrire en mémoire</div>
+</div>
+<div class="cmd-card">
+<div class="cmd-name">LEA dst, [expr]</div>
+<div class="cmd-desc">Load Effective Address — charge l'ADRESSE calculée, pas la valeur à cette adresse. Utilisé pour des calculs d'adresse et souvent par le compilateur pour des multiplications rapides.</div>
+<div class="cmd-ex">lea rdi, [rbp-0x40] ; adresse du buffer local<br/>lea rax, [rax+rax*2] ; rax = rax * 3</div>
+</div>
+<div class="cmd-card">
+<div class="cmd-name">ADD / SUB</div>
+<div class="cmd-desc">Addition et soustraction. Modifient les flags RFLAGS (ZF, CF, OF, SF). sub rsp, 0x40 = réserver 64 octets pour les variables locales (très courant dans les prologues).</div>
+<div class="cmd-ex">add rax, 1   ; rax++<br/>sub rsp, 0x40 ; allouer 64 octets sur la stack</div>
+</div>
+<div class="cmd-card">
+<div class="cmd-name">XOR dst, src</div>
+<div class="cmd-desc">OU exclusif bit à bit. Deux usages : (1) zeroing rapide : xor eax, eax = mettre RAX à 0. (2) Encodage/décodage XOR en CTF. Le compilateur utilise souvent xor eax, eax plutôt que mov eax, 0.</div>
+<div class="cmd-ex">xor eax, eax       ; rax = 0 (zeroing)<br/>xor al, 0x42       ; décodage XOR</div>
+</div>
+<div class="cmd-card">
+<div class="cmd-name">IMUL / MUL / DIV</div>
+<div class="cmd-desc">Multiplication et division. IMUL = signé. MUL = non signé. La division est rarement générée directement — le compilateur utilise des shifts et multiplications magiques pour les constantes.</div>
+<div class="cmd-ex">imul rax, rdx, 0x1d ; rax = rdx * 29</div>
+</div>
+<div class="cmd-card">
+<div class="cmd-name">AND / OR / NOT / SHL / SHR</div>
+<div class="cmd-desc">Opérations bit à bit et shifts. SHL = shift left (multiplier par 2^n). SHR = shift right (diviser par 2^n). Très utilisés dans les algorithmes de chiffrement et les flags de bits.</div>
+<div class="cmd-ex">shl rax, 3 ; rax = rax * 8<br/>and rax, 0xff ; garder seulement le byte bas</div>
+</div>
+</div>
+</div>
+<!-- SLIDE 5 — LA PILE -->
+<div class="slide" data-index="5">
+<div class="slide-tag">// Slide 06 · Stack · PUSH · POP · Fonctionnement</div>
+<h2>La Pile (Stack) — La Mémoire des Fonctions</h2>
+<h3>Comprendre la stack = comprendre comment toute fonction gère son espace</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📚 Fonctionnement LIFO</div>
+<ul class="bullets">
+<li>La stack <strong>grandit vers le bas</strong> — les adresses diminuent quand on empile</li>
+<li><strong>PUSH rax</strong> → RSP -= 8, puis [RSP] = RAX (écriture en tête de pile)</li>
+<li><strong>POP rax</strong> → RAX = [RSP], puis RSP += 8 (lecture et libération)</li>
+<li>Chaque appel de fonction crée un <strong>nouveau stack frame</strong> — espace isolé pour variables locales et état des registres</li>
+<li class="warn">Si RSP sort du segment stack → <strong>Stack Overflow</strong> (crash ou exploitation)</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🏗️ Structure d'un stack frame</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-comment">; Adresses décroissantes vers le bas</span><br/>
+<span class="term-out">Haute adresse</span><br/>
+<span class="term-out">┌──────────────────┐</span><br/>
+<span class="term-blue">│ Arguments caller  │ ← [rbp+0x10]</span><br/>
+<span class="term-blue">│ Adresse retour    │ ← [rbp+0x08] (CALL)</span><br/>
+<span class="term-green">│ Ancien RBP sauvé  │ ← [rbp] (PUSH rbp)</span><br/>
+<span class="term-yellow">│ Variable locale 1 │ ← [rbp-0x08]</span><br/>
+<span class="term-yellow">│ Variable locale 2 │ ← [rbp-0x10]</span><br/>
+<span class="term-yellow">│ Buffer (tableau)  │ ← [rbp-0x50]</span><br/>
+<span class="term-red">│ ←── RSP (sommet)  │</span><br/>
+<span class="term-out">└──────────────────┘</span><br/>
+<span class="term-out">Basse adresse</span>
+</div>
+</div>
+</div>
+</div>
+<!-- SLIDE 6 — PROLOGUE & ÉPILOGUE -->
+<div class="slide" data-index="6">
+<div class="slide-tag">// Slide 07 · CALL · RET · Prologue · Épilogue · Fonctions</div>
+<h2>CALL &amp; RET — Mécanique des Appels de Fonctions</h2>
+<h3>Chaque fonction suit le même schéma — le reconnaître instantanément</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📞 Ce que CALL fait réellement</div>
+<ul class="bullets">
+<li><strong>1.</strong> PUSH l'adresse de l'instruction suivante sur la stack (adresse de retour)</li>
+<li><strong>2.</strong> JMP vers l'adresse de la fonction appelée (modifie RIP)</li>
+<li>Résultat : RSP -= 8 et RIP = adresse de la fonction</li>
+<li class="ok">C'est pourquoi les buffer overflows sur la stack peuvent écraser l'adresse de retour et hijacker le flux d'exécution</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🔄 Ce que RET fait réellement</div>
+<ul class="bullets">
+<li><strong>1.</strong> POP l'adresse de retour depuis le sommet de la stack</li>
+<li><strong>2.</strong> JMP vers cette adresse (retour à l'appelant)</li>
+<li>Résultat : RSP += 8 et RIP = adresse de retour</li>
+<li class="warn">Si la stack a été corrompue (overflow), RET saute vers une adresse contrôlée par l'attaquant</li>
+</ul>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment">; Prologue standard — IDENTIQUE dans presque toutes les fonctions</span><br/>
+<span class="term-blue">push</span> <span class="term-green">rbp</span>               <span class="term-comment">; sauvegarder le frame pointer de l'appelant</span><br/>
+<span class="term-blue">mov</span>  <span class="term-green">rbp</span>, <span class="term-green">rsp</span>           <span class="term-comment">; créer le nouveau stack frame</span><br/>
+<span class="term-blue">sub</span>  <span class="term-green">rsp</span>, <span class="term-yellow">0x40</span>          <span class="term-comment">; réserver 64 octets pour les variables locales</span><br/>
+<br/>
+<span class="term-comment">; ... corps de la fonction ...</span><br/>
+<br/>
+<span class="term-comment">; Épilogue standard</span><br/>
+<span class="term-blue">leave</span>                  <span class="term-comment">; = mov rsp, rbp + pop rbp</span><br/>
+<span class="term-blue">ret</span>                    <span class="term-comment">; pop rip (retour à l'appelant)</span>
+</div>
+</div>
+<!-- SLIDE 7 — QCM : CONTRÔLE DE FLUX -->
+<div class="slide" data-index="7">
+<div class="slide-tag">// Slide 08 · CMP · TEST · JMP · JE · JNE · QCM requis</div>
+<h2>Contrôle de Flux — CMP, TEST et les Sauts Conditionnels</h2>
+<h3>Comment le processeur prend des décisions — la clé pour identifier les conditions if/else</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">⚖️ CMP et TEST — Comparer sans modifier</div>
+<ul class="bullets">
+<li><strong>CMP a, b</strong> — effectue (a - b) et positionne les flags SANS stocker le résultat. ZF=1 si a==b, CF=1 si a&lt;b (non signé)</li>
+<li><strong>TEST a, b</strong> — effectue (a AND b) et positionne les flags. TEST rax, rax → ZF=1 si rax==0. Idiome très fréquent pour tester la nullité</li>
+<li class="ok">CMP = pour comparer deux valeurs · TEST = pour tester des bits ou vérifier le zéro</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">🔀 Sauts conditionnels essentiels</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-blue">JE</span>  / <span class="term-blue">JZ</span>    <span class="term-comment">; Jump if Equal / Zero Flag = 1</span><br/>
+<span class="term-blue">JNE</span> / <span class="term-blue">JNZ</span>  <span class="term-comment">; Jump if Not Equal / ZF = 0</span><br/>
+<span class="term-blue">JG</span>  / <span class="term-blue">JNLE</span> <span class="term-comment">; Jump if Greater (signé)</span><br/>
+<span class="term-blue">JGE</span> / <span class="term-blue">JNL</span> <span class="term-comment">; Jump if Greater or Equal</span><br/>
+<span class="term-blue">JL</span>  / <span class="term-blue">JNGE</span> <span class="term-comment">; Jump if Less (signé)</span><br/>
+<span class="term-blue">JLE</span> / <span class="term-blue">JNG</span> <span class="term-comment">; Jump if Less or Equal</span><br/>
+<span class="term-blue">JA</span>  / <span class="term-blue">JB</span>    <span class="term-comment">; Above / Below (non signé)</span><br/>
+<span class="term-blue">JMP</span> <span class="term-comment">; Saut inconditionnel</span>
+</div>
+</div>
+</div>
+<div class="terminal sm">
+<span class="term-comment">; Pattern classique : if (rax == 0) goto .success</span><br/>
+<span class="term-blue">cmp</span>  rax, <span class="term-yellow">0</span>                    <span class="term-comment">; rax - 0 → flags</span><br/>
+<span class="term-blue">je</span>   .success                    <span class="term-comment">; si ZF=1 → .success</span><br/>
+<br/>
+<span class="term-comment">; Pattern : while (i &lt; len) → la boucle CTF classique</span><br/>
+<span class="term-blue">cmp</span> <span class="term-green">rcx</span>, <span class="term-green">rdx</span>                   <span class="term-comment">; i vs len</span><br/>
+<span class="term-blue">jge</span>  .loop_end                   <span class="term-comment">; si i &gt;= len → sortir</span>
+</div>
+</div>
+<!-- SLIDE 8 — CALLING CONVENTION -->
+<div class="slide" data-index="8">
+<div class="slide-tag">// Slide 09 · System V AMD64 ABI · Passage des arguments</div>
+<h2>System V AMD64 ABI — La Convention d'Appel Linux</h2>
+<h3>Comment les arguments sont passés et récupérés — essentiel pour tracer les appels de fonction</h3>
+<div class="grid2" style="margin-bottom:.8rem">
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📦 Ordre des arguments (Linux/macOS)</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+<span class="term-comment">// Fonction C :  int check(char *s, int len, int key)</span><br/>
+<span class="term-comment">// En assembleur avant le CALL :</span><br/>
+<span class="term-green">RDI</span> = s          <span class="term-comment">; 1er argument — pointeur string</span><br/>
+<span class="term-green">RSI</span> = len        <span class="term-comment">; 2e argument — longueur</span><br/>
+<span class="term-green">RDX</span> = key        <span class="term-comment">; 3e argument — clé XOR</span><br/>
+<span class="term-green">RCX</span> = 4e arg<br/>
+<span class="term-green">R8</span>  = 5e arg<br/>
+<span class="term-green">R9</span>  = 6e arg<br/>
+<span class="term-out">7e+ args → sur la stack (au-delà de 6)</span><br/>
+<span class="term-green">RAX</span> = valeur de retour de la fonction
+      </div>
+</div>
+<div class="card">
+<div class="cmd-name" style="margin-bottom:.7rem">📋 Registres préservés (Callee-saved)</div>
+<ul class="bullets">
+<li><strong>Caller-saved</strong> (tu peux les utiliser librement) : RAX, RCX, RDX, RSI, RDI, R8–R11</li>
+<li><strong>Callee-saved</strong> (la fonction appelée DOIT les restaurer) : RBX, RBP, R12–R15</li>
+<li class="ok">En RE : si tu vois PUSH RBX au début d'une fonction → RBX va être utilisé intensivement</li>
+<li class="warn">Les compilateurs optimisés ignorent parfois le frame pointer (RBP) pour gagner un registre</li>
+</ul>
+</div>
+</div>
+<div class="quote" style="max-width:880px;width:100%">
+    "Mémo infaillible : <strong>RDI RSI RDX RCX R8 R9</strong>. Sur Linux, les 6 premiers arguments d'un appel strcmp(s1, s2) → RDI=s1, RSI=s2. Mets un breakpoint avant CALL strcmp, affiche x/s $rdi et x/s $rsi — tu lis les deux chaînes comparées."
+  </div>
+</div>
+<!-- SLIDE 9 — QCM : LIRE UNE BOUCLE -->
+<div class="slide" data-index="9">
+<div class="slide-tag">// Slide 10 · Lire une boucle · Patterns · QCM requis</div>
+<h2>Lire une Boucle en Assembleur</h2>
+<h3>Le pattern for/while en asm — le plus fréquent dans les challenges RE</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">📖 Exemple complet : boucle XOR (challenge 2 SooPHA CTF)</div>
+<div class="terminal sm" style="margin:0;border:none;background:transparent">
+<span class="term-comment">; int check_flag(char *input) {</span><br/>
+<span class="term-comment">;   for (int i = 0; i &lt; 29; i++) {</span><br/>
+<span class="term-comment">;     if ((input[i] ^ 0x42) != encoded[i]) return 0;</span><br/>
+<span class="term-comment">;   } return 1; }</span><br/>
+<br/>
+<span class="term-blue">xor</span> <span class="term-green">eax</span>, <span class="term-green">eax</span>                   <span class="term-comment">; i = 0</span><br/>
+<span class="term-comment">.loop:</span><br/>
+<span class="term-blue">cmp</span> <span class="term-green">eax</span>, <span class="term-yellow">0x1d</span>                  <span class="term-comment">; i &lt; 29 (0x1d)</span><br/>
+<span class="term-blue">jge</span>  .done                       <span class="term-comment">; si i &gt;= 29 → exit</span><br/>
+<span class="term-blue">movzx</span> <span class="term-green">ecx</span>, byte [<span class="term-green">rdi</span>+<span class="term-green">rax</span>]       <span class="term-comment">; ecx = input[i]</span><br/>
+<span class="term-blue">xor</span> <span class="term-green">ecx</span>, <span class="term-yellow">0x42</span>                  <span class="term-comment">; ecx ^= 0x42</span><br/>
+<span class="term-blue">movzx</span> <span class="term-green">edx</span>, byte [<span class="term-green">rip</span>+encoded+<span class="term-green">rax</span>] <span class="term-comment">; edx = encoded[i]</span><br/>
+<span class="term-blue">cmp</span> <span class="term-green">ecx</span>, <span class="term-green">edx</span>                   <span class="term-comment">; input[i]^0x42 vs encoded[i]</span><br/>
+<span class="term-blue">jne</span>  .fail                       <span class="term-comment">; si différent → fail</span><br/>
+<span class="term-blue">inc</span> <span class="term-green">eax</span>                         <span class="term-comment">; i++</span><br/>
+<span class="term-blue">jmp</span>  .loop                       <span class="term-comment">; retour au début</span><br/>
+<span class="term-comment">.done: mov eax, 1 · ret          ; return 1 (succès)</span><br/>
+<span class="term-comment">.fail: xor eax, eax · ret        ; return 0 (échec)</span>
+</div>
+</div>
+</div>
+<!-- SLIDE 10 — PATTERNS COURANTS -->
+<div class="slide" data-index="10"><div class="slide-tag">// Slide 11 · Traduction ASM → pseudo-C · Patterns</div>
+<h2>Traduire Mentalement l'Assembleur en Logique Métier</h2>
+<h3>Le but n'est pas de réciter les mnémotechniques, mais de reconstruire l'intention du développeur</h3>
+<div class="cmd-grid" style="margin-bottom:.9rem">
+<div class="cmd-card"><div class="cmd-name">cmp rdi, rsi / je ok</div><div class="cmd-desc">Comparer deux valeurs puis sauter si elles sont égales.</div><div class="cmd-ex">if (a == b) goto ok;</div></div>
+<div class="cmd-card"><div class="cmd-name">test rax, rax / jne next</div><div class="cmd-desc">Vérifier si une valeur est nulle sans la modifier.</div><div class="cmd-ex">if (ptr != NULL) goto next;</div></div>
+<div class="cmd-card"><div class="cmd-name">xor eax, eax</div><div class="cmd-desc">Idiomatique : remettre un registre à zéro rapidement.</div><div class="cmd-ex">return 0; ou int i = 0;</div></div>
+<div class="cmd-card"><div class="cmd-name">lea rax, [rbp-0x20]</div><div class="cmd-desc">Calculer une adresse, souvent pour un buffer local.</div><div class="cmd-ex">char *buf = &amp;stack_buf[0];</div></div>
+</div>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🧠 Question utile</div>
+<ul class="bullets">
+<li>Qu'est-ce qui est comparé ?</li>
+<li>Qu'est-ce qui est initialisé ?</li>
+<li>Quel registre transporte un argument ou un retour ?</li>
+<li>Quelle structure haut niveau ce pattern évoque ?</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🎯 Réflexe</div>
+<ul class="bullets">
+<li>Ne lis pas l'asm ligne par ligne sans contexte.</li>
+<li>Lis des <strong>blocs logiques</strong> : préparation, comparaison, branche, retour.</li>
+<li>Pense toujours : <strong>“si je devais le réécrire en C, à quoi ça ressemblerait ?”</strong></li>
+</ul>
+</div>
+</div></div>
+<!-- SLIDE 11 — QCM : EXERCICE PRATIQUE -->
+<div class="slide" data-index="11">
+<div class="slide-tag">// Slide 12 · Exercice · Déchiffrer une fonction · QCM requis</div>
+<h2>Exercice — Déchiffrer une Fonction Complète</h2>
+<h3>Trace le flux, identifie les variables, comprends ce que fait cette fonction</h3>
+<div class="card" style="margin-bottom:.8rem">
+<div class="cmd-name" style="margin-bottom:.8rem">🔍 Analyse cette fonction — que fait-elle ?</div>
+<div class="terminal sm">
+<span class="term-comment">; Fonction mystère — quel est son rôle ?</span><br/>
+<span class="term-blue">push</span> <span class="term-green">rbp</span><br/>
+<span class="term-blue">mov</span> <span class="term-green">rbp</span>, <span class="term-green">rsp</span><br/>
+<span class="term-blue">sub</span> <span class="term-green">rsp</span>, <span class="term-yellow">0x10</span>                 <span class="term-comment">; 2 variables locales 64-bit</span><br/>
+<span class="term-blue">mov</span>  [<span class="term-green">rbp</span>-<span class="term-yellow">0x8</span>], <span class="term-green">rdi</span>            <span class="term-comment">; local_1 = arg1 (pointeur)</span><br/>
+<span class="term-blue">mov</span>  [<span class="term-green">rbp</span>-<span class="term-yellow">0x10</span>], <span class="term-green">rsi</span>           <span class="term-comment">; local_2 = arg2 (entier ?)</span><br/>
+<span class="term-blue">xor</span> <span class="term-green">eax</span>, <span class="term-green">eax</span>                   <span class="term-comment">; i = 0</span><br/>
+<span class="term-comment">.loop:</span><br/>
+<span class="term-blue">cmp</span> <span class="term-green">eax</span>, [<span class="term-green">rbp</span>-<span class="term-yellow">0x10</span>]           <span class="term-comment">; i &lt; arg2</span><br/>
+<span class="term-blue">jge</span>  .done<br/>
+<span class="term-blue">mov</span> <span class="term-green">rcx</span>, [<span class="term-green">rbp</span>-<span class="term-yellow">0x8</span>]            <span class="term-comment">; rcx = pointeur</span><br/>
+<span class="term-blue">xor</span>  byte [<span class="term-green">rcx</span>+<span class="term-green">rax</span>], <span class="term-yellow">0x13</span>     <span class="term-comment">; ← action clé</span><br/>
+<span class="term-blue">inc</span> <span class="term-green">eax</span>                        <span class="term-comment">; i++</span><br/>
+<span class="term-blue">jmp</span>  .loop<br/>
+<span class="term-comment">.done: leave · ret</span>
+</div>
+</div>
+</div>
+<!-- SLIDE 12 — SYNTHÈSE -->
+<div class="slide" data-index="12"><div class="slide-tag">// Slide 13 · Mémo · Erreurs fréquentes · Synthèse</div>
+<h2>Mémo Opérationnel x86-64</h2>
+<h3>Ce que tu dois reconnaître en quelques secondes avant d'ouvrir Ghidra</h3>
+<div class="grid2" style="margin-bottom:.9rem">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">📌 Patterns instantanés</div>
+<ul class="bullets">
+<li><strong>push rbp / mov rbp, rsp</strong> → entrée de fonction classique</li>
+<li><strong>cmp / je / jne</strong> → condition et embranchement</li>
+<li><strong>call strcmp / strlen / puts</strong> → logique de validation ou d'affichage</li>
+<li><strong>movzx</strong> → lecture d'octet non signé, très fréquent dans les boucles de flag</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">⚠️ Erreurs fréquentes</div>
+<ul class="bullets">
+<li class="warn">Confondre <strong>adresse</strong> et <strong>valeur</strong>.</li>
+<li class="warn">Oublier la calling convention et attribuer le mauvais rôle à un registre.</li>
+<li class="warn">Lire une boucle sans repérer d'abord le compteur, la condition et l'incrément.</li>
+</ul>
+</div>
+</div>
+<div class="quote">À partir d'ici, l'assembleur ne doit plus te paralyser. Dans RE·03, Ghidra va accélérer ta lecture — mais seulement parce que tu comprends maintenant ce qu'il affiche.</div></div>
+<!-- SLIDE 13 — QCM FINAL + CONCLUSION -->
+<div class="slide" data-index="13">
+<div class="slide-tag">// Slide 14 · Conclusion · RE·03 s'ouvre · QCM final</div>
+<h2>Assembleur Maîtrisé — Direction Ghidra 🔬</h2>
+<div class="grid2">
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🎓 Ce que tu maîtrises — RE·02</div>
+<ul class="bullets">
+<li>16 registres x86-64 — rôle, taille, conventions (caller/callee-saved)</li>
+<li>Instructions fondamentales : MOV, LEA, ADD, XOR, AND, SHL, CMP, JE, JNE</li>
+<li>La stack — LIFO, RSP, RBP, stack frame, adressage [rbp-offset]</li>
+<li>CALL et RET — mécanique complète des appels de fonctions</li>
+<li>Prologue et épilogue — pattern universel de toute fonction compilée</li>
+<li>System V AMD64 ABI — RDI RSI RDX RCX R8 R9, valeur de retour dans RAX</li>
+<li>Patterns courants — boucles, conditions, zeroing, accès tableau</li>
+<li>Méthode systématique pour analyser n'importe quelle fonction</li>
+</ul>
+</div>
+<div class="card">
+<div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">⚔️ Prochain challenge + module suivant</div>
+<ul class="bullets">
+<li><strong>[150 pts] XOR is not encryption</strong> — boucle XOR visible dans l'asm, clé 0x42, 29 octets encodés. Tu peux maintenant lire cette boucle !</li>
+<li>Ouvre <code style="color:#aa44ff;font-family:var(--mono)">objdump -d -M intel ./re_challenge_2</code> et identifie le pattern</li>
+<li class="ok">Submit sur <strong>ctfd.soopha-learn.com</strong></li>
+</ul>
+<div class="hdiv">MODULE SUIVANT</div>
+<ul class="bullets" style="font-size:.8rem">
+<li>➡️ <strong>RE·03 — Analyse Statique avec Ghidra</strong> — workflow complet, décompilateur, XREFs, renommage de variables</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+<div class="qcm-box">
+<div class="qcm-header">
+<span class="qcm-label">// QCM — Vérification</span>
+<span class="qcm-prog" id="qcm-prog"></span>
+</div>
+<div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+<div class="qcm-question" id="qcm-question"></div>
+<div class="qcm-options" id="qcm-options"></div>
+<div class="qcm-feedback" id="qcm-feedback"></div>
+<button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+</div>
+</div>
+<div id="completion-modal">
+<div class="completion-box">
+<div class="completion-icon" id="comp-icon">⚙️</div>
+<div class="completion-title" id="comp-title">RE·02 terminé !</div>
+<div class="completion-score" id="comp-score">--%</div>
+<div class="completion-sub" id="comp-sub"></div>
+<div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+<div>
+<a class="completion-btn completion-btn-primary" href="re3_v2.html">RE·03 : Analyse Statique →</a>
+<button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+</div>
+</div>
+</div>
+<div id="bottombar">
+<button class="nav-btn" disabled="" id="prev-btn" onclick="navigate(-1)">← PRÉCÉDENT</button>
+<div style="display:flex;align-items:center;gap:1.5rem">
+<span class="qcm-indicator" id="qcm-ind"></span>
+<span id="slide-counter">01 / 14</span>
+</div>
+<button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+<script>
+var QCM = {
+  1: {
+    question: "Pourquoi le décompilateur Ghidra peut-il parfois produire du pseudo-code incorrect ou difficile à lire, et comment l'assembleur aide-t-il dans ce cas ?",
+    options: [
+      "Ghidra est un outil bugué — il faut toujours utiliser IDA Pro qui produit un code parfait",
+      "Les optimisations du compilateur (-O2, -O3) transforment le code C de manière agressive (inlining, loop unrolling, SIMD) et Ghidra peine à reconstruire la structure originale. L'assembleur brut montre ce qui s'exécute vraiment, sans interprétation erronée",
+      "Ghidra ne supporte pas x86-64 — il faut utiliser radare2 pour les binaires 64-bit",
+      "Le pseudo-code Ghidra est toujours exact — si ça semble incorrect, c'est une incompréhension de la logique"
+    ],
+    correct: 1,
+    explanation: "Les optimisations agressives du compilateur (inlining de fonctions, déroulement de boucles, vectorisation SIMD, élimination de code mort) produisent de l'assembleur qui ne ressemble plus du tout au code C original. Ghidra fait de son mieux mais peut se tromper sur les types, les structures de données et la logique. L'assembleur brut est la vérité absolue — il ne peut pas mentir, c'est ce que le CPU exécute. En cas de doute sur le pseudo-code Ghidra, toujours vérifier dans la vue Listing (assembleur)."
+  },
+  4: {
+    question: "Dans un binaire x86-64 Linux, tu vois l'instruction 'xor eax, eax' au début d'une fonction. Que fait-elle et pourquoi le compilateur l'utilise-t-il ?",
+    options: [
+      "Elle chiffre le registre RAX avec lui-même en XOR — résultat = 0. Utilisé pour chiffrer les données de retour",
+      "Elle met RAX à zéro. Le compilateur l'utilise car l'encodage de 'xor eax, eax' (2 octets) est plus compact que 'mov rax, 0' (7 octets) et tout aussi rapide sur les CPUs modernes",
+      "Elle sauvegarde RAX sur la pile avant de l'utiliser — c'est une forme compacte de PUSH RAX",
+      "Elle compare RAX avec lui-même et positionne ZF=1 — utilisé pour vérifier si RAX est nul"
+    ],
+    correct: 1,
+    explanation: "xor eax, eax est l'idiome classique pour zeroing en x86-64. (1) N'importe quelle valeur XOR avec elle-même = 0. (2) Écrire dans EAX (32-bit) zero-extende automatiquement RAX (64-bit) — donc RAX devient 0. (3) L'encodage est seulement 2 octets vs 7 pour 'mov rax, 0'. Sur les CPUs Intel/AMD modernes, xor reg, reg est reconnu comme une instruction de zeroing et exécuté de manière optimale. Tu verras cette instruction des dizaines de fois dans chaque binaire désassemblé."
+  },
+  7: {
+    question: "En assembleur x86-64 Linux, une fonction prend 3 arguments (char *buf, int len, char key). Dans quels registres ces arguments se trouvent-ils au moment de l'appel ?",
+    options: [
+      "RSP (buf), RBP (len), RAX (key) — les arguments sont toujours passés via la pile en x86-64",
+      "RDI (buf), RSI (len), RDX (key) — les 3 premiers arguments Linux suivent la convention System V AMD64 ABI",
+      "RAX (buf), RBX (len), RCX (key) — ordre alphabétique des registres généraux",
+      "R8 (buf), R9 (len), R10 (key) — les registres étendus sont réservés aux arguments de fonction"
+    ],
+    correct: 1,
+    explanation: "La convention System V AMD64 ABI (utilisée sur Linux, macOS, BSD) définit l'ordre des 6 premiers arguments : RDI, RSI, RDX, RCX, R8, R9. Pour tout argument supplémentaire (7e+), on utilise la stack. La valeur de retour est dans RAX. Mémo : 'RDI RSI RDX RCX R8 R9'. Connaître cette convention est fondamental en RE — quand tu vois CALL strcmp avant une comparaison de flag, tu sais immédiatement que RDI = s1 (ton input) et RSI = s2 (le flag). Breakpoint + x/s $rsi → le flag apparaît."
+  },
+  9: {
+    question: "Dans le listing assembleur, tu identifies ce pattern : xor eax, eax / .loop: cmp eax, 0x1d / jge .done / ... / inc eax / jmp .loop. Que représente ce code ?",
+    options: [
+      "Un appel récursif — la fonction s'appelle elle-même jusqu'à ce que eax atteigne 29 (0x1d)",
+      "Une boucle for de 0 à 28 inclus (29 itérations, 0x1d = 29) — i=0 initialisé par xor eax,eax, condition i<29 avec cmp+jge, incrémentation inc eax, retour avec jmp",
+      "Une comparaison de string — le code vérifie si une chaîne fait exactement 29 caractères",
+      "Un calcul de checksum — eax accumule 29 valeurs et retourne leur somme"
+    ],
+    correct: 1,
+    explanation: "C'est le pattern classique d'une boucle for en assembleur compilé : (1) xor eax, eax = initialisation i=0. (2) cmp eax, 0x1d = test de condition i < 29 (0x1d en hex = 29 en décimal). (3) jge .done = si i >= 29, sortir de la boucle. (4) ... corps de la boucle. (5) inc eax = i++. (6) jmp .loop = retour au test. C'est exactement la boucle XOR du challenge 2 de SooPHA CTF — 29 itérations, une opération sur chaque octet. Reconnaître ce pattern instantanément est la compétence clé de RE intermédiaire."
+  },
+  11: {
+    question: "Dans le slide 12, la fonction mystère contient 'xor byte [rcx+rax], 0x13'. RCX pointe vers un buffer. Que fait cette fonction et quelle est la clé XOR ?",
+    options: [
+      "Elle chiffre chaque octet du buffer avec la clé 0x1d (29) — la clé est la longueur de la boucle",
+      "Elle XOR chaque octet du buffer avec la clé 0x13 (19 en décimal), sur une longueur définie par le 2e argument (rsi). C'est une fonction de chiffrement/déchiffrement XOR monobyte",
+      "Elle calcule la somme XOR de tous les octets du buffer et stocke le résultat dans [rcx]",
+      "Elle compare le buffer avec une clé hardcodée 0x13 et retourne 1 si tous les octets correspondent"
+    ],
+    correct: 1,
+    explanation: "L'analyse complète : (1) RDI = pointeur vers le buffer (stocké en local_1 = [rbp-0x8]). (2) RSI = longueur/nombre d'itérations (stocké en local_2 = [rbp-0x10]). (3) La boucle itère de i=0 à RSI-1. (4) xor byte [rcx+rax], 0x13 = buf[i] ^= 0x13. C'est une fonction de XOR in-place avec la clé 0x13. Pour décoder : appeler la même fonction avec les données encodées (XOR est réversible avec la même clé). En Python : bytes([b ^ 0x13 for b in encoded_bytes])."
+  }
+};
+
+var COURSE_ID = 're2';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){ document.getElementById('comp-icon').textContent='⚙️'; document.getElementById('comp-title').textContent='Assembleur maîtrisé !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Tu lis l\'asm couramment — direction Ghidra !'; }
+  else { document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='RE·02 terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Revois les registres et la calling convention avant RE·03.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='MOVPUSHPOPCALLRETJNEJEMOVRAXRBXRCXRDXRSIRDI01{}XOR',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(4,2,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#aa44ff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

@@ -96,7 +96,7 @@
     <div class="container">
 
       <div class="stats-bar">
-        <div class="stats-bar-item"><div class="stat-val" id="stat-total">14</div><div class="stat-label">Cours disponibles</div></div>
+        <div class="stats-bar-item"><div class="stat-val" id="stat-total">21</div><div class="stat-label">Cours disponibles</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-completed">0</div><div class="stat-label">Terminés</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-avg">0%</div><div class="stat-label">Score moyen</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-qcm">0</div><div class="stat-label">QCM répondus</div></div>
@@ -263,7 +263,7 @@
         <div class="theme-header" onclick="toggleSection('defense')">
           <span class="theme-icon">🛡️</span>
           <span class="theme-label">Défense</span>
-          <span class="theme-desc">4 cours · Active Directory à venir</span>
+          <span class="theme-desc">11 cours · DFIR, Malware & Reverse Engineering</span>
           <span class="theme-chevron">▼</span>
         </div>
         <div class="catalogue-grid">
@@ -323,6 +323,102 @@
         </div>
       </div>
 
+      
+          <a href="re1.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re1">
+            <div class="course-number">15</div>
+            <div class="course-day"><span>// Reverse Engineering · Intro</span><span id="badge-re1"></span></div>
+            <div class="course-title">RE·01 — Introduction au Reverse Engineering</div>
+            <div class="course-desc">Cadre légal, workflow, triage, format ELF, chaînes, sections, premiers réflexes d’analyse sur un binaire inconnu.</div>
+            <div class="course-tags"><span class="badge badge-purple">🧠 RE</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~45 min</span></div>
+            <div class="course-progress-wrap" id="prog-re1" style="display:none">
+              <div class="course-progress-label"><span id="prog-re1-label">En cours</span><span id="prog-re1-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-re1-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-re1">Commencer →</span>
+          </a>
+
+          <a href="re2.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re2">
+            <div class="course-number">16</div>
+            <div class="course-day"><span>// Reverse Engineering · ASM</span><span id="badge-re2"></span></div>
+            <div class="course-title">RE·02 — Assembleur x86-64</div>
+            <div class="course-desc">Registres, pile, calling convention, lecture de fonctions, patterns assembleur et traduction mentale vers le pseudo-C.</div>
+            <div class="course-tags"><span class="badge badge-purple">⚙️ ASM</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~55 min</span></div>
+            <div class="course-progress-wrap" id="prog-re2" style="display:none">
+              <div class="course-progress-label"><span id="prog-re2-label">En cours</span><span id="prog-re2-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-re2-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-re2">Commencer →</span>
+          </a>
+
+          <a href="re3.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re3">
+            <div class="course-number">17</div>
+            <div class="course-day"><span>// Reverse Engineering · Ghidra</span><span id="badge-re3"></span></div>
+            <div class="course-title">RE·03 — Analyse Statique & Ghidra</div>
+            <div class="course-desc">Imports, XREF, décompilation, renommage, patching et méthodologie d’analyse statique sur un binaire réel.</div>
+            <div class="course-tags"><span class="badge badge-purple">📘 Ghidra</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~60 min</span></div>
+            <div class="course-progress-wrap" id="prog-re3" style="display:none">
+              <div class="course-progress-label"><span id="prog-re3-label">En cours</span><span id="prog-re3-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-re3-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-re3">Commencer →</span>
+          </a>
+
+          <a href="re4.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re4">
+            <div class="course-number">18</div>
+            <div class="course-day"><span>// Reverse Engineering · GDB</span><span id="badge-re4"></span></div>
+            <div class="course-title">RE·04 — Analyse Dynamique & GDB</div>
+            <div class="course-desc">Breakpoints, mémoire, registres, exécution pas à pas, hypothèses runtime et vérification en environnement contrôlé.</div>
+            <div class="course-tags"><span class="badge badge-purple">🐞 GDB</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~60 min</span></div>
+            <div class="course-progress-wrap" id="prog-re4" style="display:none">
+              <div class="course-progress-label"><span id="prog-re4-label">En cours</span><span id="prog-re4-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-re4-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-re4">Commencer →</span>
+          </a>
+
+          <a href="re5.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re5">
+            <div class="course-number">19</div>
+            <div class="course-day"><span>// Reverse Engineering · Obfuscation</span><span id="badge-re5"></span></div>
+            <div class="course-title">RE·05 — Obfuscation & XOR</div>
+            <div class="course-desc">XOR, chaînes cachées, stack strings, diagnostic rapide d’obfuscation et méthodes de décodage.</div>
+            <div class="course-tags"><span class="badge badge-purple">🧩 Obfuscation</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~50 min</span></div>
+            <div class="course-progress-wrap" id="prog-re5" style="display:none">
+              <div class="course-progress-label"><span id="prog-re5-label">En cours</span><span id="prog-re5-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-re5-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-re5">Commencer →</span>
+          </a>
+
+          <a href="re6.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re6">
+            <div class="course-number">20</div>
+            <div class="course-day"><span>// Reverse Engineering · Anti-Debug</span><span id="badge-re6"></span></div>
+            <div class="course-title">RE·06 — Anti-Debug & Malware</div>
+            <div class="course-desc">Anti-analysis, anti-debug, indicateurs malveillants, YARA, IOCs et posture analyste face à un sample hostile.</div>
+            <div class="course-tags"><span class="badge badge-purple">🛡️ Analysis</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~60 min</span></div>
+            <div class="course-progress-wrap" id="prog-re6" style="display:none">
+              <div class="course-progress-label"><span id="prog-re6-label">En cours</span><span id="prog-re6-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-re6-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-re6">Commencer →</span>
+          </a>
+
+          <a href="re7.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re7">
+            <div class="course-number">21</div>
+            <div class="course-day"><span>// Reverse Engineering · Capstone</span><span id="badge-re7"></span></div>
+            <div class="course-title">RE·07 — Challenge Final & Méthodologie</div>
+            <div class="course-desc">Module de synthèse : triage, hypothèses, statique, dynamique, IOCs et mini-rapport d’analyse final.</div>
+            <div class="course-tags"><span class="badge badge-purple">🏁 Capstone</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~65 min</span></div>
+            <div class="course-progress-wrap" id="prog-re7" style="display:none">
+              <div class="course-progress-label"><span id="prog-re7-label">En cours</span><span id="prog-re7-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-re7-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-re7">Commencer →</span>
+          </a>
+
+
+        </div>
+      </div>
+
       <!-- ═══ 🧭 ORIENTATION ═══ -->
       <div class="theme-section theme-orientation" id="section-orientation">
         <div class="theme-header" onclick="toggleSection('orientation')">
@@ -355,7 +451,7 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2'];
+var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2','re1','re2','re3','re4','re5','re6','re7'];
 
 async function init() {
   currentUser = await requireAuth();
