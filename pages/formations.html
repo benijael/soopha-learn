@@ -93,7 +93,7 @@
     <div class="container">
 
       <div class="stats-bar">
-        <div class="stats-bar-item"><div class="stat-val" id="stat-total">25</div><div class="stat-label">Cours disponibles</div></div>
+        <div class="stats-bar-item"><div class="stat-val" id="stat-total">27</div><div class="stat-label">Cours disponibles</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-completed">0</div><div class="stat-label">Terminés</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-avg">0%</div><div class="stat-label">Score moyen</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-qcm">0</div><div class="stat-label">QCM répondus</div></div>
@@ -260,7 +260,7 @@
         <div class="theme-header" onclick="toggleSection('reseau')">
           <span class="theme-icon">🌐</span>
           <span class="theme-label">Réseau</span>
-          <span class="theme-desc">4 cours · Du débutant à l'architecture sécurisée</span>
+          <span class="theme-desc">6 cours · Du fondamental à la sécurité réseau</span>
           <span class="theme-chevron">▼</span>
         </div>
         <div class="catalogue-grid">
@@ -315,6 +315,32 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-net4-fill" style="width:0%"></div></div>
             </div>
             <span class="course-cta" id="cta-net4">Commencer →</span>
+          </a>
+
+          <a href="net5.html" class="course-card" data-theme="reseau" data-status="disponible" id="card-net5">
+            <div class="course-number">N5</div>
+            <div class="course-day"><span>// NET·05 · Wireshark</span><span id="badge-net5"></span></div>
+            <div class="course-title">Wireshark & Analyse de Trafic</div>
+            <div class="course-desc">Captures, filtres BPF, Follow Stream, tcpdump, analyse .pcap CTF, détection ARP Spoof, Nmap, brute force dans le trafic réseau.</div>
+            <div class="course-tags"><span class="badge badge-blue">🔬 Wireshark</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~65 min</span></div>
+            <div class="course-progress-wrap" id="prog-net5" style="display:none">
+              <div class="course-progress-label"><span id="prog-net5-label">En cours</span><span id="prog-net5-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net5-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-net5">Commencer →</span>
+          </a>
+
+          <a href="net6.html" class="course-card" data-theme="reseau" data-status="disponible" id="card-net6">
+            <div class="course-number">N6</div>
+            <div class="course-day"><span>// NET·06 · Sécurité Réseau</span><span id="badge-net6"></span></div>
+            <div class="course-title">Sécurité Réseau</div>
+            <div class="course-desc">Attaques réseau, Nmap avancé, IDS/IPS Suricata, VPN WireGuard, hardening complet et certifications Network+ · CCNA · MTCNA.</div>
+            <div class="course-tags"><span class="badge badge-red">🛡️ Sécurité</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~70 min</span></div>
+            <div class="course-progress-wrap" id="prog-net6" style="display:none">
+              <div class="course-progress-label"><span id="prog-net6-label">En cours</span><span id="prog-net6-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net6-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-net6">Commencer →</span>
           </a>
 
         </div>
@@ -508,7 +534,7 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2','net1','net2','net3','net4','re1','re2','re3','re4','re5','re6','re7'];
+var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2','net1','net2','net3','net4','net5','net6','re1','re2','re3','re4','re5','re6','re7'];
 
 async function init() {
   currentUser = await requireAuth();

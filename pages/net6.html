@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>NET·06 — Sécurité Réseau · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,4,12,.97);border-bottom:1px solid rgba(0,170,255,.18);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(0,170,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(0,170,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}.tb-back:hover{color:#00aaff}
+.tb-dot{width:6px;height:6px;background:#00aaff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(0,170,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#003189,#00aaff);box-shadow:0 0 8px #00aaff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#00aaff;--blue-border:rgba(0,170,255,.18);--blue-faint:rgba(0,170,255,.05)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#00aaff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(0,170,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(2,10,20,.88);border:1px solid var(--blue-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(200,220,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#00aaff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}.bullets li.ok::before{content:'✅';font-size:.7rem}.bullets li.danger::before{content:'🔴';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.terminal{background:rgba(0,0,4,.7);border:1px solid rgba(0,170,255,.15);border-left:3px solid #00aaff;padding:.8rem 1.1rem;font-family:var(--mono);font-size:.75rem;color:rgba(0,170,255,.8);line-height:1.9;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.75}
+.term-prompt{color:#00aaff}.term-out{color:rgba(255,255,255,.45)}.term-comment{color:rgba(0,170,255,.4);font-style:italic}
+.term-red{color:#ff4466}.term-yellow{color:#ffd700}.term-green{color:#00ff88}
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(0,170,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(0,170,255,.12)}
+.quote{border-left:3px solid #00aaff;padding:.7rem 1rem;background:rgba(0,170,255,.04);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#d0e8ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #00aaff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#00aaff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#00aaff;text-shadow:0 0 8px #00aaff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(200,220,255,.85);line-height:1.5}
+.attack-card{padding:.8rem 1rem;border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.04);position:relative}
+.attack-card::before{content:'';position:absolute;top:-1px;left:-1px;width:10px;height:10px;border-top:2px solid #ff4466;border-left:2px solid #ff4466}
+.attack-name{font-family:var(--mono);font-size:.75rem;color:#ff4466;margin-bottom:.25rem}
+.attack-desc{font-family:var(--body);font-size:.7rem;color:rgba(200,170,200,.55);line-height:1.4}
+.attack-fix{font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.5);margin-top:.3rem}
+/* Checklist */
+.check-section{margin-bottom:.6rem}
+.check-title{font-family:var(--mono);font-size:.68rem;color:#00aaff;letter-spacing:.12em;margin-bottom:.4rem;text-transform:uppercase}
+.check-items{display:flex;flex-direction:column;gap:.22rem}
+.check-item{display:flex;align-items:flex-start;gap:.5rem;font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.75);line-height:1.35}
+.check-item::before{content:'☐';color:rgba(0,170,255,.4);flex-shrink:0;font-size:.75rem}
+.check-item.done::before{content:'✅';font-size:.65rem}
+/* Nmap scan types */
+.scan-row{display:flex;gap:.7rem;padding:.4rem .7rem;border-bottom:1px solid rgba(0,170,255,.06);align-items:flex-start}
+.scan-row:last-child{border-bottom:none}
+.scan-flag{font-family:var(--mono);font-size:.7rem;color:#00aaff;min-width:55px;flex-shrink:0}
+.scan-name{font-family:var(--display);font-size:.68rem;font-weight:700;color:#fff;min-width:120px;flex-shrink:0}
+.scan-desc{font-family:var(--body);font-size:.7rem;color:rgba(200,220,255,.6);line-height:1.35}
+/* QCM */
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(2,4,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(2,10,20,.97);border:1px solid rgba(0,170,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(0,170,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(0,170,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.35);margin-bottom:.5rem;display:none}.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(0,4,16,.3);border:1px solid rgba(0,170,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(190,215,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(0,170,255,.35);background:rgba(0,170,255,.06);color:rgba(210,230,255,.95)}
+.qcm-option.correct{border-color:#00aaff!important;background:rgba(0,170,255,.12)!important;color:#00aaff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#00aaff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);color:rgba(210,230,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(0,170,255,.15);border:1px solid rgba(0,170,255,.4);color:#00aaff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(0,170,255,.25);box-shadow:0 0 20px rgba(0,170,255,.2)}.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(2,4,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(0,170,255,.3);background:rgba(2,10,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#00aaff;text-shadow:0 0 20px #00aaff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,220,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#00aaff;color:#000a14}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(0,170,255,.4);color:#00aaff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(2,4,12,.97);border-top:1px solid rgba(0,170,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(0,170,255,.2);color:rgba(0,170,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#00aaff;color:#00aaff}.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#00aaff;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+  <div class="tb-left">
+    <a href="formations.html" class="tb-back">← Formations</a>
+    <span><span class="tb-dot"></span>// NET·06 · Sécurité Réseau · Module Final</span>
+  </div>
+  <div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+
+<div id="slides">
+
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// NET·06 · Module Final · SooPHA Learn</div>
+  <h1 class="glitch" style="color:#00aaff!important;text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)!important">SÉCURITÉ<br>RÉSEAU</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Attaques · Nmap · IDS/IPS · VPN · Hardening · Certifications</h3>
+  <div class="card" style="text-align:center;max-width:700px">
+    <ul class="bullets" style="text-align:left">
+      <li><strong>14 slides</strong> · 5 QCM obligatoires · ~70 min</li>
+      <li><strong>Attaques réseau avancées</strong> — ARP Spoofing, MITM, SYN Flood, DNS Poisoning</li>
+      <li><strong>Nmap avancé</strong> — scripts NSE, OS detection, firewall evasion</li>
+      <li><strong>IDS/IPS</strong> — Snort, Suricata, règles de détection, tuning</li>
+      <li><strong>VPN en profondeur</strong> — WireGuard, OpenVPN, split tunneling, sécurité</li>
+      <li><strong>Checklist hardening réseau</strong> — sécuriser une infrastructure complète</li>
+      <li><strong>Certifications réseau</strong> — parcours recommandé Network+ → CCNA → CCNP</li>
+      <li class="ok">Prérequis : NET·01 → NET·05 — parcours complet réseau</li>
+    </ul>
+  </div>
+  <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-blue">NET · Module 6/6</span>
+    <span class="pill pill-red">Avancé</span>
+    <span class="pill pill-orange">Nmap · Suricata · WireGuard</span>
+    <span class="pill pill-green">Network+ · CCNA · CompTIA</span>
+  </div>
+</div>
+
+<!-- SLIDE 1 — QCM : ATTAQUES RÉSEAU -->
+<div class="slide" data-index="1">
+  <div class="slide-tag">// Slide 02 · Attaques réseau · MITM · ARP · DNS · QCM requis</div>
+  <h2>Attaques Réseau — Comprendre pour Défendre</h2>
+  <h3>Les attaques les plus courantes sur les réseaux locaux et Internet — mécanismes et contre-mesures</h3>
+  <div class="cmd-grid" style="margin-bottom:.8rem">
+    <div class="attack-card">
+      <div class="attack-name">ARP Spoofing → MITM</div>
+      <div class="attack-desc">Envoyer de faux ARP Reply pour associer sa MAC à l'IP de la passerelle. Tout le trafic de la victime passe par l'attaquant. Outil : arpspoof, Ettercap, Bettercap.</div>
+      <div class="attack-fix">✅ DAI (Dynamic ARP Inspection) sur switches · entrées ARP statiques · VPN</div>
+    </div>
+    <div class="attack-card">
+      <div class="attack-name">DNS Cache Poisoning</div>
+      <div class="attack-desc">Injecter de fausses réponses DNS dans le cache d'un résolveur pour rediriger les utilisateurs vers un faux site. Attaque Kaminsky exploitait le port source prévisible.</div>
+      <div class="attack-fix">✅ DNSSEC · randomisation port source · DNS over HTTPS</div>
+    </div>
+    <div class="attack-card">
+      <div class="attack-name">SYN Flood (DDoS couche 4)</div>
+      <div class="attack-desc">Envoyer des millions de SYN avec des IPs spoofées. La table des half-open connections du serveur sature. Aucun ACK final → le serveur attend pendant le timeout.</div>
+      <div class="attack-fix">✅ SYN Cookies · rate limiting TCP · scrubbing center · Cloudflare</div>
+    </div>
+    <div class="attack-card">
+      <div class="attack-name">SSL Strip</div>
+      <div class="attack-desc">Dans un MITM, l'attaquant remplace les liens HTTPS par HTTP entre la victime et le site. La victime pense être en HTTP normal, l'attaquant voit tout en clair.</div>
+      <div class="attack-fix">✅ HSTS (HTTP Strict Transport Security) · HSTS Preloading</div>
+    </div>
+    <div class="attack-card">
+      <div class="attack-name">VLAN Hopping</div>
+      <div class="attack-desc">Exploiter la mauvaise configuration d'un switch pour accéder à des VLANs interdits. Technique du double-tagging 802.1Q ou switch spoofing (DTP). Couche 2.</div>
+      <div class="attack-fix">✅ Désactiver DTP · changer Native VLAN · access ports explicites</div>
+    </div>
+    <div class="attack-card">
+      <div class="attack-name">DHCP Starvation + Rogue DHCP</div>
+      <div class="attack-desc">1) Saturer le pool DHCP avec de fausses requêtes. 2) Installer un faux serveur DHCP qui distribue de fausses infos (fausse passerelle, faux DNS). MITM DHCP.</div>
+      <div class="attack-fix">✅ DHCP Snooping sur switches · port security · 802.1X</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2 — NMAP AVANCÉ -->
+<div class="slide" data-index="2">
+  <div class="slide-tag">// Slide 03 · Nmap · Scan types · NSE · OS detection · Evasion</div>
+  <h2>Nmap Avancé — Cartographier et Analyser</h2>
+  <h3>Network Mapper — l'outil de reconnaissance réseau de référence, utilisé légalement en pentest et audit</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔍 Types de scans essentiels</div>
+      <div style="padding:.3rem 0">
+        <div class="scan-row"><div class="scan-flag">-sS</div><div class="scan-name">SYN Scan (Stealth)</div><div class="scan-desc">Envoie SYN, attend SYN-ACK (ouvert) ou RST (fermé). Ne complète pas le handshake → moins de logs</div></div>
+        <div class="scan-row"><div class="scan-flag">-sV</div><div class="scan-name">Version Detection</div><div class="scan-desc">Détecte les versions des services : Apache 2.4.51, OpenSSH 8.9, MySQL 8.0...</div></div>
+        <div class="scan-row"><div class="scan-flag">-O</div><div class="scan-name">OS Detection</div><div class="scan-desc">Fingerprinting TCP/IP pour identifier le système d'exploitation cible</div></div>
+        <div class="scan-row"><div class="scan-flag">-sU</div><div class="scan-name">UDP Scan</div><div class="scan-desc">Scanner les ports UDP (DNS:53, SNMP:161, DHCP:67...) — plus lent</div></div>
+        <div class="scan-row"><div class="scan-flag">-A</div><div class="scan-name">Aggressive</div><div class="scan-desc">-sV + -O + scripts NSE + traceroute — tout en une commande</div></div>
+        <div class="scan-row"><div class="scan-flag">-p-</div><div class="scan-name">All Ports</div><div class="scan-desc">Scanner les 65535 ports (pas seulement les 1000 défaut)</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🧩 Nmap Scripting Engine (NSE)</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Vulnérabilités connues</span><br>
+        <span class="term-prompt">$ </span>nmap --script vuln 192.168.1.0/24<br>
+        <br>
+        <span class="term-comment"># Détection SMB (EternalBlue)</span><br>
+        <span class="term-prompt">$ </span>nmap --script smb-vuln* -p 445 target<br>
+        <br>
+        <span class="term-comment"># Brute force SSH</span><br>
+        <span class="term-prompt">$ </span>nmap --script ssh-brute -p 22 target<br>
+        <br>
+        <span class="term-comment"># Bannières des services</span><br>
+        <span class="term-prompt">$ </span>nmap --script banner -p 21,22,25,80 target<br>
+        <br>
+        <span class="term-comment"># HTTP — titres des pages</span><br>
+        <span class="term-prompt">$ </span>nmap --script http-title -p 80,443 target<br>
+        <br>
+        <span class="term-comment"># Sauvegarde des résultats</span><br>
+        <span class="term-prompt">$ </span>nmap -A -oA scan_complet 192.168.1.0/24<br>
+        <span class="term-comment"># → .xml .nmap .gnmap générés</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3 — NMAP EVASION & LÉGALITÉ -->
+<div class="slide" data-index="3">
+  <div class="slide-tag">// Slide 04 · Evasion Firewall · Légalité · Timing · Décoys</div>
+  <h2>Nmap — Évasion de Firewalls & Cadre Légal</h2>
+  <h3>Comment les firewalls bloquent Nmap — et comment contourner légalement dans un périmètre autorisé</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔀 Techniques d'évasion (pentest autorisé uniquement)</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Timing lent (T0=paranoïaque, T5=agressif)</span><br>
+        <span class="term-prompt">$ </span>nmap -T1 target &nbsp;<span class="term-comment">← très lent, discret</span><br>
+        <span class="term-prompt">$ </span>nmap -T4 target &nbsp;<span class="term-comment">← rapide (défaut = T3)</span><br>
+        <br>
+        <span class="term-comment"># Fragmenter les paquets</span><br>
+        <span class="term-prompt">$ </span>nmap -f target<br>
+        <br>
+        <span class="term-comment"># Décoys — mélanger sa vraie IP</span><br>
+        <span class="term-prompt">$ </span>nmap -D 1.2.3.4,5.6.7.8,ME target<br>
+        <br>
+        <span class="term-comment"># Changer le port source</span><br>
+        <span class="term-prompt">$ </span>nmap --source-port 53 target<br>
+        <br>
+        <span class="term-comment"># Scan depuis un zombie (Idle Scan)</span><br>
+        <span class="term-prompt">$ </span>nmap -sI zombie_ip target
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">⚖️ Cadre légal — TOUJOURS vérifier</div>
+      <ul class="bullets">
+        <li class="ok">Scanner <strong>son propre réseau</strong> — toujours légal et recommandé régulièrement</li>
+        <li class="ok"><strong>Bug bounty / pentest contractuel</strong> — légal dans le périmètre défini par écrit</li>
+        <li class="ok"><strong>Lab et CTF</strong> — toujours légal sur les machines qui t'appartiennent</li>
+        <li class="danger">Scanner un réseau <strong>sans autorisation écrite</strong> — illégal dans tous les pays. CFAA aux USA, Loi Godfrain en France, cybercriminalité en Afrique (UEMOA, UA)</li>
+        <li class="warn">Un scan Nmap laisse des traces dans les logs — toujours avoir un contrat signé</li>
+        <li class="warn">Les IPS modernes détectent et bloquent les scans Nmap — même lents</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4 — QCM : IDS/IPS -->
+<div class="slide" data-index="4">
+  <div class="slide-tag">// Slide 05 · IDS/IPS · Snort · Suricata · Règles · QCM requis</div>
+  <h2>IDS & IPS — Détecter et Bloquer les Intrusions</h2>
+  <h3>Intrusion Detection vs Prevention System — comment ça marche et comment les configurer</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔍 IDS vs IPS — La différence fondamentale</div>
+      <ul class="bullets">
+        <li><strong>IDS</strong> (Intrusion Detection System) — observe le trafic en copie (mode passif, TAP ou SPAN port), détecte les signatures malveillantes, génère des alertes. <strong>Ne bloque pas</strong>.</li>
+        <li><strong>IPS</strong> (Intrusion Prevention System) — placé inline dans le flux réseau, détecte ET bloque en temps réel. Si l'IPS tombe en panne → le réseau peut tomber (fail-open vs fail-close).</li>
+        <li><strong>NIDS</strong> — Network-based (surveille le réseau), <strong>HIDS</strong> — Host-based (surveille un système)</li>
+        <li class="ok"><strong>Suricata</strong> et <strong>Snort</strong> peuvent fonctionner en mode IDS ou IPS selon la configuration</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📋 Règle Suricata — anatomie</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0;font-size:.62rem">
+        <span class="term-comment"># Structure d'une règle Suricata/Snort</span><br>
+        <span style="color:#ff4466">alert</span> &nbsp;<span class="term-comment">← action (alert/drop/reject/pass)</span><br>
+        <span style="color:#ffd700">tcp</span> &nbsp;&nbsp;<span class="term-comment">← protocole</span><br>
+        <span style="color:#00aaff">any any</span> <span class="term-comment">← src IP + port</span><br>
+        <span style="color:#00aaff">-> $HOME_NET 22</span> <span class="term-comment">← dst (réseau interne port 22)</span><br>
+        <span style="color:#00ff88">(msg:"SSH brute force";</span><br>
+        <span style="color:#00ff88">&nbsp;flags:S;</span> <span class="term-comment">← SYN uniquement</span><br>
+        <span style="color:#00ff88">&nbsp;threshold: type threshold, track by_src,</span><br>
+        <span style="color:#00ff88">&nbsp;&nbsp;count 5, seconds 60;</span><br>
+        <span style="color:#00ff88">&nbsp;sid:1000001; rev:1;)</span><br>
+        <br>
+        <span class="term-comment"># Lancer Suricata en mode IDS</span><br>
+        <span class="term-prompt">$ </span>suricata -c /etc/suricata/suricata.yaml -i eth0
+      </div>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "Un IDS/IPS mal tuné est inutile — trop de faux positifs et les analystes l'ignorent, trop de faux négatifs et les attaques passent. Le tuning est 80% du travail : ajuster les seuils, exclure les IPs légitimes, adapter au contexte réseau."
+  </div>
+</div>
+
+<!-- SLIDE 5 — FAIL2BAN & PROTECTION ACTIVE -->
+<div class="slide" data-index="5">
+  <div class="slide-tag">// Slide 06 · fail2ban · Protection active · Rate limiting</div>
+  <h2>Protection Active — Bloquer les Attaquants Automatiquement</h2>
+  <h3>fail2ban, rate limiting, CrowdSec — réagir en temps réel sans IPS complet</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🚫 fail2ban — bannir les brute forceurs</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Installation</span><br>
+        <span class="term-prompt">$ </span>sudo apt install fail2ban<br>
+        <br>
+        <span class="term-comment"># Config /etc/fail2ban/jail.local</span><br>
+        <span style="color:#ffd700">[sshd]</span><br>
+        <span style="color:#00ff88">enabled = true</span><br>
+        <span style="color:#00ff88">port = 22</span><br>
+        <span style="color:#00ff88">maxretry = 3</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">← 3 essais max</span><br>
+        <span style="color:#00ff88">bantime = 3600</span>&nbsp;&nbsp;<span class="term-comment">← ban 1 heure</span><br>
+        <span style="color:#00ff88">findtime = 600</span>&nbsp;&nbsp;<span class="term-comment">← fenêtre 10 min</span><br>
+        <span style="color:#00ff88">ignoreip = 127.0.0.1 10.0.0.0/8</span><br>
+        <br>
+        <span class="term-comment"># Voir les IPs bannies</span><br>
+        <span class="term-prompt">$ </span>fail2ban-client status sshd<br>
+        <br>
+        <span class="term-comment"># Débannir une IP</span><br>
+        <span class="term-prompt">$ </span>fail2ban-client set sshd unbanip 1.2.3.4
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">⚡ CrowdSec — intelligence collective</div>
+      <ul class="bullets">
+        <li><strong>CrowdSec</strong> = fail2ban moderne + communauté. Les IPs malveillantes détectées par des milliers de serveurs sont partagées — tu bénéficies de la threat intelligence collective</li>
+        <li>Analyse les logs en temps réel (SSH, Nginx, Apache, Traefik...) et ban automatiquement</li>
+        <li>Blocklists communautaires — les IPs connues des scanners, botnets, tor exit nodes</li>
+        <li class="ok">Installation : <code style="color:#00aaff;font-family:var(--mono);font-size:.65rem">curl -s https://packagecloud.io/install/repositories/crowdsec/crowdsec/script.deb.sh | sudo bash && sudo apt install crowdsec</code></li>
+      </ul>
+      <div class="hdiv">RATE LIMITING</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.2rem 0;font-size:.63rem">
+        <span class="term-comment"># Nginx : 10 req/s max par IP</span><br>
+        <span style="color:#00aaff">limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;</span><br>
+        <span style="color:#00aaff">limit_req zone=api burst=20 nodelay;</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6 — VPN EN PROFONDEUR -->
+<div class="slide" data-index="6">
+  <div class="slide-tag">// Slide 07 · VPN · WireGuard · OpenVPN · Split tunneling</div>
+  <h2>VPN en Profondeur — WireGuard vs OpenVPN</h2>
+  <h3>Comprendre les VPN au niveau du protocole — choisir et configurer le bon pour chaque usage</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">⚡ WireGuard — Le VPN moderne</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0;font-size:.63rem">
+        <span class="term-comment"># Installer WireGuard</span><br>
+        <span class="term-prompt">$ </span>sudo apt install wireguard<br>
+        <br>
+        <span class="term-comment"># Générer les clés</span><br>
+        <span class="term-prompt">$ </span>wg genkey | tee privatekey | wg pubkey > publickey<br>
+        <br>
+        <span class="term-comment"># Config serveur /etc/wireguard/wg0.conf</span><br>
+        <span style="color:#ffd700">[Interface]</span><br>
+        <span style="color:#00ff88">Address = 10.0.0.1/24</span><br>
+        <span style="color:#00ff88">ListenPort = 51820</span><br>
+        <span style="color:#00ff88">PrivateKey = &lt;clé privée serveur&gt;</span><br>
+        <span style="color:#00ff88">PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</span><br>
+        <br>
+        <span style="color:#ffd700">[Peer]</span><br>
+        <span style="color:#00ff88">PublicKey = &lt;clé publique client&gt;</span><br>
+        <span style="color:#00ff88">AllowedIPs = 10.0.0.2/32</span><br>
+        <br>
+        <span class="term-comment"># Démarrer</span><br>
+        <span class="term-prompt">$ </span>wg-quick up wg0
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📊 WireGuard vs OpenVPN</div>
+      <div style="font-family:var(--mono);font-size:.65rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.3rem;margin-bottom:.4rem">
+          <div style="color:rgba(0,170,255,.5);font-size:.58rem;letter-spacing:.1em">CRITÈRE</div>
+          <div style="color:#00aaff;font-size:.58rem;letter-spacing:.1em">WIREGUARD</div>
+          <div style="color:#ffd700;font-size:.58rem;letter-spacing:.1em">OPENVPN</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.3rem;padding:.3rem 0;border-bottom:1px solid rgba(0,170,255,.06)">
+          <div style="color:rgba(200,220,255,.5)">Code</div>
+          <div style="color:#00ff88">~4 000 lignes</div>
+          <div style="color:#ffd700">~70 000 lignes</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.3rem;padding:.3rem 0;border-bottom:1px solid rgba(0,170,255,.06)">
+          <div style="color:rgba(200,220,255,.5)">Protocole</div>
+          <div style="color:#00ff88">UDP uniquement</div>
+          <div style="color:#ffd700">TCP + UDP</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.3rem;padding:.3rem 0;border-bottom:1px solid rgba(0,170,255,.06)">
+          <div style="color:rgba(200,220,255,.5)">Chiffrement</div>
+          <div style="color:#00ff88">ChaCha20+Poly1305</div>
+          <div style="color:#ffd700">AES-256+TLS</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.3rem;padding:.3rem 0;border-bottom:1px solid rgba(0,170,255,.06)">
+          <div style="color:rgba(200,220,255,.5)">Performance</div>
+          <div style="color:#00ff88">2-3x plus rapide</div>
+          <div style="color:#ffd700">Référence</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.3rem;padding:.3rem 0;border-bottom:1px solid rgba(0,170,255,.06)">
+          <div style="color:rgba(200,220,255,.5)">Config</div>
+          <div style="color:#00ff88">Très simple</div>
+          <div style="color:#ffd700">Complexe</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.3rem;padding:.3rem 0">
+          <div style="color:rgba(200,220,255,.5)">Noyau Linux</div>
+          <div style="color:#00ff88">Intégré (v5.6+)</div>
+          <div style="color:#ffd700">Espace user</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7 — QCM : HARDENING RÉSEAU -->
+<div class="slide" data-index="7">
+  <div class="slide-tag">// Slide 08 · Hardening · Checklist · Switch · Routeur · Firewall · QCM requis</div>
+  <h2>Hardening Réseau — Sécuriser de A à Z</h2>
+  <h3>La checklist complète pour durcir une infrastructure réseau — switch, routeur, WiFi, firewall</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔒 Switch managé</div>
+      <div class="check-section">
+        <div class="check-items">
+          <div class="check-item">VLANs configurés — segmenter servers, users, IoT, guest WiFi</div>
+          <div class="check-item">Port security — limiter les MACs par port (max 2-3)</div>
+          <div class="check-item">DHCP Snooping activé — bloquer les faux serveurs DHCP</div>
+          <div class="check-item">Dynamic ARP Inspection (DAI) — contre l'ARP Spoofing</div>
+          <div class="check-item">Désactiver les ports inutilisés (shutdown)</div>
+          <div class="check-item">STP BPDU Guard sur les ports access</div>
+          <div class="check-item">Changer le Native VLAN de 1 vers un VLAN inutilisé</div>
+          <div class="check-item">802.1X — authentification avant accès réseau</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔒 Routeur & Firewall</div>
+      <div class="check-section">
+        <div class="check-items">
+          <div class="check-item">Firmware à jour — vérifier et patcher régulièrement</div>
+          <div class="check-item">Changer les credentials par défaut (admin/admin → interdit)</div>
+          <div class="check-item">Désactiver l'administration via WAN — management local ou VPN uniquement</div>
+          <div class="check-item">Politique firewall Deny-All par défaut</div>
+          <div class="check-item">Bloquer les bogons (adresses privées depuis Internet)</div>
+          <div class="check-item">Logging activé — envoyer vers un SIEM ou syslog central</div>
+          <div class="check-item">Désactiver UPnP et WPS (vecteurs d'attaque courants)</div>
+          <div class="check-item">NTP synchronisé — timestamps corrects dans les logs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8 — HARDENING WIFI -->
+<div class="slide" data-index="8">
+  <div class="slide-tag">// Slide 09 · WiFi sécurisé · WPA3 · 802.1X · SSID · Rogue AP</div>
+  <h2>Hardening WiFi — Le Sans-fil Sécurisé</h2>
+  <h3>Le WiFi est la surface d'attaque la plus exposée en entreprise africaine — le durcir correctement</h3>
+  <div class="cmd-grid" style="margin-bottom:.8rem">
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">Chiffrement WPA3 (ou WPA2+AES minimum)</div>
+      <div class="cmd-desc">WPA3 = résistant aux attaques dictionnaire offline (SAE au lieu de PSK). WPA2 avec AES-CCMP (pas TKIP) = acceptable. WEP = cassable en minutes.</div>
+      <div class="cmd-ex">WPA3-Personal ou WPA2-Enterprise (802.1X) en entreprise</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+      <div class="cmd-name" style="color:#00aaff">802.1X — Authentification RADIUS</div>
+      <div class="cmd-desc">Chaque employé s'authentifie avec ses credentials AD/LDAP avant d'accéder au WiFi. Pas de mot de passe partagé — révocation immédiate quand un employé part.</div>
+      <div class="cmd-ex">FreeRADIUS + Active Directory · Cisco ISE · Aruba ClearPass</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+      <div class="cmd-name" style="color:#ffd700">Segmentation WiFi invité</div>
+      <div class="cmd-desc">SSID invité sur un VLAN séparé (ex: VLAN 50) avec accès Internet uniquement. Client isolation activée — les invités ne se voient pas entre eux. Pas d'accès au LAN interne.</div>
+      <div class="cmd-ex">Portail captif · limitation de bande passante · expiration auto</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,68,102,.2)">
+      <div class="cmd-name" style="color:#ff4466">Détection de Rogue AP</div>
+      <div class="cmd-desc">Un attaquant ou un employé branche un point d'accès non autorisé sur le réseau. Les systèmes WIDS (Wireless IDS) détectent les SSID non autorisés et les Evil Twin.</div>
+      <div class="cmd-ex">Kismet · Ekahau · Cisco WLC avec Rogue Detection</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.2)">
+      <div class="cmd-name" style="color:#aa44ff">SSID et diffusion</div>
+      <div class="cmd-desc">Masquer le SSID (hidden) est inutile — détectable en quelques secondes avec airodump-ng. Utiliser un nom de SSID neutre sans identifier l'entreprise (pas "SOOPHA-Corp-HQ").</div>
+      <div class="cmd-ex">⚠ Hidden SSID = fausse sécurité · security through obscurity = fausse sécurité</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">PMF — Protected Management Frames</div>
+      <div class="cmd-desc">Protège les trames de management WiFi (deauth, disassoc) contre la déauthentification forcée. Sans PMF, un attaquant peut forcer la déconnexion de tous les clients (DoS WiFi).</div>
+      <div class="cmd-ex">Activer PMF/802.11w sur tous les points d'accès modernes</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9 — QCM : VPN -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// Slide 10 · VPN usage · Split tunneling · DNS leaks · QCM requis</div>
+  <h2>VPN — Ce qu'il Protège et Ce qu'il Ne Protège Pas</h2>
+  <h3>Beaucoup d'idées fausses circulent sur les VPN — comprendre exactement ce qu'un VPN fait</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88;margin-bottom:.7rem">✅ Ce qu'un VPN protège réellement</div>
+      <ul class="bullets">
+        <li>Le trafic entre toi et le serveur VPN — chiffré, lisible par personne sur le réseau local</li>
+        <li>Ton adresse IP réelle — le site destination voit l'IP du serveur VPN</li>
+        <li>Tes requêtes DNS — si le VPN inclut un resolver DNS (sinon DNS leak)</li>
+        <li>Le trafic sur WiFi public — personne sur le réseau ne peut sniffertes données</li>
+        <li class="ok">Le VPN protège contre les intermédiaires réseau (FAI, café WiFi, MITM sur LAN)</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:rgba(255,68,102,.2)">
+      <div class="cmd-name" style="color:#ff4466;margin-bottom:.7rem">🔴 Ce qu'un VPN ne protège PAS</div>
+      <ul class="bullets">
+        <li class="danger">Ton comportement en ligne — le serveur VPN voit tout ton trafic déchiffré</li>
+        <li class="danger">Les malwares déjà sur ton device — le VPN ne scanne pas les fichiers</li>
+        <li class="danger">Le phishing — une fausse page reste fausse avec ou sans VPN</li>
+        <li class="danger">La traçabilité si tu es connecté à tes comptes (Google, Facebook te traquent)</li>
+        <li class="warn"><strong>DNS leaks</strong> — si les requêtes DNS sortent en dehors du tunnel VPN</li>
+        <li class="warn"><strong>WebRTC leaks</strong> — le navigateur peut révéler ta vraie IP même avec VPN</li>
+      </ul>
+    </div>
+  </div>
+  <div class="terminal sm">
+    <span class="term-comment"># Tester les DNS leaks</span><br>
+    <span class="term-prompt">$ </span>curl https://dnsleaktest.com/api/ &nbsp;&nbsp;&nbsp;<span class="term-comment">← IPs révélées ?</span><br>
+    <span class="term-comment"># Split tunneling — router seulement certains trafics dans le VPN</span><br>
+    <span class="term-comment"># WireGuard : AllowedIPs = 10.0.0.0/8 → seul le réseau interne passe par le VPN</span><br>
+    <span class="term-comment"># AllowedIPs = 0.0.0.0/0 → tout le trafic passe par le VPN (full tunnel)</span>
+  </div>
+</div>
+
+<!-- SLIDE 10 — SNORT RULES & SIEM -->
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Slide 11 · Suricata · Règles · SIEM · Corrélation · Alertes</div>
+  <h2>De l'Alerte à la Réponse — IDS vers SIEM</h2>
+  <h3>Suricata génère des événements, le SIEM les corrèle — construire un SOC minimal</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔔 Règles Suricata — exemples pratiques</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0;font-size:.62rem">
+        <span class="term-comment"># Détecter un scan Nmap SYN</span><br>
+        <span style="color:#ff4466">alert tcp any any -> $HOME_NET any</span><br>
+        <span style="color:#00ff88">(msg:"NMAP SYN Scan"; flags:S,12;</span><br>
+        <span style="color:#00ff88">&nbsp;threshold:type threshold,track by_src,count 20,seconds 1;</span><br>
+        <span style="color:#00ff88">&nbsp;sid:1000001; rev:1;)</span><br>
+        <br>
+        <span class="term-comment"># Détecter HTTP avec User-Agent Nmap</span><br>
+        <span style="color:#ff4466">alert http any any -> any any</span><br>
+        <span style="color:#00ff88">(msg:"Nmap HTTP UA"; content:"Nmap Scripting Engine";</span><br>
+        <span style="color:#00ff88">&nbsp;http_header; sid:1000002; rev:1;)</span><br>
+        <br>
+        <span class="term-comment"># Détecter téléchargement .exe depuis HTTP</span><br>
+        <span style="color:#ff4466">alert http $EXTERNAL_NET any -> $HOME_NET any</span><br>
+        <span style="color:#00ff88">(msg:"EXE download via HTTP";</span><br>
+        <span style="color:#00ff88">&nbsp;fileext:"exe"; sid:1000003; rev:1;)</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📊 Stack SOC minimale</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem">
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">1</div><div class="step-content" style="font-size:.74rem"><strong>Suricata / Snort</strong> — NIDS, génère des alertes JSON dans /var/log/suricata/eve.json</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">2</div><div class="step-content" style="font-size:.74rem"><strong>Filebeat / Logstash</strong> — collecte et envoie les logs Suricata vers Elasticsearch</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">3</div><div class="step-content" style="font-size:.74rem"><strong>Elasticsearch</strong> — stockage et indexation des événements</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">4</div><div class="step-content" style="font-size:.74rem"><strong>Kibana</strong> — dashboards et visualisations, créer des alertes sur les signatures détectées</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">5</div><div class="step-content" style="font-size:.74rem"><strong>Wazuh</strong> — HIDS + SIEM all-in-one, excellent rapport qualité/prix pour PME africaines</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 11 — CHECKLIST FINALE -->
+<div class="slide" data-index="11">
+  <div class="slide-tag">// Slide 12 · Checklist sécurité réseau · Audit · Top priorités</div>
+  <h2>Checklist Sécurité Réseau — Top 20 Priorités</h2>
+  <h3>Si tu ne peux faire que 20 choses pour sécuriser un réseau — ce sont celles-ci</h3>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.6rem">🔴 Critique — À faire immédiatement</div>
+      <div class="check-items">
+        <div class="check-item">Changer tous les mots de passe par défaut des équipements</div>
+        <div class="check-item">Mettre à jour le firmware de tous les équipements réseau</div>
+        <div class="check-item">Firewall avec politique Deny-All par défaut</div>
+        <div class="check-item">Segmenter le réseau avec des VLANs (minimum : users/servers/IoT/guest)</div>
+        <div class="check-item">Fermer tous les ports non utilisés sur le firewall et les switches</div>
+        <div class="check-item">Désactiver Telnet, FTP, HTTP admin — utiliser SSH et HTTPS</div>
+        <div class="check-item">Activer DHCP Snooping et DAI sur les switches</div>
+        <div class="check-item">HSTS + HTTPS forcé sur toutes les applications web</div>
+        <div class="check-item">MFA sur tous les accès administratifs (VPN, jump server, cloud)</div>
+        <div class="check-item">Sauvegardes chiffrées testées régulièrement (3-2-1)</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.6rem">🟡 Important — À faire dans les 30 jours</div>
+      <div class="check-items">
+        <div class="check-item">IDS/IPS déployé (Suricata + règles ET/Open) + alertes email</div>
+        <div class="check-item">fail2ban ou CrowdSec sur tous les serveurs exposés</div>
+        <div class="check-item">DNS over HTTPS ou DoT configuré sur les résolveurs</div>
+        <div class="check-item">VPN pour tout accès distant (WireGuard recommandé)</div>
+        <div class="check-item">WiFi : WPA3 ou WPA2-Enterprise · guest VLAN isolé</div>
+        <div class="check-item">Logging centralisé — tous les équipements → syslog/SIEM</div>
+        <div class="check-item">Scan Nmap régulier de sa propre infrastructure (mensuel)</div>
+        <div class="check-item">SPF + DKIM + DMARC sur tous les domaines email</div>
+        <div class="check-item">NTP synchronisé sur tous les équipements</div>
+        <div class="check-item">Plan de réponse à incident documenté et testé</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12 — CERTIFICATIONS RÉSEAU -->
+<div class="slide" data-index="12">
+  <div class="slide-tag">// Slide 13 · Certifications réseau · Parcours · CompTIA · Cisco</div>
+  <h2>Certifications Réseau — Le Parcours Recommandé</h2>
+  <h3>Du débutant à l'expert — les certifications qui valorisent ton profil en Afrique et à l'international</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.3)">
+      <div class="cmd-name" style="color:#00ff88">CompTIA Network+</div>
+      <div class="cmd-desc">La certification réseau fondamentale, vendor-neutral. Couvre OSI, TCP/IP, sécurité réseau, troubleshooting. Reconnue mondialement, idéale pour débuter.</div>
+      <div class="cmd-ex">~360$ · 90 questions · 90 min · renouvellement 3 ans</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+      <div class="cmd-name" style="color:#00aaff">CompTIA Security+</div>
+      <div class="cmd-desc">La certification sécurité de référence — complémentaire à Network+. Gouvernements, banques, grandes entreprises l'exigent souvent. Couvre tout le spectre de la sécurité.</div>
+      <div class="cmd-ex">~404$ · Prérequis recommandé : Network+ · Examen SY0-701</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,136,0,.3)">
+      <div class="cmd-name" style="color:#ff8800">Cisco CCNA</div>
+      <div class="cmd-desc">La certification réseau Cisco — très demandée par les opérateurs africains (Orange, MTN, Airtel). Couvre le routage, le switching, VLANs, STP, OSPF, sécurité de base.</div>
+      <div class="cmd-ex">~330$ · Examen 200-301 · 120 questions · 120 min</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.3)">
+      <div class="cmd-name" style="color:#ffd700">Cisco CCNP Enterprise</div>
+      <div class="cmd-desc">Niveau avancé — routage avancé (OSPF, BGP, EIGRP), SD-WAN, infrastructure de campus, sécurité réseau avancée. Prérequis : CCNA. Ouvre les portes des grandes entreprises.</div>
+      <div class="cmd-ex">~400-500$ par examen · 2 examens · 3-5 ans d'expérience</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.3)">
+      <div class="cmd-name" style="color:#aa44ff">Cisco CyberOps Associate</div>
+      <div class="cmd-desc">Spécialisation SOC — analyse de trafic, Wireshark, IDS/IPS, réponse aux incidents, SIEM. Parfait pour rejoindre un SOC après ce parcours NET.</div>
+      <div class="cmd-ex">~330$ · Très pratique · Idéal pour Blue Team · CV SOC Analyst</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">Mikrotik MTCNA</div>
+      <div class="cmd-desc">Certification Mikrotik — très populaire en Afrique où Mikrotik domine les ISP et PME. Routage, firewall, VPN, QoS, hotspot. Formation souvent disponible en Afrique.</div>
+      <div class="cmd-ex">~50$ · Examen en ligne · Très valorisé par les FAI africains</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 13 — QCM FINAL + CONCLUSION PARCOURS -->
+<div class="slide" data-index="13">
+  <div class="slide-tag">// Slide 14 · Conclusion Parcours NET · QCM final · Tu es Expert Réseau</div>
+  <h2>Parcours NET Terminé — Tu es Expert Réseau 🌐</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🎓 Les 6 modules du Parcours NET</div>
+      <ul class="bullets">
+        <li><strong>NET·01</strong> — OSI, TCP/IP, protocoles, topologies, équipements</li>
+        <li><strong>NET·02</strong> — IPv4/IPv6, CIDR, subnetting, NAT, DHCP, AFRINIC</li>
+        <li><strong>NET·03</strong> — DNS, HTTP/HTTPS, TLS, SMTP, SSH, ARP, SPF/DKIM/DMARC</li>
+        <li><strong>NET·04</strong> — VLANs, DMZ, Firewalls, iptables, routage, Zero Trust</li>
+        <li><strong>NET·05</strong> — Wireshark, tcpdump, BPF filters, CTF .pcap, détection attaques</li>
+        <li><strong>NET·06</strong> — Attaques réseau, Nmap NSE, IDS/IPS, VPN, hardening, certs</li>
+        <li class="ok">Tu comprends maintenant les réseaux du débutant à l'expert</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🚀 La suite de ton parcours SooPHA</div>
+      <ul class="bullets">
+        <li><strong>Forensics & Investigation</strong> — analyser une compromission complète</li>
+        <li><strong>Pentest Methodology I & II</strong> — attaquer légalement pour mieux défendre</li>
+        <li><strong>Malware Analysis</strong> — comprendre ce que les malwares font vraiment</li>
+        <li><strong>Reverse Engineering RE·01 → RE·07</strong> — lire le code machine</li>
+        <li class="ok">CTFd <strong>ctfd.soopha-learn.com</strong> — mettre tes compétences réseau à l'épreuve</li>
+      </ul>
+      <div class="hdiv">RESSOURCES FINALES</div>
+      <ul class="bullets" style="font-size:.78rem">
+        <li><strong>TryHackMe</strong> — rooms Pre-Security, Network Fundamentals</li>
+        <li><strong>HackTheBox Academy</strong> — module Introduction to Networking</li>
+        <li><strong>Cisco Networking Academy</strong> — CCNA courses gratuits</li>
+      </ul>
+    </div>
+  </div>
+  <div style="margin-top:.8rem;display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-red">Nmap · Suricata · WireGuard</span>
+    <span class="pill pill-blue">VLAN · DMZ · IDS · VPN</span>
+    <span class="pill pill-green">Network+ · CCNA · MTCNA</span>
+    <span class="pill pill-orange">Parcours NET complet 🎉</span>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🌐</div>
+    <div class="completion-title" id="comp-title">Parcours NET terminé !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="formations.html" class="completion-btn completion-btn-primary">← Toutes les formations</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 14</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+var QCM = {
+  1: {
+    question: "Un attaquant sur le réseau local envoie des ARP Reply non sollicités disant que l'IP 192.168.1.1 (routeur) correspond à sa propre MAC. Quel est l'impact et la contre-mesure sur switch managé ?",
+    options: [
+      "L'attaquant devient le routeur — il peut intercepter et modifier tout le trafic. Contre-mesure : activer DHCP Snooping uniquement",
+      "L'attaquant empoisonne le cache ARP des victimes — tout leur trafic lui est redirigé (MITM). Contre-mesure : Dynamic ARP Inspection (DAI) sur le switch, qui valide les ARP contre la table DHCP Snooping",
+      "L'impact est limité car le routeur détecte l'usurpation de son IP et envoie une alerte ICMP",
+      "L'attaquant ne peut voir que le trafic broadcast — les communications unicast restent protégées"
+    ],
+    correct: 1,
+    explanation: "ARP Spoofing → MITM : l'attaquant envoie de faux ARP Reply associant sa MAC à l'IP du routeur. Les victimes mettent à jour leur cache ARP — leur trafic est envoyé à l'attaquant au lieu du vrai routeur. L'attaquant peut lire et modifier tout le trafic non chiffré. Contre-mesure principale : DAI (Dynamic ARP Inspection) sur les switches managés. DAI compare chaque ARP Reply avec la table DHCP Snooping (qui lie IP ↔ MAC ↔ port switch). Si la MAC de l'ARP Reply ne correspond pas à la table DHCP, le paquet est droppé. Autres contre-mesures : entrées ARP statiques pour la passerelle, surveillance des changements ARP avec arpwatch."
+  },
+  4: {
+    question: "Tu déploies Suricata sur ton réseau. Au bout d'une heure, tu reçois 10 000 alertes. La plupart semblent être des faux positifs sur du trafic légitime. Quelle est la bonne approche ?",
+    options: [
+      "Désactiver Suricata — trop d'alertes signifie qu'il y a un problème logiciel et qu'il est inutilisable",
+      "Tuner les règles : identifier les faux positifs récurrents, créer des suppressions pour les IPs/ports légitimes connus, ajuster les seuils, activer uniquement les règles pertinentes à ton contexte réseau",
+      "Augmenter les ressources du serveur Suricata — les faux positifs sont causés par un manque de mémoire RAM",
+      "Passer en mode IPS immédiatement — les alertes trop nombreuses en mode IDS justifient un blocage automatique"
+    ],
+    correct: 1,
+    explanation: "Le tuning est la partie la plus importante d'un déploiement IDS/IPS — c'est souvent 80% du travail. Étapes de tuning : (1) Identifier les alertes les plus fréquentes : sort les logs par sid/msg. (2) Analyser si elles sont des vrais positifs ou faux positifs. (3) Créer des suppressions pour les IPs légitimes : suppress gen_id 1, sig_id 2013504, track by_src, ip 10.0.0.1. (4) Désactiver les règles non pertinentes (ex: règles Windows si réseau Linux). (5) Ajuster les seuils (threshold) pour les règles trop sensibles. Passer en IPS avec des règles non tuned bloquerait du trafic légitime et créerait des incidents réseau."
+  },
+  7: {
+    question: "Un employé repart avec son PC portable de l'entreprise. Il accède au WiFi d'un café et son VPN d'entreprise se connecte automatiquement. Quelle menace persiste malgré le VPN ?",
+    options: [
+      "Aucune menace — le VPN chiffre tout le trafic et protège complètement l'employé et les données d'entreprise",
+      "Si un malware est déjà sur le PC, il peut exfiltrer via le tunnel VPN vers son C2. Le VPN protège contre les menaces réseau externes mais pas contre les compromissions locales du device",
+      "La menace principale est la batterie qui se décharge plus vite avec le VPN activé",
+      "Les DNS leaks révèlent uniquement les sites visités mais pas les données transmises"
+    ],
+    correct: 1,
+    explanation: "Le VPN crée un tunnel chiffré entre le device et le réseau d'entreprise — protégeant contre les attaquants sur le même WiFi de café. Mais il ne protège pas contre : (1) Un malware déjà présent sur le PC — il peut utiliser le tunnel VPN pour accéder au réseau interne ET pour contacter son C2. (2) Les menaces sur le device lui-même — keyloggers, RATs. (3) Un utilisateur qui désactive le VPN split tunnel pour accéder aux ressources personnelles. Solution complémentaire : EDR/antivirus sur le device, MDM (gestion d'appareils mobiles) pour vérifier la conformité avant de laisser accéder au VPN, Zero Trust Network Access (ZTNA) qui vérifie en continu l'état du device."
+  },
+  9: {
+    question: "Tu configures WireGuard avec AllowedIPs = 0.0.0.0/0 pour un employé en télétravail. Quelle en est la conséquence sur son trafic et quelle alternative existe ?",
+    options: [
+      "AllowedIPs = 0.0.0.0/0 configure un split tunnel — seul le trafic d'entreprise passe par le VPN, le reste va directement sur Internet",
+      "AllowedIPs = 0.0.0.0/0 configure un full tunnel — TOUT le trafic (y compris YouTube, réseaux sociaux) passe par le serveur VPN d'entreprise. Alternative : split tunneling avec AllowedIPs = 10.0.0.0/8, 192.168.0.0/16 pour n'envoyer que le trafic interne dans le tunnel",
+      "AllowedIPs = 0.0.0.0/0 bloque tout le trafic — c'est la politique Deny-All par défaut de WireGuard",
+      "AllowedIPs = 0.0.0.0/0 configure WireGuard en mode serveur — l'employé devient un nœud de sortie VPN pour d'autres"
+    ],
+    correct: 1,
+    explanation: "AllowedIPs dans WireGuard définit quelles destinations passent dans le tunnel. (1) AllowedIPs = 0.0.0.0/0 = full tunnel : TOUT le trafic passe par le serveur VPN, y compris Netflix, YouTube, réseaux sociaux. Avantage : tout le trafic est protégé par le firewall d'entreprise. Inconvénient : surcharge le serveur VPN, plus lent pour l'utilisateur. (2) Split tunneling avec AllowedIPs = 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 : seul le trafic vers les réseaux privés d'entreprise passe par le VPN. Le reste va directement sur Internet. Plus léger, mais le trafic hors tunnel n'est pas protégé par le firewall d'entreprise."
+  },
+  13: {
+    question: "Pour sécuriser le WiFi d'une PME africaine avec 30 employés et un budget limité, quelle est la configuration minimale qui offre la meilleure sécurité réaliste ?",
+    options: [
+      "Cacher le SSID (hidden network) et filtrer les adresses MAC — ces deux mesures ensemble offrent une protection solide sans coût supplémentaire",
+      "WPA2-PSK avec un mot de passe fort (20+ chars) + VLAN séparé pour le WiFi guest + fail2ban sur les serveurs exposés + Cloudflare pour la protection web — réaliste et efficace dans le contexte africain",
+      "Acheter du matériel Cisco enterprise avec Cisco ISE pour le 802.1X — c'est la seule vraie sécurité WiFi",
+      "Désactiver le WiFi et utiliser uniquement des connexions filaires — le WiFi est trop dangereux pour une entreprise"
+    ],
+    correct: 1,
+    explanation: "Pour une PME africaine à budget limité, la bonne stratégie est le rapport sécurité/coût/faisabilité : (1) WPA2-PSK avec passphrase longue (20+ chars) = protection correcte même sans 802.1X. Changer la passphrase quand un employé part. (2) VLAN guest isolé = protéger le réseau interne des visiteurs — faisable même avec un Mikrotik à 50$. (3) fail2ban sur tous les serveurs = gratuit et très efficace contre le brute force. (4) Cloudflare plan gratuit = DDoS, WAF basique, CDN. Ce que l'on évite : hidden SSID (A) et filtrage MAC = fausse sécurité, cassable en 5 minutes. Cisco Enterprise (C) = budget inaccessible pour une PME. Supprimer le WiFi (D) = irréaliste en 2026."
+  }
+};
+
+var COURSE_ID = 'net6';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){
+    document.getElementById('comp-icon').textContent='🌐';
+    document.getElementById('comp-title').textContent='Expert Réseau SooPHA !';
+    document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Tu maîtrises les réseaux du débutant à l\'expert — parcours NET complet !';
+  } else if(pct>=60){
+    document.getElementById('comp-icon').textContent='📡';
+    document.getElementById('comp-title').textContent='NET·06 terminé';
+    document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Solide ! Revois les attaques et le VPN pour consolider.';
+  } else {
+    document.getElementById('comp-icon').textContent='📚';
+    document.getElementById('comp-title').textContent='NET·06 terminé';
+    document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Relis les slides IDS/IPS et hardening avant de passer à la suite.';
+  }
+  document.getElementById('completion-modal').classList.add('show');
+}
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='NMAPIDSVPNFIREWALLWIREGUARDSURICATAHARDEN01DNSARP',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,4,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#00aaff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>NET·05 — Wireshark & Analyse de Trafic · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,4,12,.97);border-bottom:1px solid rgba(0,170,255,.18);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(0,170,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(0,170,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}.tb-back:hover{color:#00aaff}
+.tb-dot{width:6px;height:6px;background:#00aaff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(0,170,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#003189,#00aaff);box-shadow:0 0 8px #00aaff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#00aaff;--blue-border:rgba(0,170,255,.18);--blue-faint:rgba(0,170,255,.05)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#00aaff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(0,170,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(2,10,20,.88);border:1px solid var(--blue-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(200,220,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#00aaff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}.bullets li.ok::before{content:'✅';font-size:.7rem}.bullets li.danger::before{content:'🔴';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.terminal{background:rgba(0,0,4,.7);border:1px solid rgba(0,170,255,.15);border-left:3px solid #00aaff;padding:.8rem 1.1rem;font-family:var(--mono);font-size:.75rem;color:rgba(0,170,255,.8);line-height:1.9;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.75}
+.term-prompt{color:#00aaff}.term-out{color:rgba(255,255,255,.45)}.term-comment{color:rgba(0,170,255,.4);font-style:italic}
+.term-red{color:#ff4466}.term-yellow{color:#ffd700}.term-green{color:#00ff88}
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(0,170,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(0,170,255,.12)}
+.quote{border-left:3px solid #00aaff;padding:.7rem 1rem;background:rgba(0,170,255,.04);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#d0e8ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #00aaff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#00aaff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#00aaff;text-shadow:0 0 8px #00aaff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(200,220,255,.85);line-height:1.5}
+/* Wireshark packet rows */
+.pkt-table{width:100%;border-collapse:collapse;max-width:880px;font-size:.65rem}
+.pkt-table th{font-family:var(--mono);color:rgba(0,170,255,.5);letter-spacing:.1em;padding:.35rem .6rem;border-bottom:1px solid rgba(0,170,255,.15);text-align:left;background:rgba(0,170,255,.04)}
+.pkt-table td{font-family:var(--mono);padding:.32rem .6rem;border-bottom:1px solid rgba(0,170,255,.05)}
+.pkt-table tr:last-child td{border-bottom:none}
+.pkt-http{background:rgba(0,255,136,.04)}.pkt-http td:first-child{color:#00ff88}
+.pkt-dns{background:rgba(170,68,255,.04)}.pkt-dns td:first-child{color:#aa44ff}
+.pkt-tls{background:rgba(0,170,255,.04)}.pkt-tls td:first-child{color:#00aaff}
+.pkt-arp{background:rgba(255,215,0,.04)}.pkt-arp td:first-child{color:#ffd700}
+.pkt-tcp{background:rgba(255,136,0,.04)}.pkt-tcp td:first-child{color:#ff8800}
+.pkt-icmp{background:rgba(255,68,102,.04)}.pkt-icmp td:first-child{color:#ff4466}
+/* Filter pills */
+.filter-row{display:flex;gap:.4rem;flex-wrap:wrap;margin:.5rem 0}
+.flt{display:inline-block;padding:.2rem .6rem;font-family:var(--mono);font-size:.62rem;border-radius:2px;cursor:default}
+.flt-blue{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.flt-green{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25);color:#00ff88}
+.flt-red{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.25);color:#ff4466}
+.flt-yellow{background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.2);color:#ffd700}
+/* QCM */
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(2,4,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(2,10,20,.97);border:1px solid rgba(0,170,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(0,170,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(0,170,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.35);margin-bottom:.5rem;display:none}.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(0,4,16,.3);border:1px solid rgba(0,170,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(190,215,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(0,170,255,.35);background:rgba(0,170,255,.06);color:rgba(210,230,255,.95)}
+.qcm-option.correct{border-color:#00aaff!important;background:rgba(0,170,255,.12)!important;color:#00aaff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#00aaff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);color:rgba(210,230,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(0,170,255,.15);border:1px solid rgba(0,170,255,.4);color:#00aaff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(0,170,255,.25);box-shadow:0 0 20px rgba(0,170,255,.2)}.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(2,4,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(0,170,255,.3);background:rgba(2,10,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#00aaff;text-shadow:0 0 20px #00aaff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,220,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#00aaff;color:#000a14}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(0,170,255,.4);color:#00aaff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(2,4,12,.97);border-top:1px solid rgba(0,170,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(0,170,255,.2);color:rgba(0,170,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#00aaff;color:#00aaff}.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#00aaff;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+  <div class="tb-left">
+    <a href="formations.html" class="tb-back">← Formations</a>
+    <span><span class="tb-dot"></span>// NET·05 · Wireshark & Analyse de Trafic</span>
+  </div>
+  <div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+
+<div id="slides">
+
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// NET·05 · Réseau · SooPHA Learn</div>
+  <h1 class="glitch" style="color:#00aaff!important;text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)!important">WIRESHARK<br>& ANALYSE TRAFIC</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Captures · Filtres BPF · TCP Stream · tcpdump · Forensics réseau</h3>
+  <div class="card" style="text-align:center;max-width:700px">
+    <ul class="bullets" style="text-align:left">
+      <li><strong>14 slides</strong> · 5 QCM obligatoires · ~65 min</li>
+      <li><strong>Interface Wireshark</strong> — naviguer dans les paquets comme un pro</li>
+      <li><strong>Filtres d'affichage</strong> — cibler exactement le trafic qui t'intéresse</li>
+      <li><strong>Filtres BPF (capture)</strong> — capturer uniquement ce dont tu as besoin</li>
+      <li><strong>Follow Stream</strong> — reconstruire des conversations TCP/UDP complètes</li>
+      <li><strong>tcpdump</strong> — capturer en CLI sur un serveur distant sans GUI</li>
+      <li><strong>Analyse .pcap</strong> — ouvrir des captures CTF, identifier les anomalies</li>
+      <li><strong>Détecter les attaques</strong> — ARP spoofing, scans Nmap, brute force SSH</li>
+      <li class="ok">Prérequis : NET·01 à NET·03 — OSI, protocoles, ports</li>
+    </ul>
+  </div>
+  <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-blue">NET · Module 5/6</span>
+    <span class="pill pill-green">Intermédiaire</span>
+    <span class="pill pill-orange">Wireshark · tcpdump · BPF</span>
+    <span class="pill pill-red">Forensics réseau · CTF · SOC</span>
+  </div>
+</div>
+
+<!-- SLIDE 1 — QCM : WIRESHARK INTERFACE -->
+<div class="slide" data-index="1">
+  <div class="slide-tag">// Slide 02 · Interface Wireshark · Anatomie · QCM requis</div>
+  <h2>Wireshark — L'Outil Incontournable du Réseau</h2>
+  <h3>Analyser, capturer, décoder — tout le trafic réseau sous les yeux en temps réel</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🖥️ Les 5 zones de l'interface</div>
+      <ul class="bullets">
+        <li><strong>Barre de filtres</strong> (haut) — filtre d'affichage en temps réel, fond vert = filtre valide, rouge = erreur de syntaxe</li>
+        <li><strong>Liste des paquets</strong> (milieu haut) — un paquet par ligne, colorisé par protocole</li>
+        <li><strong>Détail du paquet</strong> (milieu bas) — arborescence des couches OSI, chaque champ cliquable</li>
+        <li><strong>Vue hexadécimale</strong> (bas) — octets bruts avec correspondance ASCII, surlignage synchronisé</li>
+        <li><strong>Barre de statut</strong> (bas) — nombre de paquets capturés/affichés, durée, taille</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🎨 Colorisation des protocoles</div>
+      <div style="display:flex;flex-direction:column;gap:.28rem">
+        <div style="display:flex;align-items:center;gap:.6rem;padding:.3rem .6rem;background:rgba(0,255,136,.07);border-left:3px solid #00ff88"><span style="font-family:var(--mono);font-size:.65rem;color:#00ff88;min-width:60px">HTTP</span><span style="font-family:var(--body);font-size:.7rem;color:rgba(200,220,255,.6)">Vert clair — trafic web non chiffré</span></div>
+        <div style="display:flex;align-items:center;gap:.6rem;padding:.3rem .6rem;background:rgba(0,170,255,.07);border-left:3px solid #00aaff"><span style="font-family:var(--mono);font-size:.65rem;color:#00aaff;min-width:60px">DNS</span><span style="font-family:var(--body);font-size:.7rem;color:rgba(200,220,255,.6)">Bleu clair — requêtes de résolution</span></div>
+        <div style="display:flex;align-items:center;gap:.6rem;padding:.3rem .6rem;background:rgba(170,68,255,.07);border-left:3px solid #aa44ff"><span style="font-family:var(--mono);font-size:.65rem;color:#aa44ff;min-width:60px">TCP SYN</span><span style="font-family:var(--body);font-size:.7rem;color:rgba(200,220,255,.6)">Mauve — établissement de connexion</span></div>
+        <div style="display:flex;align-items:center;gap:.6rem;padding:.3rem .6rem;background:rgba(255,215,0,.05);border-left:3px solid #ffd700"><span style="font-family:var(--mono);font-size:.65rem;color:#ffd700;min-width:60px">ARP</span><span style="font-family:var(--body);font-size:.7rem;color:rgba(200,220,255,.6)">Jaune — résolution MAC locale</span></div>
+        <div style="display:flex;align-items:center;gap:.6rem;padding:.3rem .6rem;background:rgba(255,68,102,.07);border-left:3px solid #ff4466"><span style="font-family:var(--mono);font-size:.65rem;color:#ff4466;min-width:60px">TCP RST</span><span style="font-family:var(--body);font-size:.7rem;color:rgba(200,220,255,.6)">Rouge — connexion réinitialisée</span></div>
+        <div style="display:flex;align-items:center;gap:.6rem;padding:.3rem .6rem;background:rgba(0,255,136,.04);border-left:3px solid #00ff88"><span style="font-family:var(--mono);font-size:.65rem;color:#00ff88;min-width:60px">ICMP</span><span style="font-family:var(--body);font-size:.7rem;color:rgba(200,220,255,.6)">Gris-vert — ping et messages ICMP</span></div>
+        <div style="display:flex;align-items:center;gap:.6rem;padding:.3rem .6rem;background:rgba(0,170,255,.04);border-left:3px solid #00aaff"><span style="font-family:var(--mono);font-size:.65rem;color:#00aaff;min-width:60px">TLS</span><span style="font-family:var(--body);font-size:.7rem;color:rgba(200,220,255,.6)">Bleu foncé — trafic chiffré HTTPS</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2 — FILTRES D'AFFICHAGE -->
+<div class="slide" data-index="2">
+  <div class="slide-tag">// Slide 03 · Filtres d'affichage · Display Filters · Syntaxe</div>
+  <h2>Filtres d'Affichage — Trouver l'Aiguille dans la Botte de Foin</h2>
+  <h3>La compétence clé de Wireshark — écrire des filtres précis pour isoler ce qui t'intéresse</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📌 Filtres essentiels par protocole</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Protocole seul</span><br>
+        <span style="color:#00ff88">http</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">tous les paquets HTTP</span><br>
+        <span style="color:#aa44ff">dns</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">toutes les requêtes DNS</span><br>
+        <span style="color:#00aaff">tls</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">trafic TLS/HTTPS</span><br>
+        <span style="color:#ffd700">arp</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">trames ARP</span><br>
+        <span style="color:#ff8800">tcp</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">tout TCP</span><br>
+        <span style="color:#ff8800">udp</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">tout UDP</span><br>
+        <span style="color:#ff4466">icmp</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">ping et messages ICMP</span><br>
+        <br>
+        <span class="term-comment"># Par adresse IP</span><br>
+        <span style="color:#00aaff">ip.addr == 192.168.1.10</span><br>
+        <span style="color:#00aaff">ip.src == 10.0.0.1</span><br>
+        <span style="color:#00aaff">ip.dst == 8.8.8.8</span><br>
+        <br>
+        <span class="term-comment"># Par port</span><br>
+        <span style="color:#00aaff">tcp.port == 443</span><br>
+        <span style="color:#00aaff">tcp.dstport == 22</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔗 Opérateurs et combinaisons</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Opérateurs logiques</span><br>
+        <span style="color:#ffd700">&&</span> ou <span style="color:#ffd700">and</span> &nbsp;&nbsp;<span class="term-comment">ET logique</span><br>
+        <span style="color:#ffd700">||</span> ou <span style="color:#ffd700">or</span> &nbsp;&nbsp;&nbsp;<span class="term-comment">OU logique</span><br>
+        <span style="color:#ffd700">!</span> ou <span style="color:#ffd700">not</span> &nbsp;&nbsp;&nbsp;<span class="term-comment">négation</span><br>
+        <br>
+        <span class="term-comment"># Filtres combinés pratiques</span><br>
+        <span style="color:#00ff88">http and ip.src == 192.168.1.5</span><br>
+        <span class="term-out">HTTP venant d'une IP précise</span><br>
+        <br>
+        <span style="color:#00ff88">tcp.port == 22 and ip.addr == 10.0.0.0/8</span><br>
+        <span class="term-out">SSH depuis le réseau interne</span><br>
+        <br>
+        <span style="color:#00ff88">dns and !ip.addr == 192.168.1.1</span><br>
+        <span class="term-out">DNS sans le routeur local</span><br>
+        <br>
+        <span style="color:#00ff88">http.request.method == "POST"</span><br>
+        <span class="term-out">Formulaires web soumis uniquement</span><br>
+        <br>
+        <span style="color:#ff4466">tcp.flags.syn == 1 and tcp.flags.ack == 0</span><br>
+        <span class="term-out">SYN sans ACK → détection de scan</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3 — FILTRES BPF -->
+<div class="slide" data-index="3">
+  <div class="slide-tag">// Slide 04 · Filtres BPF · Capture Filters · tcpdump</div>
+  <h2>Filtres BPF — Capturer Uniquement ce dont tu as Besoin</h2>
+  <h3>Berkeley Packet Filter — appliqué AVANT la capture pour réduire la taille des .pcap</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">⚡ Display Filter vs Capture Filter</div>
+      <ul class="bullets">
+        <li><strong>Display Filter</strong> — appliqué APRÈS la capture. Tu as tous les paquets, tu filtres l'affichage. Syntaxe Wireshark. Modifiable à chaud.</li>
+        <li><strong>Capture Filter (BPF)</strong> — appliqué PENDANT la capture. Seuls les paquets qui correspondent sont capturés. Syntaxe tcpdump. Non modifiable à chaud.</li>
+        <li class="ok">Pour les <strong>analyses courtes</strong> : pas de filtre de capture, filtrer l'affichage ensuite</li>
+        <li class="warn">Pour les <strong>captures longues</strong> (production, 24h+) : BPF obligatoire sinon le .pcap explose en taille</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📋 Syntaxe BPF essentielle</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Capturer uniquement du HTTP</span><br>
+        <span style="color:#00ff88">tcp port 80</span><br>
+        <br>
+        <span class="term-comment"># DNS uniquement</span><br>
+        <span style="color:#00ff88">udp port 53</span><br>
+        <br>
+        <span class="term-comment"># Depuis/vers une IP</span><br>
+        <span style="color:#00ff88">host 192.168.1.10</span><br>
+        <span style="color:#00ff88">src host 10.0.0.1</span><br>
+        <span style="color:#00ff88">dst host 8.8.8.8</span><br>
+        <br>
+        <span class="term-comment"># Un réseau entier</span><br>
+        <span style="color:#00ff88">net 192.168.1.0/24</span><br>
+        <br>
+        <span class="term-comment"># Combinaisons</span><br>
+        <span style="color:#00ff88">tcp port 443 or tcp port 80</span><br>
+        <span style="color:#00ff88">not port 22</span>&nbsp;<span class="term-comment">tout sauf SSH</span><br>
+        <span style="color:#00ff88">host 10.0.0.5 and port 3306</span>
+      </div>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "Différence clé : <strong>tcp port 80</strong> est de la syntaxe BPF (capture), alors que <strong>tcp.port == 80</strong> est de la syntaxe Wireshark (display). Les deux font la même chose mais à des moments différents — confondre les deux = filtre qui ne fonctionne pas."
+  </div>
+</div>
+
+<!-- SLIDE 4 — QCM : FOLLOW STREAM -->
+<div class="slide" data-index="4">
+  <div class="slide-tag">// Slide 05 · Follow Stream · Reconstruire une conversation · QCM requis</div>
+  <h2>Follow Stream — Reconstruire une Conversation Complète</h2>
+  <h3>La fonctionnalité la plus puissante de Wireshark pour comprendre ce qui s'est dit</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔄 Comment l'utiliser</div>
+      <div style="display:flex;flex-direction:column;gap:.35rem">
+        <div class="step" style="padding:.45rem .7rem"><div class="step-num" style="font-size:.8rem">1</div><div class="step-content" style="font-size:.75rem">Cliquer sur un paquet du flux qui t'intéresse (ex: un paquet HTTP vers le serveur cible)</div></div>
+        <div class="step" style="padding:.45rem .7rem"><div class="step-num" style="font-size:.8rem">2</div><div class="step-content" style="font-size:.75rem">Clic droit → <strong>Follow</strong> → <strong>TCP Stream</strong> (ou HTTP Stream, UDP Stream...)</div></div>
+        <div class="step" style="padding:.45rem .7rem"><div class="step-num" style="font-size:.8rem">3</div><div class="step-content" style="font-size:.75rem">Une fenêtre affiche l'échange complet — rouge = client → serveur, bleu = serveur → client</div></div>
+        <div class="step" style="padding:.45rem .7rem"><div class="step-num" style="font-size:.8rem">4</div><div class="step-content" style="font-size:.75rem">Possibilité de <strong>sauvegarder en brut, texte, ou hexadécimal</strong> pour analyse offline</div></div>
+        <div class="step" style="padding:.45rem .7rem"><div class="step-num" style="font-size:.8rem">5</div><div class="step-content" style="font-size:.75rem">La liste des paquets se filtre automatiquement sur ce stream — noter le filtre généré</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">💡 Ce que Follow Stream révèle</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0;font-size:.65rem">
+        <span class="term-comment">// Follow HTTP Stream sur un login en clair</span><br>
+        <span style="color:#ff4466">POST /login HTTP/1.1</span><br>
+        <span style="color:#ff4466">Host: admin.example.com</span><br>
+        <span style="color:#ff4466">Content-Type: application/x-www-form-urlencoded</span><br>
+        <br>
+        <span style="color:#ff4466">username=admin&password=<span style="background:rgba(255,68,102,.2);padding:0 .2rem">P@ssw0rd123</span></span><br>
+        <br>
+        <span style="color:#00aaff">HTTP/1.1 302 Found</span><br>
+        <span style="color:#00aaff">Location: /dashboard</span><br>
+        <span style="color:#00aaff">Set-Cookie: session=eyJhbGci...</span><br>
+        <br>
+        <span class="term-comment">// Le mot de passe est visible en clair !</span><br>
+        <span class="term-comment">// → Preuve qu'il faut forcer HTTPS</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5 — DÉMO : LIRE UNE CAPTURE -->
+<div class="slide" data-index="5">
+  <div class="slide-tag">// Slide 06 · Lire une capture pcap · Navigation · Statistiques</div>
+  <h2>Naviguer dans une Capture .pcap</h2>
+  <h3>Les menus et outils Wireshark qui font gagner du temps lors d'une analyse forensique</h3>
+  <div class="cmd-grid" style="margin-bottom:.8rem">
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">Statistics → Protocol Hierarchy</div>
+      <div class="cmd-desc">Vue synthétique de tous les protocoles présents dans la capture avec leur proportion en %. Permet d'identifier immédiatement le protocole dominant et les anomalies.</div>
+      <div class="cmd-ex">Ex : 85% UDP = possible exfiltration DNS ou jeu · 60% ARP = suspect</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+      <div class="cmd-name" style="color:#00aaff">Statistics → Conversations</div>
+      <div class="cmd-desc">Toutes les paires IP qui communiquent — triées par volume. Identifier immédiatement quelle IP génère le plus de trafic. Utile pour trouver un C2 ou une exfiltration.</div>
+      <div class="cmd-ex">Trier par Bytes desc → machine qui exfiltre en tête</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+      <div class="cmd-name" style="color:#ffd700">Statistics → IO Graph</div>
+      <div class="cmd-desc">Graphique du débit réseau dans le temps. Pic de trafic à 3h du matin = exfiltration programmée. Plateau constant = tunnel (C2, VPN non autorisé).</div>
+      <div class="cmd-ex">Pic de trafic DNS à heure fixe → DNS tunneling</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.2)">
+      <div class="cmd-name" style="color:#aa44ff">Analyze → Expert Information</div>
+      <div class="cmd-desc">Wireshark liste automatiquement les anomalies détectées : retransmissions TCP, connexions réinitialisées, erreurs. Un bon point de départ pour l'analyse forensique.</div>
+      <div class="cmd-ex">Beaucoup de TCP RST → scan de port ou firewall qui bloque</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">File → Export Objects → HTTP</div>
+      <div class="cmd-desc">Extraire tous les fichiers transmis en HTTP depuis la capture : images, scripts, archives, exécutables. Très utilisé en forensics pour récupérer des payloads malveillants.</div>
+      <div class="cmd-ex">Extraire des .exe ou .zip téléchargés depuis une capture</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,136,0,.2)">
+      <div class="cmd-name" style="color:#ff8800">Edit → Find Packet</div>
+      <div class="cmd-desc">Rechercher dans les paquets par chaîne de caractères, valeur hex, ou filtre d'affichage. Trouver rapidement "password", "flag", "secret" dans une capture CTF.</div>
+      <div class="cmd-ex">String search → "SOOPHA{" pour trouver un flag CTF dans un pcap</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6 — tcpdump -->
+<div class="slide" data-index="6">
+  <div class="slide-tag">// Slide 07 · tcpdump · CLI · Serveur distant · Sans GUI</div>
+  <h2>tcpdump — Wireshark en Ligne de Commande</h2>
+  <h3>Capturer sur un serveur Linux distant sans interface graphique — indispensable pour les admins et pentesters</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">⚡ Commandes tcpdump essentielles</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Lister les interfaces disponibles</span><br>
+        <span class="term-prompt">$ </span>tcpdump -D<br>
+        <br>
+        <span class="term-comment"># Capturer sur eth0 (verbeux)</span><br>
+        <span class="term-prompt">$ </span>tcpdump -i eth0 -v<br>
+        <br>
+        <span class="term-comment"># Sauvegarder dans un .pcap</span><br>
+        <span class="term-prompt">$ </span>tcpdump -i eth0 -w capture.pcap<br>
+        <br>
+        <span class="term-comment"># Avec filtre BPF</span><br>
+        <span class="term-prompt">$ </span>tcpdump -i eth0 -w http.pcap 'tcp port 80'<br>
+        <br>
+        <span class="term-comment"># Afficher en ASCII (no résolution DNS)</span><br>
+        <span class="term-prompt">$ </span>tcpdump -i eth0 -A -n 'port 80'<br>
+        <br>
+        <span class="term-comment"># Limiter à 100 paquets</span><br>
+        <span class="term-prompt">$ </span>tcpdump -i eth0 -c 100 -w out.pcap<br>
+        <br>
+        <span class="term-comment"># Lire un .pcap existant</span><br>
+        <span class="term-prompt">$ </span>tcpdump -r capture.pcap -n<br>
+        <span class="term-prompt">$ </span>tcpdump -r capture.pcap 'tcp port 443'
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔧 Workflow capture distante → analyse locale</div>
+      <div style="display:flex;flex-direction:column;gap:.35rem">
+        <div class="step" style="padding:.45rem .7rem"><div class="step-num" style="font-size:.8rem">1</div><div class="step-content" style="font-size:.75rem">SSH sur le serveur distant : <code style="color:#00aaff;font-family:var(--mono)">ssh user@serveur.com</code></div></div>
+        <div class="step" style="padding:.45rem .7rem"><div class="step-num" style="font-size:.8rem">2</div><div class="step-content" style="font-size:.75rem">Lancer la capture tcpdump : <code style="color:#00aaff;font-family:var(--mono)">tcpdump -i eth0 -w /tmp/cap.pcap</code></div></div>
+        <div class="step" style="padding:.45rem .7rem"><div class="step-num" style="font-size:.8rem">3</div><div class="step-content" style="font-size:.75rem">Laisser tourner le temps nécessaire, puis <code style="color:#00aaff;font-family:var(--mono)">Ctrl+C</code></div></div>
+        <div class="step" style="padding:.45rem .7rem"><div class="step-num" style="font-size:.8rem">4</div><div class="step-content" style="font-size:.75rem">Rapatrier le .pcap localement : <code style="color:#00aaff;font-family:var(--mono)">scp user@serveur:/tmp/cap.pcap ./</code></div></div>
+        <div class="step" style="padding:.45rem .7rem"><div class="step-num" style="font-size:.8rem">5</div><div class="step-content" style="font-size:.75rem">Ouvrir dans Wireshark et analyser avec les filtres d'affichage</div></div>
+      </div>
+      <div style="margin-top:.6rem;font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.4)">
+        # Option avancée : pipe direct vers Wireshark<br>
+        ssh user@srv "tcpdump -i eth0 -U -s0 -w -" | wireshark -k -i -
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7 — QCM : LIRE UN PCAP CTF -->
+<div class="slide" data-index="7">
+  <div class="slide-tag">// Slide 08 · Analyse CTF .pcap · Méthodologie · QCM requis</div>
+  <h2>Analyser un .pcap CTF — Méthodologie Systématique</h2>
+  <h3>Face à un fichier .pcap inconnu — les étapes dans l'ordre pour ne rien rater</h3>
+  <div class="card" style="margin-bottom:.8rem">
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      <div class="step"><div class="step-num">1</div><div class="step-content"><strong>Protocol Hierarchy</strong> (Statistics menu) — quels protocoles sont présents ? HTTP en clair ? DNS avec des requêtes longues ? SMTP ? Identifier le vecteur principal.</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content"><strong>Conversations</strong> — quelles IPs communiquent le plus ? Trouver les acteurs principaux (attaquant, victime, C2). Trier par bytes.</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content"><strong>Expert Information</strong> — anomalies automatiquement détectées. Beaucoup de TCP RST, retransmissions, connexions réinitialisées ?</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content"><strong>Filtrer par protocole</strong> — si du HTTP est visible : <code style="color:#00aaff;font-family:var(--mono)">http</code> puis Follow TCP Stream sur chaque conversation. Chercher les credentials, les données exfiltrées, les flags.</div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-content"><strong>Export Objects</strong> — si des fichiers ont été transférés (images, archives, exécutables), les extraire et analyser séparément.</div></div>
+      <div class="step"><div class="step-num">6</div><div class="step-content"><strong>Find Packet</strong> — rechercher des chaînes : "flag", "password", "SOOPHA{", "secret". Ou en hex si les données sont encodées.</div></div>
+      <div class="step"><div class="step-num">7</div><div class="step-content"><strong>DNS long queries</strong> — filtrer avec <code style="color:#00aaff;font-family:var(--mono)">dns and frame.len > 100</code> — des sous-domaines très longs peuvent indiquer un DNS tunneling avec des données exfiltrées.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8 — DÉTECTER UN SCAN NMAP -->
+<div class="slide" data-index="8">
+  <div class="slide-tag">// Slide 09 · Détecter les attaques · Scan Nmap · ARP Spoof · Brute Force</div>
+  <h2>Détecter des Attaques dans une Capture</h2>
+  <h3>Les signatures réseau de chaque attaque — reconnaître l'ennemi dans le trafic</h3>
+  <div class="cmd-grid" style="margin-bottom:.8rem">
+    <div class="cmd-card" style="border-color:rgba(255,68,102,.3)">
+      <div class="cmd-name" style="color:#ff4466">🔍 Scan de ports Nmap</div>
+      <div class="cmd-desc">Signature : de nombreux SYN vers des ports différents d'une même IP destination, sans suite de SYN-ACK. Les ports fermés répondent RST.</div>
+      <div class="cmd-ex">Filtre : tcp.flags.syn==1 && tcp.flags.ack==0<br>→ si 1 IP fait 1000 SYN en 1s = scan</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.3)">
+      <div class="cmd-name" style="color:#ffd700">🎭 ARP Spoofing (MITM)</div>
+      <div class="cmd-desc">Signature : une même MAC répond à plusieurs requêtes ARP pour des IPs différentes. Ou l'adresse MAC de la passerelle change soudainement dans les ARP Reply.</div>
+      <div class="cmd-ex">Filtre : arp.opcode == 2<br>→ chercher doublons MAC/IP suspects</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,136,0,.3)">
+      <div class="cmd-name" style="color:#ff8800">🔨 Brute Force SSH</div>
+      <div class="cmd-desc">Signature : des centaines de connexions TCP port 22 depuis la même IP, avec TCP RST ou FIN rapide. Chaque tentative = un SYN/SYN-ACK/ACK puis RST ou échange court.</div>
+      <div class="cmd-ex">Filtre : tcp.dstport==22 && tcp.flags.syn==1<br>→ compter les connexions par IP source</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+      <div class="cmd-name" style="color:#00aaff">🌐 DNS Tunneling</div>
+      <div class="cmd-desc">Signature : des requêtes DNS avec des sous-domaines très longs (50+ caractères), beaucoup de type TXT ou NULL, vers un seul domaine externe suspect.</div>
+      <div class="cmd-ex">Filtre : dns.qry.name contains "." && frame.len > 150<br>→ sous-domaines encodés = data exfiltrée</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.3)">
+      <div class="cmd-name" style="color:#aa44ff">💥 SYN Flood DDoS</div>
+      <div class="cmd-desc">Signature : torrent de SYN vers une IP/port sans aucun ACK final. Les IPs sources sont souvent forgées (spoofées). Le serveur cible ne répond plus aux connexions légitimes.</div>
+      <div class="cmd-ex">Filtre : tcp.flags==0x002<br>→ des milliers de SYN par seconde</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">📤 Exfiltration de données</div>
+      <div class="cmd-desc">Signature : trafic volumétrique sortant vers une IP externe inhabituelle. Protocoles inhabituels (ICMP avec payload, DNS avec gros TXT). Souvent la nuit ou en dehors des heures de bureau.</div>
+      <div class="cmd-ex">Statistics → Conversations → trier par bytes desc<br>→ IP externe en tête = suspect</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9 — QCM : PCAP EN PRATIQUE -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// Slide 10 · Analyse pratique · Cas concret · QCM requis</div>
+  <h2>Cas Pratique — Analyser une Capture d'Attaque Réelle</h2>
+  <h3>Un scénario complet : du .pcap à l'identification de la compromission</h3>
+  <div class="card" style="margin-bottom:.8rem">
+    <div class="cmd-name" style="margin-bottom:.8rem">📋 Scénario : machine compromise sur le réseau 192.168.1.0/24</div>
+    <div class="terminal sm">
+      <span class="term-comment"># Étape 1 : Ouvrir le .pcap dans Wireshark</span><br>
+      <span class="term-comment"># Statistics → Protocol Hierarchy révèle :</span><br>
+      <span class="term-out">TCP : 45% · HTTP : 30% · DNS : 15% · ARP : 10%</span><br>
+      <span class="term-red">→ 10% ARP est SUSPECT sur un réseau de 5 machines</span><br>
+      <br>
+      <span class="term-comment"># Étape 2 : Filtrer les trames ARP</span><br>
+      <span style="color:#ffd700">arp</span><br>
+      <span class="term-red">→ 192.168.1.50 répond à TOUS les ARP Requests</span><br>
+      <span class="term-red">→ même MAC pour 192.168.1.1 (routeur) ET .20 (victime)</span><br>
+      <span class="term-comment">→ ARP Spoofing confirmé — .50 est l'attaquant</span><br>
+      <br>
+      <span class="term-comment"># Étape 3 : Voir ce que l'attaquant intercepte</span><br>
+      <span style="color:#ffd700">http and ip.addr == 192.168.1.20</span><br>
+      <span class="term-comment"># Follow TCP Stream sur le login HTTP</span><br>
+      <span class="term-red">POST /login → username=admin&password=Secret2024!</span><br>
+      <span class="term-comment">→ Credentials interceptés en clair — MITM réussi</span><br>
+      <br>
+      <span class="term-comment"># Étape 4 : Chercher la persistance</span><br>
+      <span style="color:#ffd700">dns and ip.src == 192.168.1.20</span><br>
+      <span class="term-red">→ requêtes DNS vers c2.malware-domain.ru toutes les 60s</span><br>
+      <span class="term-comment">→ Malware avec beacon C2 installé sur la victime</span>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10 — FILTRES AVANCÉS -->
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Slide 11 · Filtres avancés · Expressions · Forensics réseau</div>
+  <h2>Filtres Avancés — Aller Plus Loin</h2>
+  <h3>Les filtres complexes qui font la différence lors d'une analyse forensique poussée</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🎯 Filtres forensics spécialisés</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0;font-size:.63rem">
+        <span class="term-comment"># Requêtes DNS avec noms longs (tunneling)</span><br>
+        <span style="color:#00ff88">dns.qry.name matches "^[a-z0-9]{30,}"</span><br>
+        <br>
+        <span class="term-comment"># Credentials HTTP en clair</span><br>
+        <span style="color:#00ff88">http.request.method == "POST" and http contains "password"</span><br>
+        <br>
+        <span class="term-comment"># Cookies de session</span><br>
+        <span style="color:#00ff88">http.cookie or http.set_cookie</span><br>
+        <br>
+        <span class="term-comment"># ICMP avec payload (tunneling possible)</span><br>
+        <span style="color:#00ff88">icmp and data.len > 32</span><br>
+        <br>
+        <span class="term-comment"># Connexions vers IPs non RFC1918 (Internet)</span><br>
+        <span style="color:#00ff88">not ip.dst matches "192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\."</span><br>
+        <br>
+        <span class="term-comment"># Téléchargements d'exécutables</span><br>
+        <span style="color:#00ff88">http.content_type contains "application/octet-stream"</span><br>
+        <br>
+        <span class="term-comment"># Retransmissions TCP (réseau dégradé ou IDS)</span><br>
+        <span style="color:#00ff88">tcp.analysis.retransmission</span><br>
+        <br>
+        <span class="term-comment"># Paquets avec TTL anormal (IP spoofing ?)</span><br>
+        <span style="color:#00ff88">ip.ttl < 10</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔧 Outils complémentaires</div>
+      <ul class="bullets">
+        <li><strong>tshark</strong> — Wireshark CLI, idéal pour les scripts et le parsing automatisé<br><code style="color:#00aaff;font-family:var(--mono);font-size:.63rem">tshark -r cap.pcap -Y 'http' -T fields -e http.host -e http.request.uri</code></li>
+        <li><strong>NetworkMiner</strong> — reconstruction automatique des fichiers et sessions depuis un .pcap. Extraction OS fingerprinting.</li>
+        <li><strong>Zeek (Bro)</strong> — génère des logs structurés (JSON) depuis des captures. Utilisé dans les SIEM pour la corrélation d'événements réseau.</li>
+        <li><strong>Suricata avec pcap</strong> — analyser une capture avec les règles IDS offline<br><code style="color:#00aaff;font-family:var(--mono);font-size:.63rem">suricata -c suricata.yaml -r capture.pcap</code></li>
+        <li class="ok">En CTF : tshark + grep + Python = trio gagnant pour les .pcap complexes</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 11 — WIRESHARK CTF PRATIQUE -->
+<div class="slide" data-index="11">
+  <div class="slide-tag">// Slide 12 · CTF .pcap · Challenges réseau · Ressources</div>
+  <h2>Wireshark en CTF — Les Techniques Gagnantes</h2>
+  <h3>Les challenges réseau CTF suivent des patterns récurrents — les connaître accélère tout</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🏴 Patterns CTF .pcap classiques</div>
+      <ul class="bullets">
+        <li><strong>Flag en HTTP clair</strong> — Follow TCP Stream sur les requêtes HTTP, chercher SOOPHA{ dans les réponses ou les requêtes POST</li>
+        <li><strong>Flag encodé en Base64</strong> — Follow Stream, copier les données, décoder. Chercher les chaînes = et == à la fin</li>
+        <li><strong>Flag dans les paquets DNS</strong> — les requêtes TXT contiennent parfois des données. Filtrer <code style="color:#00aaff;font-family:var(--mono)">dns.txt</code></li>
+        <li><strong>Fichier caché en HTTP</strong> — Export Objects → HTTP pour extraire et inspecter</li>
+        <li><strong>Flag en ICMP</strong> — les ICMP echo peuvent transporter un payload. Chercher dans le data des ICMP</li>
+        <li><strong>Credentials FTP</strong> — Follow TCP Stream sur port 21 → USER et PASS en clair</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔧 Script tshark pour CTF</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0;font-size:.63rem">
+        <span class="term-comment"># Extraire tous les hosts HTTP visités</span><br>
+        <span class="term-prompt">$ </span>tshark -r cap.pcap -Y http.request -T fields -e http.host | sort -u<br>
+        <br>
+        <span class="term-comment"># Extraire les usernames/passwords FTP</span><br>
+        <span class="term-prompt">$ </span>tshark -r cap.pcap -Y "ftp" -T fields -e ftp.request.command -e ftp.request.arg<br>
+        <br>
+        <span class="term-comment"># Lister toutes les requêtes DNS</span><br>
+        <span class="term-prompt">$ </span>tshark -r cap.pcap -Y dns.qry.name -T fields -e dns.qry.name | sort -u<br>
+        <br>
+        <span class="term-comment"># Extraire tous les fichiers HTTP</span><br>
+        <span class="term-prompt">$ </span>tshark -r cap.pcap --export-objects http,./extracted/<br>
+        <br>
+        <span class="term-comment"># Chercher un flag dans le pcap</span><br>
+        <span class="term-prompt">$ </span>strings capture.pcap | grep -i "soopha{"<br>
+        <span class="term-prompt">$ </span>strings capture.pcap | grep -E "[A-Z]+\{[^\}]+\}"
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12 — CAPTURE SUR VLAN / WIFI -->
+<div class="slide" data-index="12">
+  <div class="slide-tag">// Slide 13 · Capturer sur WiFi · Mode Monitor · Limites légales</div>
+  <h2>Captures WiFi & Contexte Africain</h2>
+  <h3>Capturer sur le sans-fil — et pourquoi le WiFi public africain est un risque majeur</h3>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📡 Capture WiFi — Mode Monitor</div>
+      <ul class="bullets">
+        <li>En <strong>mode normal</strong>, Wireshark ne capture que le trafic de ta machine + broadcast</li>
+        <li>En <strong>mode promiscuous</strong>, il capture tout le trafic du même VLAN/segment switch (si hub, pas switch)</li>
+        <li><strong>Mode Monitor (WiFi)</strong> — capture TOUT le trafic de l'air sur le canal radio, même les trames d'autres réseaux<br><code style="color:#00aaff;font-family:var(--mono);font-size:.65rem">sudo airmon-ng start wlan0 → wlan0mon</code></li>
+        <li class="warn">Mode Monitor nécessite une carte WiFi compatible (Alfa AWUS036ACH recommandée)</li>
+        <li class="danger">Capturer le WiFi d'autrui sans autorisation = <strong>ILLÉGAL</strong> — uniquement sur ton propre réseau ou en lab</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🌍 Risques WiFi public en Afrique</div>
+      <ul class="bullets">
+        <li>Les hotspots WiFi dans les <strong>aéroports, hôtels, cafés</strong> de Dakar, Kinshasa, Libreville, Abidjan sont souvent non chiffrés ou WEP</li>
+        <li>Tout trafic HTTP est lisible par n'importe qui sur le même réseau — logins, sessions, emails</li>
+        <li>Les <strong>Evil Twin attacks</strong> sont fréquents : un attaquant crée un hotspot WiFi avec le même nom que le WiFi de l'hôtel</li>
+        <li class="ok">Protection : utiliser un VPN (WireGuard) sur tout réseau public — même HTTPS n'est pas suffisant contre les DNS leaks</li>
+        <li class="ok">Extension HTTPS Everywhere + DNS over HTTPS comme minimum de base</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 13 — QCM FINAL -->
+<div class="slide" data-index="13">
+  <div class="slide-tag">// Slide 14 · Conclusion · NET·06 s'ouvre · QCM final</div>
+  <h2>Wireshark Maîtrisé — Direction la Sécurité Réseau 🔬</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🎓 Ce que tu maîtrises — NET·05</div>
+      <ul class="bullets">
+        <li>Interface Wireshark — 5 zones, colorisation des protocoles</li>
+        <li>Filtres d'affichage — syntaxe, opérateurs, combinaisons</li>
+        <li>Filtres BPF (capture) — différence avec les display filters</li>
+        <li>Follow TCP/UDP/HTTP Stream — reconstruire des conversations</li>
+        <li>Navigation .pcap — Protocol Hierarchy, Conversations, IO Graph</li>
+        <li>tcpdump — capture CLI, workflow capture distante → analyse locale</li>
+        <li>Méthodologie CTF .pcap — 7 étapes systématiques</li>
+        <li>Détecter les attaques — Nmap, ARP Spoof, brute force, DNS tunnel</li>
+        <li>Filtres forensics avancés — tshark, extraction automatisée</li>
+        <li>WiFi et risques africains — mode monitor, Evil Twin, VPN</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🔜 NET·06 — Ce qui t'attend</div>
+      <ul class="bullets">
+        <li><strong>Attaques réseau avancées</strong> — ARP Spoofing pratique, DNS Poisoning, SYN Flood</li>
+        <li><strong>Nmap avancé</strong> — scan OS, scripts NSE, evasion de firewall</li>
+        <li><strong>IDS/IPS</strong> — Snort, Suricata, règles de détection, tuning</li>
+        <li><strong>Hardening réseau</strong> — checklist complète pour sécuriser un réseau d'entreprise</li>
+        <li><strong>VPN en profondeur</strong> — WireGuard, OpenVPN, split tunneling</li>
+        <li class="ok">Prérequis acquis : Wireshark, filtres, detection d'attaques, pcap</li>
+      </ul>
+      <div class="hdiv">RESSOURCES</div>
+      <ul class="bullets" style="font-size:.78rem">
+        <li><strong>Wireshark Sample Captures</strong> — wiki.wireshark.org/SampleCaptures</li>
+        <li><strong>PacketTotal</strong> — packettotal.com — analyser des .pcap en ligne</li>
+        <li><strong>picoCTF</strong> → category Forensics → challenges .pcap</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🔬</div>
+    <div class="completion-title" id="comp-title">NET·05 terminé !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="net6.html" class="completion-btn completion-btn-primary">NET·06 : Sécurité →</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 14</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+var QCM = {
+  1: {
+    question: "Dans Wireshark, tu vois des paquets avec un fond rouge. Quelle est la signification de cette couleur et que dois-tu vérifier ?",
+    options: [
+      "Rouge = erreur de filtre — la syntaxe du filtre d'affichage est incorrecte et aucun paquet ne s'affiche",
+      "Rouge = paquets TCP avec flag RST ou des erreurs réseau critiques (connexions réinitialisées, Bad TCP). Cela peut indiquer un scan de ports, un firewall qui bloque, ou une connexion forcément terminée",
+      "Rouge = trafic chiffré TLS — Wireshark colorie en rouge les données qu'il ne peut pas déchiffrer",
+      "Rouge = paquets provenant d'IPs blacklistées — Wireshark dispose d'une base de réputation IP intégrée"
+    ],
+    correct: 1,
+    explanation: "Dans la colorisation par défaut de Wireshark, le rouge indique des TCP Bad Segment — notamment les paquets avec le flag RST (connexion réinitialisée) ou des retransmissions anormales. Voir beaucoup de paquets rouges peut indiquer : (1) Un scan de ports Nmap — les ports fermés répondent RST. (2) Un firewall qui bloque — il envoie des RST. (3) Un SYN Flood — les connexions ne peuvent pas s'établir. (4) Des problèmes réseau légitimes (câble dégradé, interface saturée). À vérifier : filtrer tcp.flags.reset==1 pour isoler uniquement les RST."
+  },
+  4: {
+    question: "En utilisant 'Follow TCP Stream' sur une connexion HTTP, tu vois : 'POST /login HTTP/1.1' avec 'username=admin&password=Admin123'. Que peux-tu en conclure et quelle action recommander ?",
+    options: [
+      "Rien d'anormal — les mots de passe sont toujours chiffrés dans les requêtes HTTP POST, seul le corps de la requête est visible en clair côté serveur",
+      "Le site utilise HTTP non chiffré — les credentials admin/Admin123 sont transmis en clair sur le réseau et n'importe qui sur le même réseau peut les intercepter. Action : forcer HTTPS avec HSTS immédiatement",
+      "Le site est sécurisé car la méthode POST cache les données dans le corps de la requête, contrairement à GET qui les met dans l'URL",
+      "Il faut changer le mot de passe Admin123 car il est faible, mais le fait qu'il soit visible dans Wireshark est normal pour HTTP"
+    ],
+    correct: 1,
+    explanation: "HTTP (port 80) est un protocole en clair — tout le trafic est lisible par n'importe qui sur le même réseau WiFi ou même VLAN. La méthode POST cache les données dans l'URL (contrairement à GET) mais PAS du sniffing réseau. Follow TCP Stream expose l'intégralité de la requête, corps inclus. L'action immédiate : migrer vers HTTPS avec un certificat TLS (Let's Encrypt est gratuit), activer HSTS pour forcer HTTPS, et considérer que les credentials interceptés sont compromis — changer le mot de passe admin sur tous les systèmes où il est utilisé."
+  },
+  7: {
+    question: "Tu ouvres un .pcap CTF dans Wireshark. Statistics → Protocol Hierarchy montre 60% de DNS. Quelle est l'anomalie et quel filtre utiliser pour investiguer ?",
+    options: [
+      "60% DNS est normal sur un réseau d'entreprise — le DNS est très bavard car chaque connexion HTTP génère des requêtes DNS",
+      "60% DNS est anormal — sur un réseau normal, DNS représente moins de 5% du trafic. Cela suggère du DNS tunneling (exfiltration via DNS). Filtre : dns et vérifier dns.qry.name pour des sous-domaines très longs encodés",
+      "60% DNS signifie que le serveur DNS est surchargé — il faut vérifier la configuration du cache DNS",
+      "60% DNS indique un DDoS par amplification DNS — chercher les réponses DNS volumineuses vers une IP victime"
+    ],
+    correct: 1,
+    explanation: "60% de DNS est une anomalie majeure. Sur un réseau normal, DNS représente 1 à 5% du trafic. Une proportion aussi élevée pointe vers du DNS tunneling — une technique d'exfiltration qui encode des données dans les noms de domaine des requêtes DNS (sous-domaines très longs comme 'aGVsbG8gd29ybGQ.malicious-domain.com'). Filtre à utiliser : filtrer 'dns' puis trier par longueur de nom (dns.qry.name matches '^[a-z0-9]{30,}'). Outils comme dnscat2 ou iodine créent exactement ce pattern. En CTF, c'est souvent le flag encodé en Base64 ou hex dans les sous-domaines."
+  },
+  9: {
+    question: "Dans le scénario du slide 10, comment confirmer définitivement que 192.168.1.50 fait de l'ARP Spoofing et non simplement une mauvaise configuration réseau ?",
+    options: [
+      "Pinger 192.168.1.50 — si elle répond, c'est qu'elle est malveillante",
+      "Filtrer avec 'arp.opcode == 2' et vérifier si la même adresse MAC apparaît dans les ARP Reply pour 2 IPs différentes (ex: .1 le routeur ET .20 la victime) — une seule MAC pour 2 IPs = ARP Spoofing",
+      "Utiliser 'Statistics → Conversations' et vérifier si .50 génère plus de trafic que les autres machines",
+      "Comparer les adresses MAC dans les paquets avec la table ARP du switch — si elles correspondent, c'est normal"
+    ],
+    correct: 1,
+    explanation: "La signature définitive de l'ARP Spoofing est : la même adresse MAC apparaissant dans des ARP Reply pour deux adresses IP différentes. Filtre Wireshark : arp.opcode == 2 (ARP Reply uniquement). Dans la liste, si tu vois : MAC AA:BB:CC:11:22:33 → IP 192.168.1.1 ET MAC AA:BB:CC:11:22:33 → IP 192.168.1.20 c'est la preuve du spoofing. Une machine légitime n'a qu'une seule IP (sauf exceptions rares comme VRRP). Outil : arpwatch surveille automatiquement ces changements en temps réel et alerte par email."
+  },
+  13: {
+    question: "Tu dois capturer le trafic HTTP d'un serveur web de production pendant 24h pour un audit. Quelle approche est la plus efficace et responsable ?",
+    options: [
+      "Lancer Wireshark sans filtre pendant 24h et sauvegarder tout — pour avoir une capture complète et ne rien rater",
+      "Utiliser tcpdump avec un filtre BPF 'tcp port 80 or tcp port 443', rotation des fichiers toutes les heures (-G 3600 -w cap_%H.pcap), limiter la taille (-C 100) — capturer seulement le nécessaire sans saturer le disque",
+      "Utiliser Wireshark en mode live sur le serveur — l'interface graphique permet de voir les problèmes en temps réel",
+      "Capturer côté client plutôt que serveur pour éviter tout impact sur les performances du serveur"
+    ],
+    correct: 1,
+    explanation: "Pour une capture longue durée en production, l'approche professionnelle est : (1) tcpdump (pas Wireshark GUI — trop gourmand en ressources). (2) Filtre BPF ciblé pour ne capturer que ce qui est pertinent — 24h de trafic non filtré peut générer des dizaines de GB. (3) Rotation des fichiers avec -G (rotation temporelle) et -C (limite taille) pour éviter de remplir le disque. (4) Commande complète : tcpdump -i eth0 -G 3600 -w /capture/http_%Y%m%d_%H.pcap -C 100 'tcp port 80 or tcp port 443'. (5) Vérifier que la capture des données de production ne viole pas les réglementations (RGPD, etc.) — informer la DPO."
+  }
+};
+
+var COURSE_ID = 'net5';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){ document.getElementById('comp-icon').textContent='🔬'; document.getElementById('comp-title').textContent='Analyste réseau !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Wireshark n\'a plus de secrets pour toi — direction la sécurité réseau !'; }
+  else if(pct>=60){ document.getElementById('comp-icon').textContent='📡'; document.getElementById('comp-title').textContent='NET·05 terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Revois les filtres BPF et la méthodologie CTF avant NET·06.'; }
+  else { document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='NET·05 terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Pratique avec les sample captures Wireshark avant de continuer.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='WIRESHARKTCPDUMPBPFDNSSYNRSTACKPCAPFILTERHTTP01',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,4,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#00aaff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

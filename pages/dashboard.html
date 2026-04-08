@@ -255,7 +255,7 @@
         <div class="theme-header" onclick="toggleSection('reseau')">
           <span class="theme-icon">🌐</span>
           <span class="theme-label">Réseau</span>
-          <span class="theme-count">4 cours · Du débutant à l'architecture</span>
+          <span class="theme-count">6 cours · Du fondamental à la sécurité réseau</span>
           <span class="theme-chevron">▼</span>
         </div>
         <div class="courses-grid">
@@ -310,6 +310,32 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-net4-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-net4" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+          <a href="net5.html" class="card course-card" id="course-net5">
+            <div class="course-number">N5</div>
+            <div class="course-day">// NET·05 · Wireshark</div>
+            <div class="course-title">Wireshark & Analyse de Trafic</div>
+            <div class="course-desc">Captures, filtres BPF, Follow Stream, tcpdump, analyse .pcap CTF, détection d'attaques dans le trafic.</div>
+            <div class="course-tags"><span class="badge badge-blue">🔬 Wireshark</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
+            <div class="course-progress" id="prog-net5" style="display:none">
+              <div class="course-progress-label"><span id="prog-net5-label">En cours</span><span id="prog-net5-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net5-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-net5" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+          <a href="net6.html" class="card course-card" id="course-net6">
+            <div class="course-number">N6</div>
+            <div class="course-day">// NET·06 · Sécurité Réseau</div>
+            <div class="course-title">Sécurité Réseau</div>
+            <div class="course-desc">Attaques réseau, Nmap avancé, IDS/IPS Suricata, VPN WireGuard, hardening et certifications.</div>
+            <div class="course-tags"><span class="badge badge-red">🛡️ Sécurité</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
+            <div class="course-progress" id="prog-net6" style="display:none">
+              <div class="course-progress-label"><span id="prog-net6-label">En cours</span><span id="prog-net6-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net6-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-net6" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
           </a>
 
         </div>
@@ -535,7 +561,7 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2','net1','net2','net3','net4','re1','re2','re3','re4','re5','re6','re7'];
+var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2','net1','net2','net3','net4','net5','net6','re1','re2','re3','re4','re5','re6','re7'];
 var countryFlags = {'GA':'🇬🇦','SN':'🇸🇳','CI':'🇨🇮','CM':'🇨🇲','CD':'🇨🇩','CG':'🇨🇬','MG':'🇲🇬','ML':'🇲🇱','BF':'🇧🇫','NE':'🇳🇪','TG':'🇹🇬','BJ':'🇧🇯','GN':'🇬🇳','TN':'🇹🇳','MA':'🇲🇦','DZ':'🇩🇿','FR':'🇫🇷'};
 
 function toggleSection(id) {
