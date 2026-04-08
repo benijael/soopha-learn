@@ -66,6 +66,21 @@
 .lb-country { font-size: 0.9rem; }
 @media (max-width: 900px) { .dashboard-layout { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: repeat(2,1fr); } }
 @media (max-width: 500px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+
+/* ── Coaching help button ── */
+.course-help-link {
+  display: inline-block;
+  margin-top: 0.45rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: rgba(0,255,136,0.25);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: color var(--transition);
+  border-bottom: 1px dashed rgba(0,255,136,0.15);
+  padding-bottom: 1px;
+}
+.course-help-link:hover { color: rgba(0,255,136,0.65); border-color: rgba(0,255,136,0.4); }
 </style>
 </head>
 <body>
@@ -129,6 +144,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-j1-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-j1" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'j1','Introduction à la Cybersécurité')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="linux.html" class="card course-card" id="course-linux">
@@ -142,6 +158,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-linux-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-linux" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'linux','Linux pour la Cybersécurité')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="j3.html" class="card course-card" id="course-j3">
@@ -155,6 +172,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-j3-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-j3" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'j3','Introduction aux Réseaux')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
         </div>
@@ -181,6 +199,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-j2-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-j2" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'j2','Ingénierie Sociale &amp; Phishing')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="attacks.html" class="card course-card" id="course-attacks">
@@ -194,6 +213,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-attacks-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-attacks" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'attacks','Anatomie des Cyberattaques')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="web.html" class="card course-card" id="course-web">
@@ -207,6 +227,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-web-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-web" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'web','Web Hacking')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="osint.html" class="card course-card" id="course-osint">
@@ -220,6 +241,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-osint-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-osint" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'osint','OSINT &amp; Reconnaissance')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="pentest1.html" class="card course-card" id="course-pentest1">
@@ -233,6 +255,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-pentest1-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-pentest1" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'pentest1','Pentest Methodology I')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="pentest2.html" class="card course-card" id="course-pentest2">
@@ -246,6 +269,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-pentest2-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-pentest2" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'pentest2','Pentest Methodology II')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
         </div>
@@ -272,6 +296,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-net1-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-net1" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'net1','Fondamentaux des Réseaux')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="net2.html" class="card course-card" id="course-net2">
@@ -285,6 +310,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-net2-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-net2" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'net2','Adressage IP &amp; Sous-réseaux')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="net3.html" class="card course-card" id="course-net3">
@@ -298,6 +324,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-net3-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-net3" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'net3','Protocoles &amp; Services')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="net4.html" class="card course-card" id="course-net4">
@@ -311,6 +338,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-net4-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-net4" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'net4','Architecture &amp; Firewalls')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="net5.html" class="card course-card" id="course-net5">
@@ -324,6 +352,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-net5-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-net5" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'net5','Wireshark &amp; Analyse de Trafic')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="net6.html" class="card course-card" id="course-net6">
@@ -337,6 +366,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-net6-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-net6" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'net6','Sécurité Réseau')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
         </div>
@@ -363,6 +393,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-forensics-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-forensics" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'forensics','Forensics &amp; Investigation')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="crypto.html" class="card course-card" id="course-crypto">
@@ -376,6 +407,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-crypto-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-crypto" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'crypto','Cryptographie Appliquée')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="malware.html" class="card course-card" id="course-malware">
@@ -389,6 +421,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-malware-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-malware" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'malware','Malware Analysis')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="malware2.html" class="card course-card" id="course-malware2">
@@ -402,6 +435,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-malware2-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-malware2" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'malware2','Malware Analysis II')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="re1.html" class="card course-card" id="course-re1">
@@ -415,6 +449,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-re1-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-re1" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'re1','RE·01 — Introduction au Reverse Engineering')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="re2.html" class="card course-card" id="course-re2">
@@ -428,6 +463,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-re2-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-re2" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'re2','RE·02 — Assembleur x86-64')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="re3.html" class="card course-card" id="course-re3">
@@ -441,6 +477,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-re3-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-re3" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'re3','RE·03 — Analyse Statique &amp; Ghidra')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="re4.html" class="card course-card" id="course-re4">
@@ -454,6 +491,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-re4-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-re4" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'re4','RE·04 — Analyse Dynamique &amp; GDB')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="re5.html" class="card course-card" id="course-re5">
@@ -467,6 +505,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-re5-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-re5" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'re5','RE·05 — Obfuscation &amp; XOR')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="re6.html" class="card course-card" id="course-re6">
@@ -480,6 +519,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-re6-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-re6" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'re6','RE·06 — Anti-Debug &amp; Malware')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
           <a href="re7.html" class="card course-card" id="course-re7">
@@ -493,6 +533,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-re7-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-re7" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'re7','RE·07 — Challenge Final &amp; Méthodologie')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
         </div>
@@ -519,6 +560,7 @@
               <div class="progress-bar"><div class="progress-fill" id="prog-metiers-cyber-fill" style="width:0%"></div></div>
             </div>
             <div id="cta-metiers-cyber" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+            <span class="course-help-link" onclick="openCoaching(event,'metiers-cyber','Métiers de la Cybersécurité')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
         </div>
@@ -553,6 +595,20 @@
           <a href="certifications.html" class="btn btn-secondary btn-sm" style="justify-content:flex-start">📄 Mes certifications</a>
           <a href="profile.html" class="btn btn-secondary btn-sm" style="justify-content:flex-start">👤 Mon profil</a>
         </div>
+      </div>
+
+      <div class="card" style="padding:1.5rem;margin-top:1.2rem;border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.03)">
+        <div class="section-title" style="margin-bottom:0.6rem">🎓 COACHING PRIVÉ</div>
+        <p style="font-family:var(--mono);font-size:0.65rem;color:rgba(0,255,136,0.35);line-height:1.8;margin-bottom:0.9rem;letter-spacing:0.04em">
+          Bloqué sur un module ?<br>Réserve une session 1-to-1<br>avec un formateur expert.
+        </p>
+        <div style="display:flex;justify-content:space-between;margin-bottom:0.6rem;font-family:var(--mono);font-size:0.62rem">
+          <span style="color:rgba(0,255,136,0.3)">1H SESSION</span><span style="color:rgba(0,255,136,0.7)">35 000 XAF</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:1rem;font-family:var(--mono);font-size:0.62rem;border-bottom:1px solid var(--green-border);padding-bottom:0.7rem">
+          <span style="color:rgba(0,255,136,0.3)">2H SESSION</span><span style="color:var(--green)">60 000 XAF ✦</span>
+        </div>
+        <a href="coaching.html" class="btn btn-secondary btn-sm" style="justify-content:flex-start;width:100%;border-color:rgba(0,255,136,0.3)">🎯 Réserver une session →</a>
       </div>
     </div>
   </div>
@@ -669,6 +725,12 @@ async function loadLeaderboard() {
     return '<div class="lb-row"><span class="lb-rank" style="color:' + (rankColors[i]||'rgba(0,255,136,0.4)') + '">' + rank + '</span><span class="lb-username">@' + username + '</span><span class="lb-country">' + flag + '</span><span class="lb-score">' + Math.round(row.score_pct) + '%</span></div>';
   }).join('');
   document.getElementById('leaderboard-list').innerHTML = html;
+}
+
+function openCoaching(e, moduleId, moduleName) {
+  e.preventDefault();
+  e.stopPropagation();
+  window.location.href = 'coaching.html?module=' + encodeURIComponent(moduleId) + '&name=' + encodeURIComponent(moduleName);
 }
 
 async function goToCTF() {
