@@ -2,7 +2,6 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<!-- Favicon -->
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -31,28 +30,25 @@
 .course-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
 .course-progress { margin-top: 0.8rem; }
 .course-progress-label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.6rem; color: rgba(0,255,136,0.35); margin-bottom: 0.3rem; }
-/* SECTION HEADERS */
 .theme-section { margin-bottom: 0.5rem; margin-top: 2rem; }
 .theme-section:first-child { margin-top: 0; }
-.theme-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid rgba(0,255,136,0.1); }
+.theme-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid rgba(0,255,136,0.1); cursor: pointer; user-select: none; }
+.theme-header:hover { opacity: 0.85; }
 .theme-icon { font-size: 1rem; }
 .theme-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; }
 .theme-count { font-family: var(--mono); font-size: 0.6rem; color: rgba(0,255,136,0.25); letter-spacing: 0.1em; margin-left: auto; }
-.theme-fondations .theme-label { color: rgba(0,255,136,0.7); }
-.theme-offensif   .theme-label { color: rgba(255,68,102,0.7); }
-.theme-offensif   .theme-header { border-color: rgba(255,68,102,0.12); }
-.theme-defense    .theme-label { color: rgba(0,170,255,0.7); }
-.theme-defense    .theme-header { border-color: rgba(0,170,255,0.12); }
-.theme-orientation .theme-label { color: rgba(170,68,255,0.7); }
-
-.theme-orientation .theme-header { border-color: rgba(170,68,255,0.12); }
-/* CHEVRON COLLAPSIBLE */
-.theme-header { cursor: pointer; user-select: none; }
-.theme-header:hover { opacity: 0.85; }
 .theme-chevron { margin-left: 0.5rem; font-size: 0.75rem; color: rgba(0,255,136,0.3); transition: transform 0.25s ease; display: inline-block; line-height: 1; }
 .theme-section.collapsed .theme-chevron { transform: rotate(-90deg); }
 .theme-section.collapsed .courses-grid { display: none; }
-/* SIDEBAR */
+.theme-fondations  .theme-label { color: rgba(0,255,136,0.7); }
+.theme-offensif    .theme-label { color: rgba(255,68,102,0.7); }
+.theme-offensif    .theme-header { border-color: rgba(255,68,102,0.12); }
+.theme-reseau      .theme-label { color: rgba(0,170,255,0.7); }
+.theme-reseau      .theme-header { border-color: rgba(0,170,255,0.12); }
+.theme-defense     .theme-label { color: rgba(170,68,255,0.7); }
+.theme-defense     .theme-header { border-color: rgba(170,68,255,0.12); }
+.theme-orientation .theme-label { color: rgba(255,136,0,0.7); }
+.theme-orientation .theme-header { border-color: rgba(255,136,0,0.12); }
 .dashboard-layout { display: grid; grid-template-columns: 1fr 320px; gap: 2rem; align-items: start; }
 .profile-card { padding: 1.5rem; text-align: center; margin-bottom: 1.2rem; }
 .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: rgba(0,255,136,0.1); border: 2px solid var(--green-border); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 0.8rem; font-family: var(--display); font-weight: 900; color: var(--green); overflow: hidden; }
@@ -116,7 +112,7 @@
         <div class="theme-header" onclick="toggleSection('fondations')">
           <span class="theme-icon">🧱</span>
           <span class="theme-label">Fondations</span>
-          <span class="theme-count">3 cours · Obligatoire avant tout le reste</span>
+          <span class="theme-count">3 cours</span>
           <span class="theme-chevron">▼</span>
         </div>
         <div class="courses-grid">
@@ -168,7 +164,7 @@
         <div class="theme-header" onclick="toggleSection('offensif')">
           <span class="theme-icon">⚔️</span>
           <span class="theme-label">Offensif</span>
-          <span class="theme-count">6 cours · Attaques & Reconnaissance</span>
+          <span class="theme-count">6 cours</span>
           <span class="theme-chevron">▼</span>
         </div>
         <div class="courses-grid">
@@ -254,12 +250,77 @@
         </div>
       </div>
 
+      <!-- ═══ 🌐 RÉSEAU ═══ -->
+      <div class="theme-section theme-reseau">
+        <div class="theme-header" onclick="toggleSection('reseau')">
+          <span class="theme-icon">🌐</span>
+          <span class="theme-label">Réseau</span>
+          <span class="theme-count">4 cours · Du débutant à l'architecture</span>
+          <span class="theme-chevron">▼</span>
+        </div>
+        <div class="courses-grid">
+
+          <a href="net1.html" class="card course-card" id="course-net1">
+            <div class="course-number">N1</div>
+            <div class="course-day">// NET·01 · Fondamentaux</div>
+            <div class="course-title">Fondamentaux des Réseaux</div>
+            <div class="course-desc">OSI, TCP/IP, protocoles, paquets, topologies, équipements. Les bases incontournables.</div>
+            <div class="course-tags"><span class="badge badge-blue">🌐 Réseau</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
+            <div class="course-progress" id="prog-net1" style="display:none">
+              <div class="course-progress-label"><span id="prog-net1-label">En cours</span><span id="prog-net1-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net1-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-net1" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+          <a href="net2.html" class="card course-card" id="course-net2">
+            <div class="course-number">N2</div>
+            <div class="course-day">// NET·02 · Adressage IP</div>
+            <div class="course-title">Adressage IP & Sous-réseaux</div>
+            <div class="course-desc">IPv4, IPv6, CIDR, subnetting, NAT, DHCP. Calculer des sous-réseaux sans calculatrice.</div>
+            <div class="course-tags"><span class="badge badge-blue">📡 IP</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
+            <div class="course-progress" id="prog-net2" style="display:none">
+              <div class="course-progress-label"><span id="prog-net2-label">En cours</span><span id="prog-net2-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net2-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-net2" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+          <a href="net3.html" class="card course-card" id="course-net3">
+            <div class="course-number">N3</div>
+            <div class="course-day">// NET·03 · Protocoles</div>
+            <div class="course-title">Protocoles & Services</div>
+            <div class="course-desc">DNS, HTTP/HTTPS, TLS, SMTP, SSH, ARP. SPF, DKIM, DMARC anti-spoofing.</div>
+            <div class="course-tags"><span class="badge badge-blue">🔐 Proto</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
+            <div class="course-progress" id="prog-net3" style="display:none">
+              <div class="course-progress-label"><span id="prog-net3-label">En cours</span><span id="prog-net3-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net3-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-net3" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+          <a href="net4.html" class="card course-card" id="course-net4">
+            <div class="course-number">N4</div>
+            <div class="course-day">// NET·04 · Architecture</div>
+            <div class="course-title">Architecture & Firewalls</div>
+            <div class="course-desc">VLANs, DMZ, NGFW, iptables, routage, Zero Trust. Concevoir un réseau sécurisé.</div>
+            <div class="course-tags"><span class="badge badge-blue">🏗️ Archi</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
+            <div class="course-progress" id="prog-net4" style="display:none">
+              <div class="course-progress-label"><span id="prog-net4-label">En cours</span><span id="prog-net4-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net4-fill" style="width:0%"></div></div>
+            </div>
+            <div id="cta-net4" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
+          </a>
+
+        </div>
+      </div>
+
       <!-- ═══ 🛡️ DÉFENSE ═══ -->
       <div class="theme-section theme-defense">
         <div class="theme-header" onclick="toggleSection('defense')">
           <span class="theme-icon">🛡️</span>
           <span class="theme-label">Défense</span>
-          <span class="theme-count">11 cours · DFIR, Malware & Reverse Engineering</span>
+          <span class="theme-count">11 cours · DFIR, Malware & RE</span>
           <span class="theme-chevron">▼</span>
         </div>
         <div class="courses-grid">
@@ -316,15 +377,11 @@
             <div id="cta-malware2" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
           </a>
 
-        </div>
-      </div>
-
-      
           <a href="re1.html" class="card course-card" id="course-re1">
             <div class="course-number">15</div>
-            <div class="course-day">// Reverse Engineering · Intro</div>
+            <div class="course-day">// RE·01 · Introduction</div>
             <div class="course-title">RE·01 — Introduction au Reverse Engineering</div>
-            <div class="course-desc">Cadre légal, triage, ELF, chaînes, sections et premiers réflexes d’analyse.</div>
+            <div class="course-desc">Cadre légal, triage, ELF, chaînes, sections et premiers réflexes d'analyse.</div>
             <div class="course-tags"><span class="badge badge-purple">🧠 RE</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
             <div class="course-progress" id="prog-re1" style="display:none">
               <div class="course-progress-label"><span id="prog-re1-label">En cours</span><span id="prog-re1-score"></span></div>
@@ -335,7 +392,7 @@
 
           <a href="re2.html" class="card course-card" id="course-re2">
             <div class="course-number">16</div>
-            <div class="course-day">// Reverse Engineering · ASM</div>
+            <div class="course-day">// RE·02 · Assembleur</div>
             <div class="course-title">RE·02 — Assembleur x86-64</div>
             <div class="course-desc">Registres, pile, calling convention et lecture de fonctions comme un analyste.</div>
             <div class="course-tags"><span class="badge badge-purple">⚙️ ASM</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
@@ -348,9 +405,9 @@
 
           <a href="re3.html" class="card course-card" id="course-re3">
             <div class="course-number">17</div>
-            <div class="course-day">// Reverse Engineering · Ghidra</div>
+            <div class="course-day">// RE·03 · Ghidra</div>
             <div class="course-title">RE·03 — Analyse Statique & Ghidra</div>
-            <div class="course-desc">Imports, XREF, décompilation, renommage et patching d’un binaire.</div>
+            <div class="course-desc">Imports, XREF, décompilation, renommage et patching d'un binaire.</div>
             <div class="course-tags"><span class="badge badge-purple">📘 Ghidra</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
             <div class="course-progress" id="prog-re3" style="display:none">
               <div class="course-progress-label"><span id="prog-re3-label">En cours</span><span id="prog-re3-score"></span></div>
@@ -361,9 +418,9 @@
 
           <a href="re4.html" class="card course-card" id="course-re4">
             <div class="course-number">18</div>
-            <div class="course-day">// Reverse Engineering · GDB</div>
+            <div class="course-day">// RE·04 · GDB</div>
             <div class="course-title">RE·04 — Analyse Dynamique & GDB</div>
-            <div class="course-desc">Breakpoints, registres, mémoire et validation d’hypothèses à l’exécution.</div>
+            <div class="course-desc">Breakpoints, registres, mémoire et validation d'hypothèses à l'exécution.</div>
             <div class="course-tags"><span class="badge badge-purple">🐞 GDB</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
             <div class="course-progress" id="prog-re4" style="display:none">
               <div class="course-progress-label"><span id="prog-re4-label">En cours</span><span id="prog-re4-score"></span></div>
@@ -374,7 +431,7 @@
 
           <a href="re5.html" class="card course-card" id="course-re5">
             <div class="course-number">19</div>
-            <div class="course-day">// Reverse Engineering · Obfuscation</div>
+            <div class="course-day">// RE·05 · Obfuscation</div>
             <div class="course-title">RE·05 — Obfuscation & XOR</div>
             <div class="course-desc">XOR, chaînes cachées, stack strings et techniques de décodage simples.</div>
             <div class="course-tags"><span class="badge badge-purple">🧩 Obfuscation</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
@@ -387,7 +444,7 @@
 
           <a href="re6.html" class="card course-card" id="course-re6">
             <div class="course-number">20</div>
-            <div class="course-day">// Reverse Engineering · Anti-Debug</div>
+            <div class="course-day">// RE·06 · Anti-Debug</div>
             <div class="course-title">RE·06 — Anti-Debug & Malware</div>
             <div class="course-desc">Anti-analysis, anti-debug, YARA, IOCs et posture analyste défense.</div>
             <div class="course-tags"><span class="badge badge-purple">🛡️ Analysis</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
@@ -400,7 +457,7 @@
 
           <a href="re7.html" class="card course-card" id="course-re7">
             <div class="course-number">21</div>
-            <div class="course-day">// Reverse Engineering · Capstone</div>
+            <div class="course-day">// RE·07 · Capstone</div>
             <div class="course-title">RE·07 — Challenge Final & Méthodologie</div>
             <div class="course-desc">Capstone final : triage, hypothèses, statique, dynamique et mini-rapport.</div>
             <div class="course-tags"><span class="badge badge-purple">🏁 Capstone</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span></div>
@@ -410,7 +467,6 @@
             </div>
             <div id="cta-re7" style="margin-top:0.8rem;font-family:var(--mono);font-size:0.7rem;color:var(--green);letter-spacing:0.1em">Commencer →</div>
           </a>
-
 
         </div>
       </div>
@@ -479,9 +535,8 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2','re1','re2','re3','re4','re5','re6','re7'];
+var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2','net1','net2','net3','net4','re1','re2','re3','re4','re5','re6','re7'];
 var countryFlags = {'GA':'🇬🇦','SN':'🇸🇳','CI':'🇨🇮','CM':'🇨🇲','CD':'🇨🇩','CG':'🇨🇬','MG':'🇲🇬','ML':'🇲🇱','BF':'🇧🇫','NE':'🇳🇪','TG':'🇹🇬','BJ':'🇧🇯','GN':'🇬🇳','TN':'🇹🇳','MA':'🇲🇦','DZ':'🇩🇿','FR':'🇫🇷'};
-
 
 function toggleSection(id) {
   var sec = document.querySelector('.theme-' + id);
@@ -505,7 +560,6 @@ async function init() {
   var avatarLetter = firstname.charAt(0).toUpperCase();
   document.getElementById('avatar-initials').textContent = avatarLetter;
 
-  // Fetch avatar_url pour la sidebar — createElement évite les problèmes de quotes
   supabase.from('profiles').select('avatar_url').eq('id', currentUser.id).single()
     .then(function(res) {
       if (res.data && res.data.avatar_url) {

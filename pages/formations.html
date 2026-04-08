@@ -2,7 +2,6 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<!-- Favicon -->
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -22,30 +21,28 @@
 .filter-tab:hover, .filter-tab.active { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.06); }
 .filter-tab.fondations.active  { border-color:rgba(0,255,136,.7);  color:rgba(0,255,136,.9);  background:rgba(0,255,136,.06); }
 .filter-tab.offensif.active    { border-color:rgba(255,68,102,.7); color:rgba(255,68,102,.9); background:rgba(255,68,102,.06); }
-.filter-tab.defense.active     { border-color:rgba(0,170,255,.7);  color:rgba(0,170,255,.9);  background:rgba(0,170,255,.06); }
-.filter-tab.orientation.active { border-color:rgba(170,68,255,.7); color:rgba(170,68,255,.9); background:rgba(170,68,255,.06); }
+.filter-tab.reseau.active      { border-color:rgba(0,170,255,.7);  color:rgba(0,170,255,.9);  background:rgba(0,170,255,.06); }
+.filter-tab.defense.active     { border-color:rgba(170,68,255,.7); color:rgba(170,68,255,.9); background:rgba(170,68,255,.06); }
+.filter-tab.orientation.active { border-color:rgba(255,136,0,.7);  color:rgba(255,136,0,.9);  background:rgba(255,136,0,.06); }
 .filter-sep { width: 1px; background: rgba(0,255,136,0.1); align-self: stretch; margin: 0 0.2rem; }
-/* SECTION HEADERS */
 .theme-section { margin-bottom: 3rem; }
-.theme-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1.2rem; padding-bottom: 0.7rem; border-bottom: 1px solid rgba(0,255,136,0.1); }
+.theme-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1.2rem; padding-bottom: 0.7rem; border-bottom: 1px solid rgba(0,255,136,0.1); cursor: pointer; user-select: none; }
+.theme-header:hover { opacity: 0.85; }
 .theme-icon { font-size: 1rem; }
 .theme-label { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; }
 .theme-desc { font-family: var(--mono); font-size: 0.6rem; color: rgba(0,255,136,0.25); letter-spacing: 0.08em; margin-left: auto; }
-.theme-fondations  .theme-label { color: rgba(0,255,136,0.7); }
-.theme-offensif    .theme-label { color: rgba(255,68,102,0.7); }
-.theme-offensif    .theme-header { border-color: rgba(255,68,102,0.12); }
-.theme-defense     .theme-label { color: rgba(0,170,255,0.7); }
-.theme-defense     .theme-header { border-color: rgba(0,170,255,0.12); }
-.theme-orientation .theme-label { color: rgba(170,68,255,0.7); }
-
-.theme-orientation .theme-header { border-color: rgba(170,68,255,0.12); }
-/* CHEVRON COLLAPSIBLE */
-.theme-header { cursor: pointer; user-select: none; }
-.theme-header:hover { opacity: 0.85; }
 .theme-chevron { margin-left: 0.5rem; font-size: 0.75rem; color: rgba(0,255,136,0.3); transition: transform 0.25s ease; display: inline-block; line-height: 1; }
 .theme-section.collapsed .theme-chevron { transform: rotate(-90deg); }
 .theme-section.collapsed .catalogue-grid { display: none; }
-/* CARDS */
+.theme-fondations  .theme-label { color: rgba(0,255,136,0.7); }
+.theme-offensif    .theme-label { color: rgba(255,68,102,0.7); }
+.theme-offensif    .theme-header { border-color: rgba(255,68,102,0.12); }
+.theme-reseau      .theme-label { color: rgba(0,170,255,0.7); }
+.theme-reseau      .theme-header { border-color: rgba(0,170,255,0.12); }
+.theme-defense     .theme-label { color: rgba(170,68,255,0.7); }
+.theme-defense     .theme-header { border-color: rgba(170,68,255,0.12); }
+.theme-orientation .theme-label { color: rgba(255,136,0,0.7); }
+.theme-orientation .theme-header { border-color: rgba(255,136,0,0.12); }
 .catalogue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 1.2rem; }
 .course-card { background: rgba(4,15,8,0.9); border: 1px solid var(--green-border); border-radius: 2px; padding: 1.8rem; text-decoration: none; color: inherit; display: block; position: relative; transition: all 0.2s; }
 .course-card::before { content: ''; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px; border-top: 2px solid var(--green); border-left: 2px solid var(--green); }
@@ -96,19 +93,19 @@
     <div class="container">
 
       <div class="stats-bar">
-        <div class="stats-bar-item"><div class="stat-val" id="stat-total">21</div><div class="stat-label">Cours disponibles</div></div>
+        <div class="stats-bar-item"><div class="stat-val" id="stat-total">25</div><div class="stat-label">Cours disponibles</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-completed">0</div><div class="stat-label">Terminés</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-avg">0%</div><div class="stat-label">Score moyen</div></div>
         <div class="stats-bar-item"><div class="stat-val" id="stat-qcm">0</div><div class="stat-label">QCM répondus</div></div>
       </div>
 
-      <!-- FILTRES THÉMATIQUES + STATUT -->
       <div class="filter-tabs">
         <button class="filter-tab active" onclick="filterBy('all', this)">Tous</button>
         <div class="filter-sep"></div>
-        <button class="filter-tab fondations" onclick="filterBy('fondations', this)">🧱 Fondations</button>
-        <button class="filter-tab offensif"   onclick="filterBy('offensif', this)">⚔️ Offensif</button>
-        <button class="filter-tab defense"    onclick="filterBy('defense', this)">🛡️ Défense</button>
+        <button class="filter-tab fondations"  onclick="filterBy('fondations', this)">🧱 Fondations</button>
+        <button class="filter-tab offensif"    onclick="filterBy('offensif', this)">⚔️ Offensif</button>
+        <button class="filter-tab reseau"      onclick="filterBy('reseau', this)">🌐 Réseau</button>
+        <button class="filter-tab defense"     onclick="filterBy('defense', this)">🛡️ Défense</button>
         <button class="filter-tab orientation" onclick="filterBy('orientation', this)">🧭 Orientation</button>
         <div class="filter-sep"></div>
         <button class="filter-tab" onclick="filterBy('termine', this)">✅ Terminés</button>
@@ -258,6 +255,71 @@
         </div>
       </div>
 
+      <!-- ═══ 🌐 RÉSEAU ═══ -->
+      <div class="theme-section theme-reseau" id="section-reseau">
+        <div class="theme-header" onclick="toggleSection('reseau')">
+          <span class="theme-icon">🌐</span>
+          <span class="theme-label">Réseau</span>
+          <span class="theme-desc">4 cours · Du débutant à l'architecture sécurisée</span>
+          <span class="theme-chevron">▼</span>
+        </div>
+        <div class="catalogue-grid">
+
+          <a href="net1.html" class="course-card" data-theme="reseau" data-status="disponible" id="card-net1">
+            <div class="course-number">N1</div>
+            <div class="course-day"><span>// NET·01 · Fondamentaux</span><span id="badge-net1"></span></div>
+            <div class="course-title">Fondamentaux des Réseaux</div>
+            <div class="course-desc">OSI, TCP/IP, protocoles, paquets, types de réseaux, topologies, équipements. Les bases incontournables avant tout le reste.</div>
+            <div class="course-tags"><span class="badge badge-blue">🌐 Réseau</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~55 min</span></div>
+            <div class="course-progress-wrap" id="prog-net1" style="display:none">
+              <div class="course-progress-label"><span id="prog-net1-label">En cours</span><span id="prog-net1-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net1-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-net1">Commencer →</span>
+          </a>
+
+          <a href="net2.html" class="course-card" data-theme="reseau" data-status="disponible" id="card-net2">
+            <div class="course-number">N2</div>
+            <div class="course-day"><span>// NET·02 · Adressage IP</span><span id="badge-net2"></span></div>
+            <div class="course-title">Adressage IP & Sous-réseaux</div>
+            <div class="course-desc">IPv4, IPv6, CIDR, subnetting, NAT, DHCP, AFRINIC. Décoder et calculer des sous-réseaux sans calculatrice.</div>
+            <div class="course-tags"><span class="badge badge-blue">📡 IP</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~60 min</span></div>
+            <div class="course-progress-wrap" id="prog-net2" style="display:none">
+              <div class="course-progress-label"><span id="prog-net2-label">En cours</span><span id="prog-net2-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net2-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-net2">Commencer →</span>
+          </a>
+
+          <a href="net3.html" class="course-card" data-theme="reseau" data-status="disponible" id="card-net3">
+            <div class="course-number">N3</div>
+            <div class="course-day"><span>// NET·03 · Protocoles</span><span id="badge-net3"></span></div>
+            <div class="course-title">Protocoles & Services</div>
+            <div class="course-desc">DNS, HTTP/HTTPS, TLS, SMTP, SSH, FTP, ARP. SPF, DKIM, DMARC — stopper le spoofing email une fois pour toutes.</div>
+            <div class="course-tags"><span class="badge badge-blue">🔐 Protocoles</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~65 min</span></div>
+            <div class="course-progress-wrap" id="prog-net3" style="display:none">
+              <div class="course-progress-label"><span id="prog-net3-label">En cours</span><span id="prog-net3-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net3-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-net3">Commencer →</span>
+          </a>
+
+          <a href="net4.html" class="course-card" data-theme="reseau" data-status="disponible" id="card-net4">
+            <div class="course-number">N4</div>
+            <div class="course-day"><span>// NET·04 · Architecture</span><span id="badge-net4"></span></div>
+            <div class="course-title">Architecture & Firewalls</div>
+            <div class="course-desc">VLANs, DMZ dual-firewall, NGFW, iptables, routage, Zero Trust, micro-segmentation. Concevoir une architecture réseau sécurisée.</div>
+            <div class="course-tags"><span class="badge badge-blue">🏗️ Archi</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~65 min</span></div>
+            <div class="course-progress-wrap" id="prog-net4" style="display:none">
+              <div class="course-progress-label"><span id="prog-net4-label">En cours</span><span id="prog-net4-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-net4-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-net4">Commencer →</span>
+          </a>
+
+        </div>
+      </div>
+
       <!-- ═══ 🛡️ DÉFENSE ═══ -->
       <div class="theme-section theme-defense" id="section-defense">
         <div class="theme-header" onclick="toggleSection('defense')">
@@ -282,7 +344,7 @@
           </a>
 
           <a href="forensics.html" class="course-card" data-theme="defense" data-status="disponible" id="card-forensics">
-            <div class="course-number">08</div>
+            <div class="course-number">09</div>
             <div class="course-day"><span>// Forensics · DFIR</span><span id="badge-forensics"></span></div>
             <div class="course-title">Forensics & Investigation</div>
             <div class="course-desc">Disque, RAM, réseau, artefacts Windows/Linux, Volatility, Wireshark, Timeline. Reconstituer une attaque.</div>
@@ -320,15 +382,11 @@
             <span class="course-cta" id="cta-malware2">Commencer →</span>
           </a>
 
-        </div>
-      </div>
-
-      
           <a href="re1.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re1">
             <div class="course-number">15</div>
-            <div class="course-day"><span>// Reverse Engineering · Intro</span><span id="badge-re1"></span></div>
+            <div class="course-day"><span>// RE·01 · Introduction</span><span id="badge-re1"></span></div>
             <div class="course-title">RE·01 — Introduction au Reverse Engineering</div>
-            <div class="course-desc">Cadre légal, workflow, triage, format ELF, chaînes, sections, premiers réflexes d’analyse sur un binaire inconnu.</div>
+            <div class="course-desc">Cadre légal, workflow, triage, format ELF, chaînes, sections, premiers réflexes d'analyse sur un binaire inconnu.</div>
             <div class="course-tags"><span class="badge badge-purple">🧠 RE</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~45 min</span></div>
             <div class="course-progress-wrap" id="prog-re1" style="display:none">
               <div class="course-progress-label"><span id="prog-re1-label">En cours</span><span id="prog-re1-score"></span></div>
@@ -339,7 +397,7 @@
 
           <a href="re2.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re2">
             <div class="course-number">16</div>
-            <div class="course-day"><span>// Reverse Engineering · ASM</span><span id="badge-re2"></span></div>
+            <div class="course-day"><span>// RE·02 · Assembleur</span><span id="badge-re2"></span></div>
             <div class="course-title">RE·02 — Assembleur x86-64</div>
             <div class="course-desc">Registres, pile, calling convention, lecture de fonctions, patterns assembleur et traduction mentale vers le pseudo-C.</div>
             <div class="course-tags"><span class="badge badge-purple">⚙️ ASM</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~55 min</span></div>
@@ -352,9 +410,9 @@
 
           <a href="re3.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re3">
             <div class="course-number">17</div>
-            <div class="course-day"><span>// Reverse Engineering · Ghidra</span><span id="badge-re3"></span></div>
+            <div class="course-day"><span>// RE·03 · Ghidra</span><span id="badge-re3"></span></div>
             <div class="course-title">RE·03 — Analyse Statique & Ghidra</div>
-            <div class="course-desc">Imports, XREF, décompilation, renommage, patching et méthodologie d’analyse statique sur un binaire réel.</div>
+            <div class="course-desc">Imports, XREF, décompilation, renommage, patching et méthodologie d'analyse statique sur un binaire réel.</div>
             <div class="course-tags"><span class="badge badge-purple">📘 Ghidra</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~60 min</span></div>
             <div class="course-progress-wrap" id="prog-re3" style="display:none">
               <div class="course-progress-label"><span id="prog-re3-label">En cours</span><span id="prog-re3-score"></span></div>
@@ -365,7 +423,7 @@
 
           <a href="re4.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re4">
             <div class="course-number">18</div>
-            <div class="course-day"><span>// Reverse Engineering · GDB</span><span id="badge-re4"></span></div>
+            <div class="course-day"><span>// RE·04 · GDB</span><span id="badge-re4"></span></div>
             <div class="course-title">RE·04 — Analyse Dynamique & GDB</div>
             <div class="course-desc">Breakpoints, mémoire, registres, exécution pas à pas, hypothèses runtime et vérification en environnement contrôlé.</div>
             <div class="course-tags"><span class="badge badge-purple">🐞 GDB</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~60 min</span></div>
@@ -378,9 +436,9 @@
 
           <a href="re5.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re5">
             <div class="course-number">19</div>
-            <div class="course-day"><span>// Reverse Engineering · Obfuscation</span><span id="badge-re5"></span></div>
+            <div class="course-day"><span>// RE·05 · Obfuscation</span><span id="badge-re5"></span></div>
             <div class="course-title">RE·05 — Obfuscation & XOR</div>
-            <div class="course-desc">XOR, chaînes cachées, stack strings, diagnostic rapide d’obfuscation et méthodes de décodage.</div>
+            <div class="course-desc">XOR, chaînes cachées, stack strings, diagnostic rapide d'obfuscation et méthodes de décodage.</div>
             <div class="course-tags"><span class="badge badge-purple">🧩 Obfuscation</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~50 min</span></div>
             <div class="course-progress-wrap" id="prog-re5" style="display:none">
               <div class="course-progress-label"><span id="prog-re5-label">En cours</span><span id="prog-re5-score"></span></div>
@@ -391,7 +449,7 @@
 
           <a href="re6.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re6">
             <div class="course-number">20</div>
-            <div class="course-day"><span>// Reverse Engineering · Anti-Debug</span><span id="badge-re6"></span></div>
+            <div class="course-day"><span>// RE·06 · Anti-Debug</span><span id="badge-re6"></span></div>
             <div class="course-title">RE·06 — Anti-Debug & Malware</div>
             <div class="course-desc">Anti-analysis, anti-debug, indicateurs malveillants, YARA, IOCs et posture analyste face à un sample hostile.</div>
             <div class="course-tags"><span class="badge badge-purple">🛡️ Analysis</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~60 min</span></div>
@@ -404,9 +462,9 @@
 
           <a href="re7.html" class="course-card" data-theme="defense" data-status="disponible" id="card-re7">
             <div class="course-number">21</div>
-            <div class="course-day"><span>// Reverse Engineering · Capstone</span><span id="badge-re7"></span></div>
+            <div class="course-day"><span>// RE·07 · Capstone</span><span id="badge-re7"></span></div>
             <div class="course-title">RE·07 — Challenge Final & Méthodologie</div>
-            <div class="course-desc">Module de synthèse : triage, hypothèses, statique, dynamique, IOCs et mini-rapport d’analyse final.</div>
+            <div class="course-desc">Module de synthèse : triage, hypothèses, statique, dynamique, IOCs et mini-rapport d'analyse final.</div>
             <div class="course-tags"><span class="badge badge-purple">🏁 Capstone</span><span class="badge badge-blue">14 slides</span><span class="badge badge-yellow">5 QCM</span><span class="badge badge-gray">~65 min</span></div>
             <div class="course-progress-wrap" id="prog-re7" style="display:none">
               <div class="course-progress-label"><span id="prog-re7-label">En cours</span><span id="prog-re7-score"></span></div>
@@ -414,7 +472,6 @@
             </div>
             <span class="course-cta" id="cta-re7">Commencer →</span>
           </a>
-
 
         </div>
       </div>
@@ -451,7 +508,7 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2','re1','re2','re3','re4','re5','re6','re7'];
+var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2','net1','net2','net3','net4','re1','re2','re3','re4','re5','re6','re7'];
 
 async function init() {
   currentUser = await requireAuth();
@@ -490,7 +547,6 @@ async function init() {
   document.getElementById('page-content').style.display = 'block';
 }
 
-
 function toggleSection(id) {
   var sec = document.getElementById('section-' + id);
   if (sec) sec.classList.toggle('collapsed');
@@ -500,17 +556,15 @@ function filterBy(filter, btn) {
   document.querySelectorAll('.filter-tab').forEach(function(t){ t.classList.remove('active'); });
   btn.classList.add('active');
 
-  var sections = ['fondations','offensif','defense','orientation'];
-  var themeFilters = ['fondations','offensif','defense','orientation'];
+  var sections = ['fondations','offensif','reseau','defense','orientation'];
+  var themeFilters = ['fondations','offensif','reseau','defense','orientation'];
 
   if (themeFilters.indexOf(filter) !== -1) {
-    // filtre thématique → afficher seulement cette section
     sections.forEach(function(s) {
       var sec = document.getElementById('section-' + s);
       if (sec) sec.style.display = (s === filter) ? 'block' : 'none';
     });
   } else if (filter === 'termine') {
-    // afficher toutes les sections, masquer les cards non terminées
     sections.forEach(function(s) {
       var sec = document.getElementById('section-' + s);
       if (sec) sec.style.display = 'block';
@@ -529,7 +583,6 @@ function filterBy(filter, btn) {
     });
     return;
   } else {
-    // Tous — tout afficher et déplier
     sections.forEach(function(s) {
       var sec = document.getElementById('section-' + s);
       if (!sec) return;
@@ -537,7 +590,6 @@ function filterBy(filter, btn) {
       sec.classList.remove('collapsed');
     });
   }
-  // Réafficher toutes les cards de la/des sections visibles
   document.querySelectorAll('.course-card').forEach(function(card) {
     card.style.display = 'block';
   });
