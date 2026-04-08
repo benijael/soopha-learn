@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>NET·01 — Fondamentaux des Réseaux · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,4,12,.97);border-bottom:1px solid rgba(0,170,255,.18);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(0,170,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(0,170,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}.tb-back:hover{color:#00aaff}
+.tb-dot{width:6px;height:6px;background:#00aaff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(0,170,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#003189,#00aaff);box-shadow:0 0 8px #00aaff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#00aaff;--blue-border:rgba(0,170,255,.18);--blue-faint:rgba(0,170,255,.05)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#00aaff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(0,170,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(2,10,20,.88);border:1px solid var(--blue-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(200,220,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#00aaff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}.bullets li.ok::before{content:'✅';font-size:.7rem}.bullets li.danger::before{content:'🔴';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.terminal{background:rgba(0,0,4,.7);border:1px solid rgba(0,170,255,.15);border-left:3px solid #00aaff;padding:.8rem 1.1rem;font-family:var(--mono);font-size:.75rem;color:rgba(0,170,255,.8);line-height:1.9;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.75}
+.term-prompt{color:#00aaff}.term-out{color:rgba(255,255,255,.45)}.term-comment{color:rgba(0,170,255,.4);font-style:italic}
+.term-red{color:#ff4466}.term-yellow{color:#ffd700}.term-green{color:#00ff88}
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(0,170,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(0,170,255,.12)}
+.quote{border-left:3px solid #00aaff;padding:.7rem 1rem;background:rgba(0,170,255,.04);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#d0e8ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #00aaff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#00aaff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#00aaff;text-shadow:0 0 8px #00aaff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(200,220,255,.85);line-height:1.5}
+/* OSI */
+.osi-stack{display:flex;flex-direction:column;gap:.25rem;width:100%;max-width:880px}
+.osi-layer{display:flex;align-items:center;gap:.8rem;padding:.5rem .9rem;border-radius:2px}
+.osi-num{font-family:var(--display);font-weight:900;font-size:.9rem;min-width:24px;text-align:center}
+.osi-name{font-family:var(--display);font-size:.7rem;font-weight:700;min-width:110px}
+.osi-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,230,255,.6);flex:1}
+.osi-proto{font-family:var(--mono);font-size:.6rem;padding:.1rem .3rem;border-radius:2px;flex-shrink:0}
+.osi-attack{font-family:var(--mono);font-size:.58rem;padding:.1rem .3rem;border-radius:2px;flex-shrink:0;border:1px solid rgba(255,68,102,.3);color:#ff4466;background:rgba(255,68,102,.06)}
+.osi-layer.l7{background:rgba(0,255,136,.06)}.osi-layer.l7 .osi-num,.osi-layer.l7 .osi-name{color:#00ff88}.osi-layer.l7 .osi-proto{background:rgba(0,255,136,.1);color:#00ff88}
+.osi-layer.l6{background:rgba(0,200,100,.05)}.osi-layer.l6 .osi-num,.osi-layer.l6 .osi-name{color:#00cc66}.osi-layer.l6 .osi-proto{background:rgba(0,200,100,.1);color:#00cc66}
+.osi-layer.l5{background:rgba(0,200,180,.05)}.osi-layer.l5 .osi-num,.osi-layer.l5 .osi-name{color:#00ccbb}.osi-layer.l5 .osi-proto{background:rgba(0,200,180,.1);color:#00ccbb}
+.osi-layer.l4{background:rgba(0,170,255,.05)}.osi-layer.l4 .osi-num,.osi-layer.l4 .osi-name{color:#00aaff}.osi-layer.l4 .osi-proto{background:rgba(0,170,255,.1);color:#00aaff}
+.osi-layer.l3{background:rgba(100,100,255,.05)}.osi-layer.l3 .osi-num,.osi-layer.l3 .osi-name{color:#8888ff}.osi-layer.l3 .osi-proto{background:rgba(100,100,255,.1);color:#8888ff}
+.osi-layer.l2{background:rgba(255,136,0,.05)}.osi-layer.l2 .osi-num,.osi-layer.l2 .osi-name{color:#ff8800}.osi-layer.l2 .osi-proto{background:rgba(255,136,0,.1);color:#ff8800}
+.osi-layer.l1{background:rgba(255,68,102,.05)}.osi-layer.l1 .osi-num,.osi-layer.l1 .osi-name{color:#ff4466}.osi-layer.l1 .osi-proto{background:rgba(255,68,102,.1);color:#ff4466}
+/* Topo */
+.topo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;max-width:880px;width:100%}
+.topo-card{padding:.9rem 1rem;border:1px solid rgba(0,170,255,.14);background:var(--blue-faint);text-align:center}
+.topo-icon{font-size:1.8rem;margin-bottom:.4rem}
+.topo-name{font-family:var(--display);font-size:.75rem;font-weight:700;color:#00aaff;margin-bottom:.3rem}
+.topo-desc{font-family:var(--body);font-size:.7rem;color:rgba(200,220,255,.55);line-height:1.4}
+.topo-note{font-family:var(--mono);font-size:.6rem;color:rgba(0,170,255,.4);margin-top:.35rem}
+/* QCM */
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(2,4,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(2,10,20,.97);border:1px solid rgba(0,170,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(0,170,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(0,170,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.35);margin-bottom:.5rem;display:none}.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(0,4,16,.3);border:1px solid rgba(0,170,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(190,215,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(0,170,255,.35);background:rgba(0,170,255,.06);color:rgba(210,230,255,.95)}
+.qcm-option.correct{border-color:#00aaff!important;background:rgba(0,170,255,.12)!important;color:#00aaff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#00aaff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);color:rgba(210,230,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(0,170,255,.15);border:1px solid rgba(0,170,255,.4);color:#00aaff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(0,170,255,.25);box-shadow:0 0 20px rgba(0,170,255,.2)}.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(2,4,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(0,170,255,.3);background:rgba(2,10,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#00aaff;text-shadow:0 0 20px #00aaff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,220,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#00aaff;color:#000a14}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(0,170,255,.4);color:#00aaff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(2,4,12,.97);border-top:1px solid rgba(0,170,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(0,170,255,.2);color:rgba(0,170,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#00aaff;color:#00aaff}.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#00aaff;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<div id="topbar">
+  <div class="tb-left">
+    <a href="formations.html" class="tb-back">← Formations</a>
+    <span><span class="tb-dot"></span>// NET·01 · Fondamentaux des Réseaux</span>
+  </div>
+  <div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+
+<div id="slides">
+
+<!-- ══ SLIDE 0 — INTRO ══ -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// NET·01 · Réseau · SooPHA Learn</div>
+  <h1 class="glitch" style="color:#00aaff!important;text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)!important">FONDAMENTAUX<br>DES RÉSEAUX</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Modèle OSI · TCP/IP · Paquets · Topologies · Types de réseaux</h3>
+  <div class="card" style="text-align:center;max-width:700px">
+    <ul class="bullets" style="text-align:left">
+      <li><strong>14 slides</strong> · 5 QCM obligatoires · ~55 min</li>
+      <li><strong>Qu'est-ce qu'un réseau</strong> — nœuds, protocoles, paquets, adressage</li>
+      <li><strong>Modèle OSI</strong> — les 7 couches détaillées avec leurs protocoles et attaques</li>
+      <li><strong>Modèle TCP/IP</strong> — le modèle réel d'Internet, comparaison avec l'OSI</li>
+      <li><strong>Comment un paquet voyage</strong> — encapsulation, routage, déencapsulation</li>
+      <li><strong>Types de réseaux</strong> — LAN, WAN, MAN, PAN, différences pratiques</li>
+      <li><strong>Topologies réseau</strong> — bus, étoile, maillé, hybride — avantages et risques</li>
+      <li class="ok">Prérequis : Module 02 — Linux (bases) ou aucun prérequis technique</li>
+    </ul>
+  </div>
+  <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-blue">NET · Module 1/6</span>
+    <span class="pill pill-green">Débutant</span>
+    <span class="pill pill-orange">OSI · TCP/IP · LAN · WAN</span>
+    <span class="pill pill-yellow">Fondation obligatoire</span>
+  </div>
+</div>
+
+<!-- ══ SLIDE 1 — QCM : DÉFINITION ══ -->
+<div class="slide" data-index="1">
+  <div class="slide-tag">// Slide 02 · Définition · Anatomie d'un réseau · QCM requis</div>
+  <h2>C'est quoi un Réseau Informatique ?</h2>
+  <h3>La base absolue — comprendre ce qui se passe quand tu envoies un message</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">🌐 Définition</div>
+      <ul class="bullets">
+        <li>Un réseau = un ensemble d'<strong>appareils interconnectés</strong> qui échangent des données selon des règles communes appelées <strong>protocoles</strong></li>
+        <li>Chaque appareil est un <strong>nœud</strong> : PC, smartphone, routeur, serveur, caméra IoT, imprimante...</li>
+        <li>Les données voyagent découpées en <strong>paquets</strong> — comme une lettre découpée en tranches, réassemblées à l'arrivée</li>
+        <li>Chaque nœud a une <strong>adresse unique</strong> — l'adresse IP — comme un numéro de rue dans une ville</li>
+        <li class="ok">Un réseau sans sécurité = une ville sans serrures ni gardiens</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.7rem">📦 Anatomie d'un paquet réseau</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment">┌─────────────────────────────────┐</span><br>
+        <span class="term-comment">│ En-tête (Header)                │</span><br>
+        <span style="color:#00aaff">│  IP source : 192.168.1.10       │</span><br>
+        <span style="color:#00aaff">│  IP destination : 8.8.8.8       │</span><br>
+        <span style="color:#00aaff">│  Port source : 54321            │</span><br>
+        <span style="color:#00aaff">│  Port destination : 443 (HTTPS) │</span><br>
+        <span class="term-comment">├─────────────────────────────────┤</span><br>
+        <span style="color:#00ff88">│ Données (Payload)               │</span><br>
+        <span style="color:#00ff88">│  [contenu chiffré TLS...]       │</span><br>
+        <span class="term-comment">└─────────────────────────────────┘</span>
+      </div>
+      <div style="margin-top:.6rem;font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.55)">Un attaquant qui intercepte le paquet voit l'en-tête (métadonnées) — le payload est chiffré en HTTPS.</div>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "Quand tu envoies un WhatsApp, ton message est découpé en paquets qui traversent des routeurs à travers plusieurs pays avant d'arriver chez ton contact. Chaque routeur est un point de passage — et un point de risque potentiel."
+  </div>
+</div>
+
+<!-- ══ SLIDE 2 — PROTOCOLES ══ -->
+<div class="slide" data-index="2">
+  <div class="slide-tag">// Slide 03 · Protocoles · Les règles du réseau</div>
+  <h2>Les Protocoles — Les Règles du Jeu</h2>
+  <h3>Sans protocoles, les machines ne pourraient pas se comprendre — comme parler sans langue commune</h3>
+  <div class="cmd-grid" style="margin-bottom:.8rem">
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">TCP — Transmission Control Protocol</div>
+      <div class="cmd-desc">Protocole <strong style="color:#fff">orienté connexion</strong> — garantit la livraison dans l'ordre, avec accusé de réception. Si un paquet est perdu, il est retransmis. Plus lent mais fiable.</div>
+      <div class="cmd-ex">HTTP, HTTPS, SSH, SMTP, FTP → utilisent TCP</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,136,0,.2)">
+      <div class="cmd-name" style="color:#ff8800">UDP — User Datagram Protocol</div>
+      <div class="cmd-desc">Protocole <strong style="color:#fff">sans connexion</strong> — envoie et oublie, pas d'accusé de réception. Paquets peuvent arriver désordonnés ou se perdre. Plus rapide, tolérant aux pertes.</div>
+      <div class="cmd-ex">DNS, DHCP, VoIP, streaming vidéo, jeux → utilisent UDP</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+      <div class="cmd-name" style="color:#00aaff">IP — Internet Protocol</div>
+      <div class="cmd-desc">Le protocole d'<strong style="color:#fff">adressage et de routage</strong> — attribue des adresses uniques (IPv4/IPv6) et détermine le chemin que prennent les paquets à travers le réseau.</div>
+      <div class="cmd-ex">IPv4 : 192.168.1.1 · IPv6 : 2001:db8::1</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+      <div class="cmd-name" style="color:#ffd700">ICMP — Internet Control Message Protocol</div>
+      <div class="cmd-desc">Protocole de <strong style="color:#fff">diagnostic réseau</strong> — utilisé par ping et traceroute. Envoie des messages d'erreur et de contrôle entre équipements. Souvent bloqué par les firewalls.</div>
+      <div class="cmd-ex">ping 8.8.8.8 · traceroute google.com</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.2)">
+      <div class="cmd-name" style="color:#aa44ff">ARP — Address Resolution Protocol</div>
+      <div class="cmd-desc">Résout les adresses IP en adresses MAC sur un réseau local. Chaque appareil maintient une table ARP. Vulnérable à l'<strong style="color:#ff4466">ARP Spoofing</strong> — l'attaque MITM du réseau local.</div>
+      <div class="cmd-ex">arp -a → voir la table ARP · arping</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,68,102,.2)">
+      <div class="cmd-name" style="color:#ff4466">DNS — Domain Name System</div>
+      <div class="cmd-desc">Traduit les noms de domaine en adresses IP — l'annuaire d'Internet. Sans DNS, il faut taper 142.250.185.14 au lieu de google.com. Vulnérable au <strong style="color:#ff4466">DNS Spoofing / Cache Poisoning</strong>.</div>
+      <div class="cmd-ex">nslookup soopha-learn.com · dig google.com</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 3 — OSI 7 COUCHES ══ -->
+<div class="slide" data-index="3">
+  <div class="slide-tag">// Slide 04 · Modèle OSI · 7 couches · Protocoles · Attaques</div>
+  <h2>Le Modèle OSI — 7 Couches en Détail</h2>
+  <h3>Open Systems Interconnection — le modèle de référence qui structure toute communication réseau</h3>
+  <div class="osi-stack" style="margin-bottom:.8rem">
+    <div class="osi-layer l7">
+      <span class="osi-num">7</span>
+      <span class="osi-name">Application</span>
+      <span class="osi-desc">Interface avec l'utilisateur — services réseau finaux</span>
+      <span class="osi-proto">HTTP · FTP · DNS · SMTP · SSH</span>
+      <span class="osi-attack">XSS · SQLi · phishing</span>
+    </div>
+    <div class="osi-layer l6">
+      <span class="osi-num">6</span>
+      <span class="osi-name">Présentation</span>
+      <span class="osi-desc">Chiffrement, compression, formatage des données</span>
+      <span class="osi-proto">TLS/SSL · JPEG · MIME · ASCII</span>
+      <span class="osi-attack">SSL Strip · cert forgery</span>
+    </div>
+    <div class="osi-layer l5">
+      <span class="osi-num">5</span>
+      <span class="osi-name">Session</span>
+      <span class="osi-desc">Ouvre, gère et ferme les sessions entre applications</span>
+      <span class="osi-proto">NetBIOS · RPC · SMB sessions</span>
+      <span class="osi-attack">Session hijacking</span>
+    </div>
+    <div class="osi-layer l4">
+      <span class="osi-num">4</span>
+      <span class="osi-name">Transport</span>
+      <span class="osi-desc">Livraison fiable end-to-end, ports, contrôle de flux</span>
+      <span class="osi-proto">TCP · UDP · SCTP</span>
+      <span class="osi-attack">SYN Flood · port scan</span>
+    </div>
+    <div class="osi-layer l3">
+      <span class="osi-num">3</span>
+      <span class="osi-name">Réseau</span>
+      <span class="osi-desc">Adressage logique IP et routage entre réseaux</span>
+      <span class="osi-proto">IP · ICMP · ARP · OSPF · BGP</span>
+      <span class="osi-attack">IP spoofing · routing attacks</span>
+    </div>
+    <div class="osi-layer l2">
+      <span class="osi-num">2</span>
+      <span class="osi-name">Liaison</span>
+      <span class="osi-desc">Transfert fiable sur le lien physique, adresses MAC</span>
+      <span class="osi-proto">Ethernet · WiFi · PPP · VLAN</span>
+      <span class="osi-attack">ARP Spoofing · VLAN hopping</span>
+    </div>
+    <div class="osi-layer l1">
+      <span class="osi-num">1</span>
+      <span class="osi-name">Physique</span>
+      <span class="osi-desc">Transmission des bits sur le support physique</span>
+      <span class="osi-proto">câble · fibre · WiFi · USB</span>
+      <span class="osi-attack">wiretapping · jamming</span>
+    </div>
+  </div>
+  <div style="font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);text-align:center">
+    // Mémo : <strong style="color:#fff">A</strong>ll <strong style="color:#fff">P</strong>eople <strong style="color:#fff">S</strong>eem <strong style="color:#fff">T</strong>o <strong style="color:#fff">N</strong>eed <strong style="color:#fff">D</strong>ata <strong style="color:#fff">P</strong>rocessing (couches 7→1)
+  </div>
+</div>
+
+<!-- ══ SLIDE 4 — QCM : OSI ══ -->
+<div class="slide" data-index="4">
+  <div class="slide-tag">// Slide 05 · OSI en pratique · QCM requis</div>
+  <h2>Le Modèle OSI en Pratique — À Quelle Couche Intervenir ?</h2>
+  <h3>Chaque problème réseau, chaque attaque, chaque outil opère à une couche précise</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🛡️ Couche de chaque outil de sécurité</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span style="color:#00aaff">Firewall réseau</span> → <span style="color:#8888ff">Couche 3 (IP)</span> + <span style="color:#00aaff">Couche 4 (TCP/UDP)</span><br>
+        <span style="color:#00aaff">Firewall applicatif (WAF)</span> → <span style="color:#00ff88">Couche 7 (HTTP)</span><br>
+        <span style="color:#00aaff">Wireshark / tcpdump</span> → <span style="color:#ff8800">Couche 2</span> à <span style="color:#00ff88">Couche 7</span><br>
+        <span style="color:#00aaff">Nmap (port scan)</span> → <span style="color:#00aaff">Couche 3 + 4</span><br>
+        <span style="color:#00aaff">TLS/HTTPS</span> → <span style="color:#00cc66">Couche 6 (chiffrement)</span><br>
+        <span style="color:#00aaff">VLAN</span> → <span style="color:#ff8800">Couche 2 (Liaison)</span><br>
+        <span style="color:#00aaff">VPN (tunnel)</span> → <span style="color:#8888ff">Couche 3</span> à <span style="color:#00ff88">7</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">⚔️ Attaque → couche ciblée</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-red">ARP Spoofing</span> → <span style="color:#ff8800">Couche 2</span><br>
+        <span class="term-red">IP Spoofing</span> → <span style="color:#8888ff">Couche 3</span><br>
+        <span class="term-red">SYN Flood (DDoS)</span> → <span style="color:#00aaff">Couche 4</span><br>
+        <span class="term-red">SSL Strip</span> → <span style="color:#00cc66">Couche 6</span><br>
+        <span class="term-red">SQLi / XSS</span> → <span style="color:#00ff88">Couche 7</span><br>
+        <span class="term-red">Phishing</span> → <span style="color:#00ff88">Couche 7</span><br>
+        <span class="term-red">Wiretapping / écoute</span> → <span style="color:#ff4466">Couche 1</span>
+      </div>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "En cybersécurité, parler de 'couche' n'est pas du jargon — c'est une façon précise d'identifier où agir. Un firewall couche 3 ne protège pas contre une SQLi couche 7. Chaque menace a sa couche, chaque défense a la sienne."
+  </div>
+</div>
+
+<!-- ══ SLIDE 5 — TCP/IP MODEL ══ -->
+<div class="slide" data-index="5">
+  <div class="slide-tag">// Slide 06 · Modèle TCP/IP · Le modèle réel d'Internet</div>
+  <h2>Le Modèle TCP/IP — Le Vrai Internet</h2>
+  <h3>OSI = modèle théorique de référence · TCP/IP = ce qu'Internet utilise vraiment</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📊 Comparaison OSI ↔ TCP/IP</div>
+      <div style="display:flex;gap:.8rem">
+        <div style="flex:1">
+          <div style="font-family:var(--mono);font-size:.6rem;color:rgba(0,170,255,.4);margin-bottom:.4rem">MODÈLE OSI</div>
+          <div style="display:flex;flex-direction:column;gap:.2rem;font-family:var(--mono);font-size:.68rem">
+            <div style="padding:.3rem .5rem;background:rgba(0,255,136,.06);color:#00ff88">7 · Application</div>
+            <div style="padding:.3rem .5rem;background:rgba(0,200,100,.05);color:#00cc66">6 · Présentation</div>
+            <div style="padding:.3rem .5rem;background:rgba(0,200,180,.05);color:#00ccbb">5 · Session</div>
+            <div style="padding:.3rem .5rem;background:rgba(0,170,255,.05);color:#00aaff">4 · Transport</div>
+            <div style="padding:.3rem .5rem;background:rgba(100,100,255,.05);color:#8888ff">3 · Réseau</div>
+            <div style="padding:.3rem .5rem;background:rgba(255,136,0,.05);color:#ff8800">2 · Liaison</div>
+            <div style="padding:.3rem .5rem;background:rgba(255,68,102,.05);color:#ff4466">1 · Physique</div>
+          </div>
+        </div>
+        <div style="flex:1">
+          <div style="font-family:var(--mono);font-size:.6rem;color:rgba(0,170,255,.4);margin-bottom:.4rem">MODÈLE TCP/IP</div>
+          <div style="display:flex;flex-direction:column;gap:.2rem;font-family:var(--mono);font-size:.68rem">
+            <div style="padding:.5rem .5rem;background:rgba(0,255,136,.06);color:#00ff88;min-height:3.2rem;display:flex;align-items:center">Application<br><span style="font-size:.58rem;opacity:.6">HTTP, DNS, SMTP, SSH...</span></div>
+            <div style="padding:.3rem .5rem;background:rgba(0,170,255,.05);color:#00aaff">Transport · TCP / UDP</div>
+            <div style="padding:.3rem .5rem;background:rgba(100,100,255,.05);color:#8888ff">Internet · IP / ICMP</div>
+            <div style="padding:.5rem .5rem;background:rgba(255,136,0,.05);color:#ff8800;min-height:2.4rem;display:flex;align-items:center">Accès réseau<br><span style="font-size:.58rem;opacity:.6">Ethernet, WiFi, PPP</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔄 Encapsulation — comment un paquet se construit</div>
+      <ul class="bullets">
+        <li><strong>Couche Application</strong> génère les données (ex: requête HTTP GET /index.html)</li>
+        <li><strong>Couche Transport</strong> ajoute un en-tête TCP (ports source/dest, numéro de séquence)</li>
+        <li><strong>Couche Internet</strong> ajoute un en-tête IP (adresses IP source et destination)</li>
+        <li><strong>Couche Accès</strong> ajoute un en-tête Ethernet (adresses MAC + CRC de vérification)</li>
+        <li class="ok">À la réception, chaque couche <strong>retire son en-tête</strong> et passe les données à la couche supérieure — c'est la déencapsulation</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 6 — QCM : TCP vs UDP ══ -->
+<div class="slide" data-index="6">
+  <div class="slide-tag">// Slide 07 · TCP vs UDP · Three-way handshake · QCM requis</div>
+  <h2>TCP vs UDP — Comprendre la Différence en Profondeur</h2>
+  <h3>Le choix entre TCP et UDP détermine comment les données voyagent — et comment les attaquer</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88;margin-bottom:.7rem">TCP — Fiable mais lent</div>
+      <ul class="bullets">
+        <li><strong>Three-way handshake</strong> obligatoire avant tout échange : SYN → SYN-ACK → ACK</li>
+        <li><strong>Accusés de réception</strong> (ACK) — chaque paquet reçu est confirmé</li>
+        <li><strong>Retransmission</strong> automatique des paquets perdus</li>
+        <li><strong>Ordre garanti</strong> — les paquets sont réordonnés si nécessaire</li>
+        <li class="warn">Vulnérable au <strong>SYN Flood</strong> — inonder avec des SYN sans ACK final</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:rgba(255,136,0,.2)">
+      <div class="cmd-name" style="color:#ff8800;margin-bottom:.7rem">UDP — Rapide mais sans garantie</div>
+      <ul class="bullets">
+        <li><strong>Pas de handshake</strong> — on envoie directement sans établir de connexion</li>
+        <li><strong>Pas d'accusé de réception</strong> — fire and forget</li>
+        <li><strong>Paquets peuvent se perdre</strong> ou arriver dans le désordre</li>
+        <li><strong>Latence minimale</strong> — idéal pour la VoIP, les jeux, le streaming</li>
+        <li class="warn">Vulnérable au <strong>UDP Flood</strong> et à l'<strong>amplification DNS</strong></li>
+      </ul>
+    </div>
+  </div>
+  <div class="terminal sm" style="max-width:880px">
+    <span class="term-comment"># Le Three-way handshake TCP — établir une connexion</span><br>
+    <span style="color:#00aaff">Client</span> → <span style="color:#00ff88">Serveur</span> : <span style="color:#ffd700">SYN</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">; "Je veux me connecter" (seq=x)</span><br>
+    <span style="color:#00ff88">Serveur</span> → <span style="color:#00aaff">Client</span> : <span style="color:#ffd700">SYN-ACK</span> &nbsp;&nbsp;<span class="term-comment">; "OK, je suis prêt" (seq=y, ack=x+1)</span><br>
+    <span style="color:#00aaff">Client</span> → <span style="color:#00ff88">Serveur</span> : <span style="color:#ffd700">ACK</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">; "Connexion établie" (ack=y+1)</span><br>
+    <span class="term-comment"># → SYN Flood : envoyer des milliers de SYN sans jamais envoyer l'ACK final</span><br>
+    <span class="term-comment"># → Le serveur garde toutes ces demi-connexions en mémoire → saturation</span>
+  </div>
+</div>
+
+<!-- ══ SLIDE 7 — TYPES DE RÉSEAUX ══ -->
+<div class="slide" data-index="7">
+  <div class="slide-tag">// Slide 08 · LAN · WAN · MAN · PAN · WLAN · Types de réseaux</div>
+  <h2>Types de Réseaux — Du Bluetooth à Internet</h2>
+  <h3>Chaque type de réseau a une portée, une technologie et un profil de risque différents</h3>
+  <div class="cmd-grid" style="margin-bottom:.8rem">
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.25)">
+      <div class="cmd-name" style="color:#00ff88">LAN — Local Area Network</div>
+      <div class="cmd-desc">Réseau local — bâtiment, bureau, maison. Portée : quelques centaines de mètres. Technologie : Ethernet (câble) ou WiFi (sans fil). Haut débit, faible latence.</div>
+      <div class="cmd-ex">Réseau de bureau · réseau domestique · salle informatique</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+      <div class="cmd-name" style="color:#00aaff">WAN — Wide Area Network</div>
+      <div class="cmd-desc">Réseau étendu — relie des LAN à travers des villes, pays ou continents. Internet est le plus grand WAN. Géré par des opérateurs télécoms. Latence plus élevée.</div>
+      <div class="cmd-ex">Internet · liaisons MPLS entreprise · connexions transatlantiques</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.2)">
+      <div class="cmd-name" style="color:#aa44ff">MAN — Metropolitan Area Network</div>
+      <div class="cmd-desc">Réseau métropolitain — couvre une ville ou une agglomération. Entre LAN et WAN. Utilisé par les opérateurs pour relier les quartiers, les campus universitaires, les mairies.</div>
+      <div class="cmd-ex">Réseau fibré d'une ville · campus universitaire multi-sites</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+      <div class="cmd-name" style="color:#ffd700">PAN — Personal Area Network</div>
+      <div class="cmd-desc">Réseau personnel — autour d'une personne, portée de quelques mètres. Technologies : Bluetooth, NFC, infrarouge. Risque BlueSnarfing (vol de données Bluetooth).</div>
+      <div class="cmd-ex">Smartphone + casque Bluetooth · paiement NFC · montre connectée</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,136,0,.2)">
+      <div class="cmd-name" style="color:#ff8800">WLAN — Wireless LAN</div>
+      <div class="cmd-desc">LAN sans fil (WiFi). Standard IEEE 802.11. Versions : WiFi 4 (802.11n), WiFi 5 (ac), WiFi 6 (ax). Chiffrement : WEP (cassé), WPA2, WPA3. Surface d'attaque élevée.</div>
+      <div class="cmd-ex">WiFi domicile · hotspot café · réseau d'entreprise sans fil</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,68,102,.2)">
+      <div class="cmd-name" style="color:#ff4466">VPN — Virtual Private Network</div>
+      <div class="cmd-desc">Tunnel chiffré qui crée un réseau privé sur Internet. L'employé en télétravail rejoint le LAN de l'entreprise via VPN. Protocoles : OpenVPN, WireGuard, IPsec.</div>
+      <div class="cmd-ex">Télétravail sécurisé · contournement géo-restrictions · anonymat</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 8 — ADRESSES MAC & IP ══ -->
+<div class="slide" data-index="8">
+  <div class="slide-tag">// Slide 09 · MAC vs IP · Adressage · Couche 2 vs Couche 3</div>
+  <h2>MAC vs IP — Deux Niveaux d'Adressage</h2>
+  <h3>L'adresse MAC identifie le matériel · l'adresse IP identifie l'emplacement réseau</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔌 Adresse MAC — Couche 2</div>
+      <ul class="bullets">
+        <li><strong>Media Access Control</strong> — gravée dans la carte réseau à la fabrication</li>
+        <li>Format : <strong>6 octets en hexadécimal</strong> — ex : <code style="color:#00aaff;font-family:var(--mono)">AA:BB:CC:11:22:33</code></li>
+        <li>Les 3 premiers octets = <strong>OUI</strong> — identifiant du fabricant (Cisco, Apple, Samsung...)</li>
+        <li>Utilisée uniquement sur le <strong>réseau local (LAN)</strong> — invisible sur Internet</li>
+        <li class="warn"><strong>MAC Spoofing</strong> — possible de falsifier son adresse MAC pour contourner les contrôles d'accès WiFi</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🌐 Adresse IP — Couche 3</div>
+      <ul class="bullets">
+        <li><strong>Internet Protocol</strong> — attribuée dynamiquement (DHCP) ou statiquement</li>
+        <li>IPv4 : <strong>4 octets en décimal</strong> — ex : <code style="color:#00aaff;font-family:var(--mono)">192.168.1.10</code> (4 milliards d'adresses)</li>
+        <li>IPv6 : <strong>16 octets en hex</strong> — ex : <code style="color:#00aaff;font-family:var(--mono)">2001:0db8::1</code> (340 undécillions)</li>
+        <li>Routée sur <strong>Internet et les réseaux locaux</strong></li>
+        <li class="warn"><strong>IP Spoofing</strong> — falsifier l'IP source pour masquer son origine ou usurper une identité</li>
+      </ul>
+    </div>
+  </div>
+  <div class="terminal sm">
+    <span class="term-prompt">$ </span>ip addr show eth0<br>
+    <span class="term-out">2: eth0: &lt;BROADCAST,MULTICAST,UP&gt;</span><br>
+    <span style="color:#ff8800">&nbsp;&nbsp;link/ether aa:bb:cc:11:22:33 brd ff:ff:ff:ff:ff:ff</span>&nbsp;<span class="term-comment">← MAC</span><br>
+    <span style="color:#00aaff">&nbsp;&nbsp;inet 192.168.1.10/24 brd 192.168.1.255</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">← IPv4</span><br>
+    <span style="color:#8888ff">&nbsp;&nbsp;inet6 fe80::a8bb:ccff:fe11:2233/64</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">← IPv6 link-local</span>
+  </div>
+</div>
+
+<!-- ══ SLIDE 9 — QCM : TOPOLOGIES ══ -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// Slide 10 · Topologies réseau · QCM requis</div>
+  <h2>Topologies Réseau — Comment les Machines Sont Connectées</h2>
+  <h3>La topologie détermine la résilience, les performances et la surface d'attaque</h3>
+  <div class="topo-grid" style="margin-bottom:.8rem">
+    <div class="topo-card">
+      <div class="topo-icon">🚌</div>
+      <div class="topo-name">Bus</div>
+      <div class="topo-desc">Toutes les machines partagent un seul câble commun. Un paquet envoyé = toutes les machines le voient. Obsolète mais important historiquement.</div>
+      <div class="topo-note">⚠ Panne du câble = tout le réseau tombe · sniffing facile</div>
+    </div>
+    <div class="topo-card">
+      <div class="topo-icon">⭐</div>
+      <div class="topo-name">Étoile</div>
+      <div class="topo-desc">Toutes les machines connectées à un switch ou hub central. La plus courante dans les bureaux et maisons. Facile à dépanner et à étendre.</div>
+      <div class="topo-note">⚠ Switch central = point de défaillance unique et cible idéale</div>
+    </div>
+    <div class="topo-card">
+      <div class="topo-icon">💠</div>
+      <div class="topo-name">Maillé (Mesh)</div>
+      <div class="topo-desc">Chaque nœud connecté à plusieurs autres. Très résilient — si un lien tombe, les données empruntent un autre chemin. Utilisé par Internet lui-même.</div>
+      <div class="topo-note">✅ Haute résilience · utilisé pour les datacenters critiques</div>
+    </div>
+    <div class="topo-card">
+      <div class="topo-icon">🔗</div>
+      <div class="topo-name">Anneau (Ring)</div>
+      <div class="topo-desc">Les machines forment un anneau, les données circulent dans un sens. Une rupture interrompt tout le réseau. Utilisé en fibre optique (SONET/SDH).</div>
+      <div class="topo-note">⚠ Rupture du lien = réseau coupé · difficile à déboguer</div>
+    </div>
+    <div class="topo-card">
+      <div class="topo-icon">🌳</div>
+      <div class="topo-name">Arbre (Tree)</div>
+      <div class="topo-desc">Hiérarchique — un switch racine alimente des switchs secondaires qui alimentent des machines. Très utilisé dans les grandes entreprises et les campus.</div>
+      <div class="topo-note">// Facile à scaler · switch racine = point critique</div>
+    </div>
+    <div class="topo-card">
+      <div class="topo-icon">🔀</div>
+      <div class="topo-name">Hybride</div>
+      <div class="topo-desc">Combinaison de plusieurs topologies. La plupart des réseaux réels sont hybrides : étoile au niveau local, maillé au niveau WAN/datacenter.</div>
+      <div class="topo-note">✅ La réalité des grands réseaux d'entreprise</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 10 — ÉQUIPEMENTS ══ -->
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Slide 11 · Équipements réseau · Hub · Switch · Routeur · Firewall</div>
+  <h2>Les Équipements Réseau — Qui Fait Quoi ?</h2>
+  <h3>Chaque équipement opère à une couche OSI précise — et a ses propres vulnérabilités</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card" style="border-color:rgba(255,68,102,.2)">
+      <div class="cmd-name" style="color:#ff4466">Hub — Couche 1</div>
+      <div class="cmd-desc">Répéteur multiport — reçoit un paquet et le retransmet sur TOUS les ports sans distinction. Chaque machine voit le trafic de toutes les autres. Totalement obsolète mais encore présent dans les vieilles infras africaines.</div>
+      <div class="cmd-ex">⚠ Sniffing passif trivial — Wireshark voit tout</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,136,0,.25)">
+      <div class="cmd-name" style="color:#ff8800">Switch — Couche 2</div>
+      <div class="cmd-desc">Commutateur intelligent — apprend les adresses MAC et envoie les paquets uniquement au bon port. Remplace le hub dans tous les réseaux modernes. Peut être segmenté en VLANs.</div>
+      <div class="cmd-ex">⚠ Vulnérable au MAC flooding, ARP spoofing, VLAN hopping</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+      <div class="cmd-name" style="color:#00aaff">Routeur — Couche 3</div>
+      <div class="cmd-desc">Achemine les paquets entre différents réseaux en se basant sur les adresses IP. C'est lui qui connecte ton réseau local à Internet. Dispose d'une table de routage maintenue dynamiquement.</div>
+      <div class="cmd-ex">⚠ Attaques BGP hijacking, faille dans le firmware</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">Firewall — Couches 3-7</div>
+      <div class="cmd-desc">Filtre le trafic selon des règles définies. Stateless (filtre paquet par paquet), Stateful (suit l'état des connexions), NGFW (inspection applicative, DPI, IPS intégré).</div>
+      <div class="cmd-ex">✅ Première ligne de défense — bien configuré, c'est essentiel</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.2)">
+      <div class="cmd-name" style="color:#aa44ff">Point d'accès WiFi — Couches 1-2</div>
+      <div class="cmd-desc">Crée un réseau sans fil (WLAN) et le relie au réseau câblé. Le chiffrement WPA3 est le standard actuel. WEP est totalement cassé, WPA2 vulnérable à PMKID et KRACK.</div>
+      <div class="cmd-ex">⚠ WEP crackable en minutes · réseau ouvert = catastrophe</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+      <div class="cmd-name" style="color:#ffd700">Proxy — Couche 7</div>
+      <div class="cmd-desc">Intermédiaire entre les clients et Internet. Forward proxy = cache + filtrage URL. Reverse proxy = load balancer + protection serveur. WAF = proxy spécialisé sécurité web.</div>
+      <div class="cmd-ex">Nginx, HAProxy, Squid, Cloudflare (reverse proxy)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 11 — COMMENT UN PAQUET VOYAGE ══ -->
+<div class="slide" data-index="11">
+  <div class="slide-tag">// Slide 12 · Routage · Traceroute · Voyage d'un paquet</div>
+  <h2>Le Voyage d'un Paquet — De Kinshasa à Google</h2>
+  <h3>Tracer le chemin d'un paquet pour comprendre le réseau — et identifier les points de surveillance</h3>
+  <div class="card" style="margin-bottom:.8rem">
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      <div class="step"><div class="step-num">1</div><div class="step-content"><strong>Ton navigateur</strong> crée une requête HTTP GET / — la couche Transport ajoute l'en-tête TCP (port 443), la couche IP ajoute ton IP source et l'IP Google destination</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content"><strong>Ton routeur domicile</strong> reçoit le paquet, vérifie sa table de routage → "l'IP 142.250.x.x n'est pas dans mon réseau local → je l'envoie vers mon opérateur" (NAT appliqué)</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content"><strong>L'opérateur télécoms</strong> reçoit le paquet, le route vers un point d'échange Internet (IXP) régional — en Afrique : IXPN Nigeria, JINX Johannesburg, DE-CIX Djibouti</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content"><strong>Les câbles sous-marins</strong> transportent le paquet vers l'Europe ou les USA si aucun datacenter Google n'est plus proche — chaque saut = un routeur traversé</div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-content"><strong>Google reçoit</strong>, traite et répond — la réponse suit le chemin inverse. Traceroute montre chaque routeur traversé avec sa latence</div></div>
+    </div>
+  </div>
+  <div class="terminal sm">
+    <span class="term-prompt">$ </span>traceroute google.com<br>
+    <span class="term-out">1 &nbsp;192.168.1.1 &nbsp;&nbsp;&nbsp;(routeur local) &nbsp;&nbsp;&nbsp;&nbsp;1ms</span><br>
+    <span class="term-out">2 &nbsp;10.x.x.x &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(opérateur) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;8ms</span><br>
+    <span class="term-out">3 &nbsp;196.x.x.x &nbsp;&nbsp;&nbsp;(IXP Afrique) &nbsp;&nbsp;&nbsp;&nbsp;45ms</span><br>
+    <span style="color:#ffd700">4 &nbsp;* * * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(routeur silencieux) &nbsp;---</span><br>
+    <span class="term-out">5 &nbsp;142.250.x.x &nbsp;(Google) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;120ms</span>
+  </div>
+</div>
+
+<!-- ══ SLIDE 12 — PLAN DU PARCOURS ══ -->
+<div class="slide" data-index="12">
+  <div class="slide-tag">// Slide 13 · Parcours Réseau · 6 modules</div>
+  <h2>Le Parcours Réseau — 6 Modules pour Tout Maîtriser</h2>
+  <h3>De l'octet aux attaques — un chemin structuré du débutant à l'expert réseau</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.45)">
+      <div class="cmd-name" style="color:#00aaff">NET·01 — Fondamentaux (tu es ici)</div>
+      <div class="cmd-desc">Protocoles, OSI, TCP/IP, paquets, types de réseaux, topologies, équipements, voyage d'un paquet. Les bases incontournables avant tout le reste.</div>
+      <div class="cmd-ex">OSI · TCP/IP · MAC · IP · Hub · Switch · Routeur</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,200,255,.2)">
+      <div class="cmd-name" style="color:#00ccff">NET·02 — Adressage IP & Sous-réseaux</div>
+      <div class="cmd-desc">IPv4 complet, IPv6, notation CIDR, calcul de sous-réseaux, NAT, DHCP. Savoir lire 192.168.1.0/24 et calculer les plages d'adresses utilisables.</div>
+      <div class="cmd-ex">CIDR · subnetting · NAT · DHCP · IPv6</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,180,.2)">
+      <div class="cmd-name" style="color:#00ffbb">NET·03 — Protocoles & Services</div>
+      <div class="cmd-desc">DNS en profondeur, HTTP/HTTPS, SMTP, FTP, SSH, TLS/SSL, ARP. Comment chaque protocole fonctionne et comment il peut être attaqué.</div>
+      <div class="cmd-ex">DNS · DHCP · HTTP · SSH · TLS · ARP</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(100,180,255,.2)">
+      <div class="cmd-name" style="color:#64b4ff">NET·04 — Architecture & Firewalls</div>
+      <div class="cmd-desc">Routeurs, switches managés, firewalls stateless/stateful/NGFW, VLANs, DMZ, zones de sécurité, architecture réseau d'entreprise.</div>
+      <div class="cmd-ex">VLAN · DMZ · firewall rules · segmentation</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">NET·05 — Wireshark & Analyse de Trafic</div>
+      <div class="cmd-desc">Wireshark complet — captures, filtres BPF, follow TCP stream, analyse .pcap, tcpdump, identifier du trafic anormal, challenge Forensics réseau.</div>
+      <div class="cmd-ex">Wireshark · tcpdump · BPF filters · .pcap</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,68,102,.2)">
+      <div class="cmd-name" style="color:#ff4466">NET·06 — Sécurité Réseau</div>
+      <div class="cmd-desc">Attaques ARP Spoofing, DNS Poisoning, MITM, SYN Flood. Nmap avancé, IDS/IPS, VPN, hardening réseau, bonnes pratiques Blue Team.</div>
+      <div class="cmd-ex">ARP · MITM · Nmap · IDS · VPN · hardening</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 13 — QCM FINAL + CONCLUSION ══ -->
+<div class="slide" data-index="13">
+  <div class="slide-tag">// Slide 14 · Conclusion · NET·02 s'ouvre · QCM final</div>
+  <h2>Fondamentaux Acquis — Direction l'Adressage IP 🌐</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🎓 Ce que tu maîtrises — NET·01</div>
+      <ul class="bullets">
+        <li>Définition d'un réseau — nœuds, protocoles, paquets, adressage</li>
+        <li>Protocoles fondamentaux — TCP, UDP, IP, ICMP, ARP, DNS</li>
+        <li>Modèle OSI — 7 couches, protocoles et attaques associées</li>
+        <li>Modèle TCP/IP — 4 couches, comparaison OSI, encapsulation</li>
+        <li>TCP vs UDP — handshake, garanties, cas d'usage, vulnérabilités</li>
+        <li>Types de réseaux — LAN, WAN, MAN, PAN, WLAN, VPN</li>
+        <li>Adresses MAC vs IP — couches, formats, usages, attaques</li>
+        <li>Topologies — bus, étoile, maillé, anneau, arbre, hybride</li>
+        <li>Équipements — Hub, Switch, Routeur, Firewall, Proxy</li>
+        <li>Voyage d'un paquet — de ton réseau local à Google</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🔜 NET·02 — Ce qui t'attend</div>
+      <ul class="bullets">
+        <li>Décrypter <strong>192.168.1.0/24</strong> — que signifie le /24 exactement ?</li>
+        <li>Calculer combien d'hôtes peut accueillir un sous-réseau /26</li>
+        <li>Comprendre le <strong>NAT</strong> — pourquoi ton IP locale et ton IP publique sont différentes</li>
+        <li>La transition <strong>IPv4 → IPv6</strong> — pourquoi, comment, en Afrique aussi</li>
+        <li class="ok">Prérequis acquis : protocoles, OSI, TCP/IP, types de réseaux</li>
+      </ul>
+      <div class="hdiv">RESSOURCES COMPLÉMENTAIRES</div>
+      <ul class="bullets" style="font-size:.78rem">
+        <li><strong>Cisco NetAcad</strong> — cours réseau gratuits en français</li>
+        <li><strong>Professor Messer</strong> — vidéos Network+ très pédagogiques</li>
+        <li><strong>TryHackMe</strong> — room "Pre-Security" · parcours réseau</li>
+      </ul>
+    </div>
+  </div>
+  <div style="margin-top:.8rem;display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-blue">OSI · TCP/IP · MAC · IP</span>
+    <span class="pill pill-green">LAN · WAN · VPN · WiFi</span>
+    <span class="pill pill-orange">Hub · Switch · Routeur · Firewall</span>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🌐</div>
+    <div class="completion-title" id="comp-title">NET·01 terminé !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="net2.html" class="completion-btn completion-btn-primary">NET·02 : Adressage IP →</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 14</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+var QCM = {
+  1: {
+    question: "Quand tu envoies un message WhatsApp, tes données voyagent découpées en paquets. Qu'est-ce qu'un paquet réseau contient obligatoirement ?",
+    options: [
+      "Uniquement les données (le message) — les informations de routage sont gérées séparément par le réseau",
+      "Un en-tête avec les adresses IP source et destination, les ports, et un payload contenant les données — le tout pouvant être chiffré",
+      "Uniquement l'adresse IP destination — l'adresse source est inutile car le réseau sait d'où vient le paquet",
+      "Le nom d'utilisateur et le mot de passe de l'expéditeur pour authentifier chaque paquet individuellement"
+    ],
+    correct: 1,
+    explanation: "Un paquet réseau est structuré en deux parties : l'en-tête (header) qui contient les métadonnées de routage (IP source, IP destination, ports, protocole, TTL) et le payload qui contient les données utiles. En HTTPS, le payload est chiffré par TLS — même si quelqu'un intercepte le paquet, il ne peut pas lire le contenu. Mais l'en-tête reste lisible, révélant avec qui tu communiques même si le contenu est chiffré. C'est ce qu'on appelle l'analyse des métadonnées."
+  },
+  4: {
+    question: "Un WAF (Web Application Firewall) protège contre les SQLi et XSS mais pas contre un SYN Flood DDoS. À quelle couche OSI opère chacune de ces menaces ?",
+    options: [
+      "SQLi et SYN Flood opèrent tous les deux à la couche 4 (Transport) — ce sont des attaques sur les protocoles de connexion",
+      "SQLi/XSS opèrent à la couche 7 (Application) — le WAF les bloque · SYN Flood opère à la couche 4 (Transport) — il faut un autre type de protection",
+      "SQLi opère à la couche 3 (Réseau) et SYN Flood à la couche 6 (Présentation) — d'où la difficulté de les bloquer avec un seul outil",
+      "Tous opèrent à la couche 7 — un WAF bien configuré devrait bloquer les deux sans problème"
+    ],
+    correct: 1,
+    explanation: "C'est une question fondamentale en architecture sécurité : chaque menace a sa couche. SQLi et XSS sont des attaques sur les données applicatives — couche 7 (Application). Le WAF inspecte les requêtes HTTP, les paramètres, les corps de requête pour détecter ces patterns. Le SYN Flood cible le protocole TCP — couche 4 (Transport) — en saturant la table des demi-connexions du serveur. Pour contrer le SYN Flood, il faut des mécanismes couche 4 : SYN cookies, rate limiting TCP, scrubbing center, ou un CDN comme Cloudflare qui absorbe ce trafic."
+  },
+  6: {
+    question: "Pourquoi le TCP three-way handshake (SYN → SYN-ACK → ACK) rend-il possible l'attaque SYN Flood ?",
+    options: [
+      "Parce que le handshake chiffre les données et l'attaquant peut casser ce chiffrement pour accéder aux sessions",
+      "Parce que le serveur alloue des ressources mémoire pour chaque SYN reçu en attendant l'ACK final — un attaquant qui envoie des millions de SYN sans jamais envoyer l'ACK épuise la mémoire du serveur",
+      "Parce que le SYN contient le mot de passe en clair — un attaquant qui intercepte le SYN obtient les credentials",
+      "Parce que le handshake prend 3 secondes minimum — suffisant pour ralentir toutes les connexions légitimes"
+    ],
+    correct: 1,
+    explanation: "Le SYN Flood exploite une caractéristique fondamentale de TCP : quand un serveur reçoit un SYN, il alloue une entrée dans sa table des 'half-open connections' et attend l'ACK final pendant un certain timeout (30-120 secondes). L'attaquant envoie des millions de SYN avec des IPs sources forgées (IP spoofing) — le serveur répond SYN-ACK vers ces fausses IPs et attend. Sa table de connexions se remplit et les vraies connexions légitimes sont refusées. Contre-mesures : SYN cookies (le serveur n'alloue pas de mémoire avant l'ACK), rate limiting, Cloudflare."
+  },
+  9: {
+    question: "Dans un bureau, toutes les machines sont connectées à un switch central. Si le switch tombe en panne, que se passe-t-il et quelle topologie aurait évité ce problème ?",
+    options: [
+      "Seules les machines directement connectées au switch tombent — les autres continuent de communiquer normalement via une topologie bus de secours",
+      "Tout le réseau est coupé car le switch est le point de défaillance unique de la topologie étoile — une topologie maillée (mesh) avec plusieurs chemins redondants aurait évité ce Single Point of Failure",
+      "Rien ne se passe — les machines basculent automatiquement vers la connexion WiFi de secours intégrée dans chaque switch moderne",
+      "Seul Internet est coupé — les machines peuvent continuer à communiquer entre elles via leurs adresses MAC directement"
+    ],
+    correct: 1,
+    explanation: "La topologie en étoile a un avantage (facilité de gestion, isolation des pannes individuelles) mais un défaut critique : le switch central est un Single Point of Failure (SPOF). Si le switch tombe, tout le réseau est coupé. Solutions : (1) Topologie maillée partielle — chaque switch connecté à plusieurs autres (utilisé dans les datacenters). (2) Redondance des switches — deux switches actifs/passif avec protocoles STP/RSTP. (3) Link Aggregation — plusieurs câbles entre switches (LACP). Dans la réalité des entreprises, on combine étoile pour les postes de travail + maillage entre les équipements critiques."
+  },
+  13: {
+    question: "Un collègue te dit : 'J'utilise un hub au lieu d'un switch, c'est pareil mais moins cher.' Quelle est l'erreur critique de ce raisonnement, surtout en termes de sécurité ?",
+    options: [
+      "Il n'y a pas d'erreur — hub et switch sont fonctionnellement identiques, seule la vitesse diffère légèrement",
+      "Un hub retransmet tous les paquets sur tous ses ports — n'importe qui connecté au hub peut voir tout le trafic de tout le monde avec Wireshark. Un switch n'envoie le paquet qu'au bon destinataire via sa table MAC",
+      "Le hub consomme plus d'électricité que le switch — le vrai problème est environnemental, pas sécuritaire",
+      "Le hub ne supporte que le protocole IPv4 — avec IPv6, il faut obligatoirement un switch"
+    ],
+    correct: 1,
+    explanation: "C'est une erreur de sécurité majeure. Un hub (couche 1) est un simple répéteur — il reçoit un signal et le retransmet sur TOUS ses ports sans aucune intelligence. Résultat : si Alice, Bob et Carlos sont sur le même hub, quand Alice envoie un paquet à Bob, Carlos le reçoit aussi. Avec Wireshark en mode promiscuous, Carlos voit tout le trafic du réseau — mots de passe HTTP, cookies, requêtes DNS. Un switch (couche 2) apprend les adresses MAC et n'envoie le paquet qu'au bon port. La segmentation réseau avec des switches est la base de la sécurité réseau interne."
+  }
+};
+
+var COURSE_ID = 'net1';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){
+    document.getElementById('comp-icon').textContent='🌐';
+    document.getElementById('comp-title').textContent='Fondamentaux maîtrisés !';
+    document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Excellente base — tu comprends comment le réseau fonctionne vraiment. Direction NET·02 !';
+  } else if(pct>=60){
+    document.getElementById('comp-icon').textContent='📡';
+    document.getElementById('comp-title').textContent='NET·01 terminé';
+    document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Solide — revois les topologies et le modèle OSI avant NET·02.';
+  } else {
+    document.getElementById('comp-icon').textContent='📚';
+    document.getElementById('comp-title').textContent='NET·01 terminé';
+    document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Relis les slides sur TCP/IP et l\'OSI avant de continuer.';
+  }
+  document.getElementById('completion-modal').classList.add('show');
+}
+
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='01TCPIPUDPDNSHTTPLANWANMACOSIROUTERVLANSWITCHSYNACKARP',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,4,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#00aaff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>NET·02 — Adressage IP & Sous-réseaux · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,4,12,.97);border-bottom:1px solid rgba(0,170,255,.18);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(0,170,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(0,170,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}.tb-back:hover{color:#00aaff}
+.tb-dot{width:6px;height:6px;background:#00aaff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(0,170,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#003189,#00aaff);box-shadow:0 0 8px #00aaff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#00aaff;--blue-border:rgba(0,170,255,.18);--blue-faint:rgba(0,170,255,.05)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#00aaff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(0,170,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(2,10,20,.88);border:1px solid var(--blue-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(200,220,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#00aaff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}.bullets li.ok::before{content:'✅';font-size:.7rem}.bullets li.danger::before{content:'🔴';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.terminal{background:rgba(0,0,4,.7);border:1px solid rgba(0,170,255,.15);border-left:3px solid #00aaff;padding:.8rem 1.1rem;font-family:var(--mono);font-size:.75rem;color:rgba(0,170,255,.8);line-height:1.9;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.75}
+.term-prompt{color:#00aaff}.term-out{color:rgba(255,255,255,.45)}.term-comment{color:rgba(0,170,255,.4);font-style:italic}
+.term-red{color:#ff4466}.term-yellow{color:#ffd700}.term-green{color:#00ff88}
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(0,170,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(0,170,255,.12)}
+.quote{border-left:3px solid #00aaff;padding:.7rem 1rem;background:rgba(0,170,255,.04);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#d0e8ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #00aaff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#00aaff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#00aaff;text-shadow:0 0 8px #00aaff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(200,220,255,.85);line-height:1.5}
+/* Subnet table */
+.subnet-table{width:100%;border-collapse:collapse;max-width:880px;font-family:var(--mono);font-size:.7rem}
+.subnet-table th{color:rgba(0,170,255,.5);letter-spacing:.12em;padding:.45rem .7rem;border-bottom:1px solid rgba(0,170,255,.15);text-align:left}
+.subnet-table td{padding:.4rem .7rem;border-bottom:1px solid rgba(0,170,255,.06);color:rgba(200,220,255,.75)}
+.subnet-table tr:last-child td{border-bottom:none}
+.subnet-table td:first-child{color:#00aaff;font-weight:700}
+.subnet-table td.hosts{color:#00ff88}
+.subnet-table td.mask{color:#ffd700}
+.subnet-table td.usage{font-family:var(--body);font-size:.68rem;color:rgba(200,220,255,.5)}
+/* IP breakdown */
+.ip-breakdown{display:flex;gap:0;max-width:880px;width:100%}
+.ip-oct{flex:1;text-align:center;padding:.7rem .4rem;border:1px solid rgba(0,170,255,.15);background:var(--blue-faint)}
+.ip-oct-val{font-family:var(--display);font-size:1.4rem;font-weight:900;color:#00aaff;text-shadow:0 0 10px #00aaff}
+.ip-oct-bin{font-family:var(--mono);font-size:.6rem;color:rgba(0,170,255,.45);margin-top:.2rem}
+.ip-oct-label{font-family:var(--mono);font-size:.55rem;color:rgba(0,170,255,.3);margin-top:.15rem;letter-spacing:.05em}
+.ip-dot{display:flex;align-items:center;font-family:var(--display);font-size:1.6rem;color:rgba(0,170,255,.3);padding:0 .2rem}
+/* QCM */
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(2,4,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(2,10,20,.97);border:1px solid rgba(0,170,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(0,170,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(0,170,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.35);margin-bottom:.5rem;display:none}.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(0,4,16,.3);border:1px solid rgba(0,170,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(190,215,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(0,170,255,.35);background:rgba(0,170,255,.06);color:rgba(210,230,255,.95)}
+.qcm-option.correct{border-color:#00aaff!important;background:rgba(0,170,255,.12)!important;color:#00aaff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#00aaff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);color:rgba(210,230,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(0,170,255,.15);border:1px solid rgba(0,170,255,.4);color:#00aaff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(0,170,255,.25);box-shadow:0 0 20px rgba(0,170,255,.2)}.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(2,4,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(0,170,255,.3);background:rgba(2,10,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#00aaff;text-shadow:0 0 20px #00aaff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,220,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#00aaff;color:#000a14}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(0,170,255,.4);color:#00aaff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(2,4,12,.97);border-top:1px solid rgba(0,170,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(0,170,255,.2);color:rgba(0,170,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#00aaff;color:#00aaff}.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#00aaff;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<div id="topbar">
+  <div class="tb-left">
+    <a href="formations.html" class="tb-back">← Formations</a>
+    <span><span class="tb-dot"></span>// NET·02 · Adressage IP & Sous-réseaux</span>
+  </div>
+  <div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+
+<div id="slides">
+
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// NET·02 · Réseau · SooPHA Learn</div>
+  <h1 class="glitch" style="color:#00aaff!important;text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)!important">ADRESSAGE IP<br>& SOUS-RÉSEAUX</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>IPv4 · IPv6 · CIDR · Subnetting · NAT · DHCP</h3>
+  <div class="card" style="text-align:center;max-width:700px">
+    <ul class="bullets" style="text-align:left">
+      <li><strong>14 slides</strong> · 5 QCM obligatoires · ~60 min</li>
+      <li><strong>IPv4 en binaire</strong> — décoder 192.168.1.10 octet par octet</li>
+      <li><strong>Classes d'adresses</strong> — A, B, C, D, E et leurs plages</li>
+      <li><strong>Adresses privées vs publiques</strong> — RFC 1918, NAT</li>
+      <li><strong>Notation CIDR</strong> — lire et calculer 192.168.1.0/24</li>
+      <li><strong>Subnetting</strong> — découper un réseau en sous-réseaux</li>
+      <li><strong>DHCP</strong> — attribution automatique des adresses IP</li>
+      <li><strong>IPv6</strong> — pourquoi, format, coexistence avec IPv4</li>
+      <li class="ok">Prérequis : NET·01 — Fondamentaux des Réseaux</li>
+    </ul>
+  </div>
+  <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-blue">NET · Module 2/6</span>
+    <span class="pill pill-green">Débutant → Intermédiaire</span>
+    <span class="pill pill-orange">IPv4 · CIDR · NAT · DHCP</span>
+    <span class="pill pill-yellow">CompTIA Network+ · CCNA</span>
+  </div>
+</div>
+
+<!-- SLIDE 1 — QCM : IPv4 BINAIRE -->
+<div class="slide" data-index="1">
+  <div class="slide-tag">// Slide 02 · IPv4 · Binaire · Structure · QCM requis</div>
+  <h2>IPv4 — Décoder une Adresse IP</h2>
+  <h3>Une adresse IP = 32 bits organisés en 4 octets — comprendre le binaire, c'est tout comprendre</h3>
+  <div style="margin-bottom:.8rem">
+    <div style="font-family:var(--mono);font-size:.6rem;color:rgba(0,170,255,.4);letter-spacing:.2em;text-align:center;margin-bottom:.5rem">DÉCOMPOSITION DE 192.168.1.10</div>
+    <div class="ip-breakdown">
+      <div class="ip-oct">
+        <div class="ip-oct-val">192</div>
+        <div class="ip-oct-bin">11000000</div>
+        <div class="ip-oct-label">octet 1</div>
+      </div>
+      <div class="ip-dot">.</div>
+      <div class="ip-oct">
+        <div class="ip-oct-val">168</div>
+        <div class="ip-oct-bin">10101000</div>
+        <div class="ip-oct-label">octet 2</div>
+      </div>
+      <div class="ip-dot">.</div>
+      <div class="ip-oct">
+        <div class="ip-oct-val">1</div>
+        <div class="ip-oct-bin">00000001</div>
+        <div class="ip-oct-label">octet 3</div>
+      </div>
+      <div class="ip-dot">.</div>
+      <div class="ip-oct">
+        <div class="ip-oct-val">10</div>
+        <div class="ip-oct-bin">00001010</div>
+        <div class="ip-oct-label">octet 4</div>
+      </div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔢 Convertir binaire ↔ décimal</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Table des puissances de 2 (1 octet)</span><br>
+        <span style="color:#ffd700">128  64  32  16   8   4   2   1</span><br>
+        <span style="color:#00aaff"> 1    1   0   0   0   0   0   0</span> = <span class="term-green">128+64 = 192</span><br>
+        <span style="color:#00aaff"> 1    0   1   0   1   0   0   0</span> = <span class="term-green">128+32+8 = 168</span><br>
+        <span style="color:#00aaff"> 0    0   0   0   1   0   1   0</span> = <span class="term-green">8+2 = 10</span><br>
+        <br>
+        <span class="term-comment"># Astuce : un octet = 0 à 255 maximum</span><br>
+        <span class="term-comment"># 11111111 binaire = 255 décimal</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📏 Caractéristiques IPv4</div>
+      <ul class="bullets">
+        <li><strong>32 bits</strong> = 4 octets = ~4,3 milliards d'adresses théoriques</li>
+        <li>Format <strong>pointé décimal</strong> — 4 nombres entre 0 et 255</li>
+        <li>Deux parties : <strong>partie réseau</strong> (Network ID) + <strong>partie hôte</strong> (Host ID)</li>
+        <li>Le masque de sous-réseau définit où s'arrête la partie réseau</li>
+        <li class="warn">IPv4 est <strong>épuisé depuis 2011</strong> — d'où la migration vers IPv6</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2 — CLASSES D'ADRESSES -->
+<div class="slide" data-index="2">
+  <div class="slide-tag">// Slide 03 · Classes A B C D E · Adresses privées · RFC 1918</div>
+  <h2>Classes d'Adresses IPv4 & Adresses Privées</h2>
+  <h3>Toutes les adresses IP ne se valent pas — certaines ne peuvent jamais aller sur Internet</h3>
+  <div class="card" style="margin-bottom:.8rem;padding:.8rem 0">
+    <table class="subnet-table">
+      <tr>
+        <th>Classe</th><th>Premier octet</th><th>Plage complète</th><th>Masque défaut</th><th>Hôtes max</th><th>Usage</th>
+      </tr>
+      <tr>
+        <td>A</td>
+        <td style="color:#00ff88">1–126</td>
+        <td>1.0.0.0 – 126.255.255.255</td>
+        <td class="mask">/8</td>
+        <td class="hosts">16 777 214</td>
+        <td class="usage">Très grands réseaux (ISP, gouvernements)</td>
+      </tr>
+      <tr>
+        <td>B</td>
+        <td style="color:#00aaff">128–191</td>
+        <td>128.0.0.0 – 191.255.255.255</td>
+        <td class="mask">/16</td>
+        <td class="hosts">65 534</td>
+        <td class="usage">Grandes entreprises, universités</td>
+      </tr>
+      <tr>
+        <td>C</td>
+        <td style="color:#ffd700">192–223</td>
+        <td>192.0.0.0 – 223.255.255.255</td>
+        <td class="mask">/24</td>
+        <td class="hosts">254</td>
+        <td class="usage">PME, réseaux locaux standard</td>
+      </tr>
+      <tr>
+        <td>D</td>
+        <td style="color:#ff8800">224–239</td>
+        <td>224.0.0.0 – 239.255.255.255</td>
+        <td class="mask">N/A</td>
+        <td class="hosts">—</td>
+        <td class="usage">Multicast (streaming, OSPF, RIP)</td>
+      </tr>
+      <tr>
+        <td>E</td>
+        <td style="color:#ff4466">240–255</td>
+        <td>240.0.0.0 – 255.255.255.255</td>
+        <td class="mask">N/A</td>
+        <td class="hosts">—</td>
+        <td class="usage">Réservé (recherche, 255.255.255.255 = broadcast)</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card" style="padding:.9rem 1.4rem">
+    <div class="cmd-name" style="margin-bottom:.6rem">🔒 Adresses Privées RFC 1918 — jamais routées sur Internet</div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap">
+      <div style="font-family:var(--mono);font-size:.72rem;padding:.4rem .8rem;border:1px solid rgba(0,170,255,.2);background:var(--blue-faint)"><span style="color:#00ff88">10.0.0.0/8</span> — 16M d'adresses (Classe A privée)</div>
+      <div style="font-family:var(--mono);font-size:.72rem;padding:.4rem .8rem;border:1px solid rgba(0,170,255,.2);background:var(--blue-faint)"><span style="color:#00aaff">172.16.0.0/12</span> — 1M d'adresses (Classe B privée)</div>
+      <div style="font-family:var(--mono);font-size:.72rem;padding:.4rem .8rem;border:1px solid rgba(0,170,255,.2);background:var(--blue-faint)"><span style="color:#ffd700">192.168.0.0/16</span> — 65K d'adresses (Classe C privée)</div>
+      <div style="font-family:var(--mono);font-size:.72rem;padding:.4rem .8rem;border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.03)"><span style="color:#ff4466">127.0.0.1</span> — loopback (ta propre machine)</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3 — MASQUE & CIDR -->
+<div class="slide" data-index="3">
+  <div class="slide-tag">// Slide 04 · Masque de sous-réseau · Notation CIDR · /24 /16 /8</div>
+  <h2>Masque de Sous-réseau & Notation CIDR</h2>
+  <h3>Le masque dit au routeur : "jusqu'où va mon réseau" — le /24 est ton meilleur ami</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🎭 Comment fonctionne le masque</div>
+      <ul class="bullets">
+        <li>Le masque est un nombre de 32 bits avec des <strong>1 pour la partie réseau</strong> et des <strong>0 pour la partie hôte</strong></li>
+        <li><code style="color:#00aaff;font-family:var(--mono)">/24</code> = 24 bits à 1 = <code style="color:#ffd700;font-family:var(--mono)">255.255.255.0</code> en décimal</li>
+        <li>Pour <code style="color:#00aaff;font-family:var(--mono)">192.168.1.10/24</code> : le réseau = <code style="color:#00aaff;font-family:var(--mono)">192.168.1</code>, l'hôte = <code style="color:#00ff88;font-family:var(--mono)">.10</code></li>
+        <li>Opération AND entre IP et masque → donne l'adresse réseau</li>
+        <li class="ok">CIDR = Classless Inter-Domain Routing — notation compacte standard depuis 1993</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📐 Masques les plus courants</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span style="color:#00aaff">/8</span>  = <span class="term-yellow">255.0.0.0</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">→ 16 777 214 hôtes</span><br>
+        <span style="color:#00aaff">/16</span> = <span class="term-yellow">255.255.0.0</span> &nbsp;&nbsp;<span class="term-comment">→ 65 534 hôtes</span><br>
+        <span style="color:#00aaff">/24</span> = <span class="term-yellow">255.255.255.0</span> <span class="term-comment">→ 254 hôtes ← le plus courant</span><br>
+        <span style="color:#00aaff">/25</span> = <span class="term-yellow">255.255.255.128</span><span class="term-comment">→ 126 hôtes</span><br>
+        <span style="color:#00aaff">/26</span> = <span class="term-yellow">255.255.255.192</span><span class="term-comment">→ 62 hôtes</span><br>
+        <span style="color:#00aaff">/27</span> = <span class="term-yellow">255.255.255.224</span><span class="term-comment">→ 30 hôtes</span><br>
+        <span style="color:#00aaff">/28</span> = <span class="term-yellow">255.255.255.240</span><span class="term-comment">→ 14 hôtes</span><br>
+        <span style="color:#00aaff">/30</span> = <span class="term-yellow">255.255.255.252</span><span class="term-comment">→ 2 hôtes (liaison P2P)</span><br>
+        <span style="color:#00aaff">/32</span> = <span class="term-yellow">255.255.255.255</span><span class="term-comment">→ 1 hôte (route spécifique)</span>
+      </div>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "Formule magique : nombre d'hôtes = 2^(32-préfixe) - 2. Pour un /24 : 2^8 - 2 = 254 hôtes. On enlève 2 car l'adresse réseau (.0) et l'adresse broadcast (.255) ne sont pas assignables à des machines."
+  </div>
+</div>
+
+<!-- SLIDE 4 — QCM : SUBNETTING -->
+<div class="slide" data-index="4">
+  <div class="slide-tag">// Slide 05 · Subnetting · Calcul · Exercices · QCM requis</div>
+  <h2>Subnetting — Découper un Réseau</h2>
+  <h3>La compétence qui différencie un technicien réseau d'un administrateur — calculer sans calculatrice</h3>
+  <div class="card" style="margin-bottom:.8rem">
+    <div class="cmd-name" style="margin-bottom:.8rem">🔪 Exercice concret : découper 192.168.10.0/24 en 4 sous-réseaux égaux</div>
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      <div class="step"><div class="step-num">1</div><div class="step-content"><strong>Déterminer le nouveau préfixe</strong> : 4 sous-réseaux = 2² → emprunter 2 bits supplémentaires → /24 + 2 = <strong>/26</strong></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content"><strong>Calculer les hôtes par sous-réseau</strong> : 2^(32-26) - 2 = 2^6 - 2 = <strong>62 hôtes utilisables</strong> par sous-réseau</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content"><strong>Calculer l'incrément</strong> : 256 - 192 (valeur du masque /26 dans le dernier octet) = <strong>64</strong> → chaque sous-réseau fait un bloc de 64 adresses</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content">
+        <strong>Lister les 4 sous-réseaux</strong> :<br>
+        <div style="font-family:var(--mono);font-size:.7rem;margin-top:.3rem;display:flex;flex-direction:column;gap:.15rem">
+          <div><span style="color:#00aaff">192.168.10.0/26</span> → hôtes <span style="color:#00ff88">.1 à .62</span>, broadcast <span style="color:#ff4466">.63</span></div>
+          <div><span style="color:#00aaff">192.168.10.64/26</span> → hôtes <span style="color:#00ff88">.65 à .126</span>, broadcast <span style="color:#ff4466">.127</span></div>
+          <div><span style="color:#00aaff">192.168.10.128/26</span> → hôtes <span style="color:#00ff88">.129 à .190</span>, broadcast <span style="color:#ff4466">.191</span></div>
+          <div><span style="color:#00aaff">192.168.10.192/26</span> → hôtes <span style="color:#00ff88">.193 à .254</span>, broadcast <span style="color:#ff4466">.255</span></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5 — ADRESSES SPÉCIALES -->
+<div class="slide" data-index="5">
+  <div class="slide-tag">// Slide 06 · Broadcast · Loopback · APIPA · Adresses réservées</div>
+  <h2>Adresses Spéciales — Celles qui ont un Rôle Particulier</h2>
+  <h3>Pas toutes les IPs sont pour les machines — certaines ont des fonctions critiques</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card" style="border-color:rgba(255,68,102,.2)">
+      <div class="cmd-name" style="color:#ff4466">Broadcast — 255.255.255.255</div>
+      <div class="cmd-desc">Envoie un message à <strong>toutes les machines</strong> du réseau local simultanément. Le routeur ne le transmet jamais au-delà du LAN. Utilisé par DHCP Discovery, ARP Request.</div>
+      <div class="cmd-ex">192.168.1.255 = broadcast du réseau 192.168.1.0/24</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">Loopback — 127.0.0.1</div>
+      <div class="cmd-desc">S'adresse à <strong>ta propre machine</strong> — le paquet ne sort jamais de la carte réseau. Tester si la pile TCP/IP fonctionne. 127.0.0.0/8 entier est réservé loopback.</div>
+      <div class="cmd-ex">ping 127.0.0.1 · curl http://localhost:3000</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+      <div class="cmd-name" style="color:#ffd700">APIPA — 169.254.0.0/16</div>
+      <div class="cmd-desc">Automatic Private IP Addressing — attribuée automatiquement quand le DHCP est <strong>inaccessible</strong>. Si tu vois une IP 169.254.x.x, ton appareil n'a pas pu obtenir d'IP. Signe d'un problème réseau.</div>
+      <div class="cmd-ex">169.254.x.x → DHCP unreachable → pas d'Internet</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.2)">
+      <div class="cmd-name" style="color:#aa44ff">Multicast — 224.0.0.0/4</div>
+      <div class="cmd-desc">Envoyer à un <strong>groupe spécifique</strong> de machines qui se sont abonnées. Utilisé pour le streaming vidéo, les protocoles de routage (OSPF : 224.0.0.5, RIP : 224.0.0.9).</div>
+      <div class="cmd-ex">224.0.0.1 = tous les hôtes · 224.0.0.2 = tous les routeurs</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.2)">
+      <div class="cmd-name" style="color:#00aaff">Adresse réseau — .0</div>
+      <div class="cmd-desc">La première adresse d'un bloc CIDR identifie le <strong>réseau lui-même</strong> — non assignable à un hôte. Ex : 192.168.1.0 est l'identifiant du réseau 192.168.1.0/24.</div>
+      <div class="cmd-ex">192.168.1.0 → identifie le réseau, jamais une machine</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">0.0.0.0</div>
+      <div class="cmd-desc">Route par défaut (default gateway) — "envoyer tout ce qui ne correspond à aucune route connue vers cette adresse". Aussi utilisée par DHCP pour signifier "n'importe quelle IP source".</div>
+      <div class="cmd-ex">0.0.0.0/0 = default route → passe tout au routeur</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6 — QCM : NAT -->
+<div class="slide" data-index="6">
+  <div class="slide-tag">// Slide 07 · NAT · IP privée vs IP publique · QCM requis</div>
+  <h2>NAT — Network Address Translation</h2>
+  <h3>Pourquoi ton adresse locale (192.168.x.x) et ton IP publique sont différentes — et comment ça marche</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔄 Comment fonctionne le NAT</div>
+      <ul class="bullets">
+        <li>Ton routeur possède <strong>une seule IP publique</strong> attribuée par ton FAI (ex: 41.243.x.x en Afrique)</li>
+        <li>Toutes tes machines ont des <strong>IPs privées</strong> (192.168.1.x) non routables sur Internet</li>
+        <li>Quand tu accèdes à Google, le routeur <strong>remplace ton IP privée par son IP publique</strong> + note le port dans sa table NAT</li>
+        <li>La réponse de Google arrive sur l'IP publique → le routeur consulte sa table → <strong>redirige vers ta machine</strong></li>
+        <li class="ok">NAT permet à 254 machines de partager 1 seule IP publique — économie d'adresses IPv4</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔢 Types de NAT</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># SNAT / Masquerading (le plus courant)</span><br>
+        <span style="color:#00ff88">Plusieurs IPs privées → 1 IP publique</span><br>
+        <span class="term-out">192.168.1.10:54321 → 41.243.x.x:54321</span><br>
+        <span class="term-out">192.168.1.11:60000 → 41.243.x.x:60000</span><br>
+        <br>
+        <span class="term-comment"># DNAT / Port Forwarding</span><br>
+        <span style="color:#ffd700">IP publique:port → IP privée:port</span><br>
+        <span class="term-out">41.243.x.x:80 → 192.168.1.100:80</span><br>
+        <span class="term-comment"># Exposer un serveur web interne</span><br>
+        <br>
+        <span class="term-comment"># Voir son IP publique</span><br>
+        <span class="term-prompt">$ </span>curl ifconfig.me
+      </div>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "Le NAT a sauvé Internet — en 2011, l'IANA a attribué le dernier bloc IPv4 disponible. Sans NAT, chaque appareil aurait besoin d'une IP publique unique et nous aurions manqué d'adresses bien avant. IPv6 est la vraie solution à long terme."
+  </div>
+</div>
+
+<!-- SLIDE 7 — DHCP -->
+<div class="slide" data-index="7">
+  <div class="slide-tag">// Slide 08 · DHCP · Attribution automatique · DORA</div>
+  <h2>DHCP — L'Attribution Automatique des IPs</h2>
+  <h3>Dynamic Host Configuration Protocol — comment ton téléphone obtient une IP en se connectant au WiFi</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📋 Ce que DHCP attribue</div>
+      <ul class="bullets">
+        <li><strong>Adresse IP</strong> — une IP libre de la plage configurée (ex: 192.168.1.50)</li>
+        <li><strong>Masque de sous-réseau</strong> — ex: 255.255.255.0 (/24)</li>
+        <li><strong>Passerelle par défaut</strong> — l'IP du routeur (ex: 192.168.1.1)</li>
+        <li><strong>Serveurs DNS</strong> — ex: 8.8.8.8 (Google) ou 1.1.1.1 (Cloudflare)</li>
+        <li><strong>Durée du bail (lease)</strong> — combien de temps l'IP est réservée (24h, 7 jours...)</li>
+        <li class="warn">Un serveur DHCP rogue peut attribuer de fausses infos → attaque DHCP Starvation</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🤝 Le processus DORA</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span style="color:#00aaff">D</span>ISCOVER — broadcast UDP port 67<br>
+        <span class="term-out">Client → 255.255.255.255 : "Y a-t-il un serveur DHCP ?"</span><br>
+        <br>
+        <span style="color:#00aaff">O</span>FFER — serveur répond<br>
+        <span class="term-out">DHCP → Client : "Je t'offre 192.168.1.50, bail 24h"</span><br>
+        <br>
+        <span style="color:#00aaff">R</span>EQUEST — client accepte<br>
+        <span class="term-out">Client → broadcast : "J'accepte 192.168.1.50"</span><br>
+        <br>
+        <span style="color:#00aaff">A</span>CK — confirmation<br>
+        <span class="term-out">DHCP → Client : "Confirmé, IP réservée 24h"</span><br>
+        <br>
+        <span class="term-prompt">$ </span>ip addr · ipconfig /all<span class="term-comment"> ← voir l'IP obtenue</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8 — TABLE DE SUBNETTING -->
+<div class="slide" data-index="8">
+  <div class="slide-tag">// Slide 09 · Table CIDR complète · Référence · /8 à /32</div>
+  <h2>Table CIDR de Référence — Apprendre par Cœur les Essentiels</h2>
+  <h3>Ces préfixes reviennent dans chaque certification réseau et chaque config firewall</h3>
+  <div class="card" style="padding:.7rem 0;margin-bottom:.6rem">
+    <table class="subnet-table">
+      <tr><th>Préfixe</th><th>Masque décimal</th><th>Nb sous-réseaux (/24)</th><th>Hôtes utilisables</th><th>Cas d'usage typique</th></tr>
+      <tr><td>/8</td><td class="mask">255.0.0.0</td><td>—</td><td class="hosts">16 777 214</td><td class="usage">Très grands opérateurs, classes A</td></tr>
+      <tr><td>/16</td><td class="mask">255.255.0.0</td><td>—</td><td class="hosts">65 534</td><td class="usage">Grandes entreprises, cloud VPC</td></tr>
+      <tr><td>/24</td><td class="mask">255.255.255.0</td><td>1</td><td class="hosts">254</td><td class="usage">Réseau bureau/maison standard ← le plus courant</td></tr>
+      <tr><td>/25</td><td class="mask">255.255.255.128</td><td>2</td><td class="hosts">126</td><td class="usage">Diviser un /24 en 2 moitiés</td></tr>
+      <tr><td>/26</td><td class="mask">255.255.255.192</td><td>4</td><td class="hosts">62</td><td class="usage">Sous-réseaux de département</td></tr>
+      <tr><td>/27</td><td class="mask">255.255.255.224</td><td>8</td><td class="hosts">30</td><td class="usage">Petits sous-réseaux, VLANs</td></tr>
+      <tr><td>/28</td><td class="mask">255.255.255.240</td><td>16</td><td class="hosts">14</td><td class="usage">Segments très petits, DMZ</td></tr>
+      <tr><td>/29</td><td class="mask">255.255.255.248</td><td>32</td><td class="hosts">6</td><td class="usage">Micro-segments, points d'échange</td></tr>
+      <tr><td>/30</td><td class="mask">255.255.255.252</td><td>64</td><td class="hosts">2</td><td class="usage">Liaisons point-à-point (routeur↔routeur)</td></tr>
+      <tr><td>/32</td><td class="mask">255.255.255.255</td><td>256</td><td class="hosts">1</td><td class="usage">Route hôte spécifique, loopback</td></tr>
+    </table>
+  </div>
+  <div style="font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);text-align:center">
+    // Formule : hôtes = 2^(32-préfixe) - 2 &nbsp;·&nbsp; sous-réseaux dans /24 = 2^(préfixe-24)
+  </div>
+</div>
+
+<!-- SLIDE 9 — QCM : IPv6 -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// Slide 10 · IPv6 · Format · Avantages · Coexistence · QCM requis</div>
+  <h2>IPv6 — L'Avenir du Réseau</h2>
+  <h3>128 bits · 340 undécillions d'adresses · Déjà déployé en Afrique — comprendre l'essentiel</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📐 Format et structure IPv6</div>
+      <ul class="bullets">
+        <li><strong>128 bits</strong> = 8 groupes de 4 chiffres hexadécimaux séparés par <code style="color:#00aaff;font-family:var(--mono)">:</code></li>
+        <li>Exemple : <code style="color:#00aaff;font-family:var(--mono)">2001:0db8:85a3:0000:0000:8a2e:0370:7334</code></li>
+        <li><strong>Simplification</strong> : les zéros consécutifs → <code style="color:#00aaff;font-family:var(--mono)">::</code> (une seule fois par adresse)</li>
+        <li>Exemple simplifié : <code style="color:#00aaff;font-family:var(--mono)">2001:db8:85a3::8a2e:370:7334</code></li>
+        <li>Préfixe réseau le plus courant : <strong>/64</strong> (moitié réseau, moitié interface)</li>
+        <li class="ok">340 000 000 000 000 000 000 000 000 000 000 000 000 adresses — jamais à court</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔑 Adresses IPv6 importantes</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span style="color:#ff4466">::1</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">loopback (= 127.0.0.1)</span><br>
+        <span style="color:#ffd700">fe80::/10</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">link-local (auto-configuré)</span><br>
+        <span style="color:#00ff88">2001:db8::/32</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">documentation/exemples</span><br>
+        <span style="color:#00aaff">2000::/3</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">adresses globales (Internet)</span><br>
+        <span style="color:#ff8800">fc00::/7</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">unique local (= RFC 1918)</span><br>
+        <span style="color:#aa44ff">ff02::1</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">multicast tous hôtes LAN</span><br>
+        <br>
+        <span class="term-comment"># Voir ses adresses IPv6</span><br>
+        <span class="term-prompt">$ </span>ip -6 addr show<br>
+        <span class="term-prompt">$ </span>ping6 ::1
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-green">Afrique : ~12% de trafic IPv6 (2024, en croissance)</span>
+    <span class="pill pill-blue">Dual-stack = IPv4 + IPv6 en parallèle</span>
+  </div>
+</div>
+
+<!-- SLIDE 10 — IPv6 AVANTAGES -->
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Slide 11 · IPv6 vs IPv4 · Nouveautés · Sécurité</div>
+  <h2>IPv6 vs IPv4 — Ce qui Change Vraiment</h2>
+  <h3>IPv6 n'est pas juste "plus d'adresses" — c'est une refonte complète du protocole</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">Adressage illimité</div>
+      <div class="cmd-desc">340 undécillions d'adresses — chaque grain de sable sur Terre pourrait avoir des milliards d'adresses. Plus besoin de NAT — chaque device a une vraie IP publique unique.</div>
+      <div class="cmd-ex">Fin du NAT → chaque IoT device directement adressable sur Internet</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+      <div class="cmd-name" style="color:#00aaff">Auto-configuration (SLAAC)</div>
+      <div class="cmd-desc">Stateless Address Autoconfiguration — un device peut générer sa propre adresse IPv6 depuis son adresse MAC et le préfixe réseau, sans DHCP. Plug and play réseau.</div>
+      <div class="cmd-ex">Préfixe réseau + EUI-64 (dérivé MAC) → IP auto-générée</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.2)">
+      <div class="cmd-name" style="color:#aa44ff">IPsec natif</div>
+      <div class="cmd-desc">IPv6 intègre IPsec (chiffrement et authentification) nativement dans la spécification. En IPv4, IPsec est optionnel. Les communications IPv6 peuvent être chiffrées end-to-end par défaut.</div>
+      <div class="cmd-ex">Authentification et chiffrement sans VPN supplémentaire</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+      <div class="cmd-name" style="color:#ffd700">En-tête simplifié</div>
+      <div class="cmd-desc">L'en-tête IPv6 est plus simple qu'IPv4 malgré des adresses plus longues — la checksum a été supprimée (délégué aux couches supérieures). Les routeurs traitent les paquets plus rapidement.</div>
+      <div class="cmd-ex">En-tête fixe de 40 octets vs variable en IPv4</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,136,0,.2)">
+      <div class="cmd-name" style="color:#ff8800">Multicast et Anycast</div>
+      <div class="cmd-desc">IPv6 remplace le broadcast par le multicast (ciblé) et ajoute l'anycast (envoi au plus proche d'un groupe). Plus efficace, moins de bruit sur le réseau.</div>
+      <div class="cmd-ex">Anycast : DNS Cloudflare 2606:4700:4700::1111</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,68,102,.2)">
+      <div class="cmd-name" style="color:#ff4466">Nouveaux risques de sécurité</div>
+      <div class="cmd-desc">Pas de NAT = les devices sont directement exposés. NDP (remplace ARP) est vulnérable au NDP Spoofing. Beaucoup d'équipements africains mal configurés pour IPv6.</div>
+      <div class="cmd-ex">⚠ Activer IPv6 sans firewall = surface d'attaque maximale</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 11 — DIAGNOSTIC RÉSEAU -->
+<div class="slide" data-index="11">
+  <div class="slide-tag">// Slide 12 · Outils de diagnostic · ping · traceroute · nslookup</div>
+  <h2>Diagnostic Réseau — Identifier les Problèmes d'Adressage</h2>
+  <h3>Les commandes que tout technicien réseau utilise quotidiennement</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔧 Commandes essentielles Linux</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Voir sa configuration IP</span><br>
+        <span class="term-prompt">$ </span>ip addr show<br>
+        <span class="term-prompt">$ </span>ip route show &nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment"># table de routage</span><br>
+        <br>
+        <span class="term-comment"># Tester la connectivité</span><br>
+        <span class="term-prompt">$ </span>ping 8.8.8.8 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment"># ICMP vers Google DNS</span><br>
+        <span class="term-prompt">$ </span>ping6 ::1 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment"># test IPv6 loopback</span><br>
+        <br>
+        <span class="term-comment"># Tracer le chemin</span><br>
+        <span class="term-prompt">$ </span>traceroute google.com<br>
+        <span class="term-prompt">$ </span>mtr google.com &nbsp;&nbsp;&nbsp;<span class="term-comment"># ping + traceroute live</span><br>
+        <br>
+        <span class="term-comment"># Résolution DNS</span><br>
+        <span class="term-prompt">$ </span>nslookup soopha-learn.com<br>
+        <span class="term-prompt">$ </span>dig soopha-learn.com A<br>
+        <br>
+        <span class="term-comment"># IP publique</span><br>
+        <span class="term-prompt">$ </span>curl ifconfig.me
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🩺 Méthode de diagnostic étape par étape</div>
+      <div style="display:flex;flex-direction:column;gap:.35rem">
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.85rem">1</div><div class="step-content" style="font-size:.75rem"><strong>ping 127.0.0.1</strong> → stack TCP/IP fonctionnelle ?</div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.85rem">2</div><div class="step-content" style="font-size:.75rem"><strong>ip addr</strong> → j'ai une IP ? (169.254 = DHCP mort)</div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.85rem">3</div><div class="step-content" style="font-size:.75rem"><strong>ping [passerelle]</strong> → je joins mon routeur local ?</div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.85rem">4</div><div class="step-content" style="font-size:.75rem"><strong>ping 8.8.8.8</strong> → j'ai accès à Internet (IP) ?</div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.85rem">5</div><div class="step-content" style="font-size:.75rem"><strong>ping google.com</strong> → DNS fonctionne ? (si KO = DNS problem)</div></div>
+        <div class="step" style="padding:.5rem .7rem"><div class="step-num" style="font-size:.85rem">6</div><div class="step-content" style="font-size:.75rem"><strong>traceroute</strong> → où ça bloque dans le chemin ?</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12 — ADRESSAGE EN AFRIQUE -->
+<div class="slide" data-index="12">
+  <div class="slide-tag">// Slide 13 · AFRINIC · Adressage IP en Afrique · Réalités</div>
+  <h2>L'Adressage IP en Afrique — Les Réalités du Terrain</h2>
+  <h3>AFRINIC · pénurie IPv4 · adoption IPv6 · architecture typique des FAI africains</h3>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🌍 AFRINIC — Le registre africain</div>
+      <ul class="bullets">
+        <li><strong>AFRINIC</strong> (African Network Information Centre) — distribue les adresses IP en Afrique depuis 2005, basé à Maurice</li>
+        <li>L'Afrique est la région RIR avec le <strong>moins d'IPv4</strong> par habitant — historiquement désavantagée</li>
+        <li>Situation de crise : AFRINIC est en <strong>phase de pénurie sévère</strong> depuis 2021 — pool épuisé</li>
+        <li class="ok">IPv6 : plusieurs opérateurs africains leaders mondiaux en adoption (MTN, Orange Africa, Safaricom)</li>
+        <li class="warn">Gabon, Congo, Cameroun : adoption IPv6 encore lente — opportunité professionnelle</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🏗️ Architecture typique FAI africain</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment">Internet</span><br>
+        <span style="color:#00aaff">&nbsp;&nbsp;↓ Câble sous-marin (ACE, WACS, SAT3)</span><br>
+        <span style="color:#00aaff">FAI (IXP national)</span><br>
+        <span style="color:#ffd700">&nbsp;&nbsp;↓ IP publique attribuée par AFRINIC</span><br>
+        <span style="color:#ffd700">CGNAT (Carrier-Grade NAT)</span><br>
+        <span class="term-comment">&nbsp;&nbsp;← Des milliers de clients derrière 1 IP pub</span><br>
+        <span style="color:#00ff88">&nbsp;&nbsp;↓ IP privée 10.x.x.x attribuée au client</span><br>
+        <span style="color:#00ff88">Routeur client (box FAI)</span><br>
+        <span style="color:#00ff88">&nbsp;&nbsp;↓ DHCP local</span><br>
+        <span style="color:#00ff88">192.168.1.x ← tes appareils</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 13 — QCM FINAL -->
+<div class="slide" data-index="13">
+  <div class="slide-tag">// Slide 14 · Conclusion · NET·03 s'ouvre · QCM final</div>
+  <h2>Adressage Maîtrisé — Direction les Protocoles 🌐</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🎓 Ce que tu maîtrises — NET·02</div>
+      <ul class="bullets">
+        <li>Décoder une IPv4 en binaire — octet par octet</li>
+        <li>Classes A, B, C, D, E et plages d'adresses</li>
+        <li>Adresses privées RFC 1918 — les 3 blocs réservés</li>
+        <li>Notation CIDR — lire /24, calculer les hôtes</li>
+        <li>Subnetting — découper un réseau en sous-réseaux (/26 = 62 hôtes)</li>
+        <li>Adresses spéciales — broadcast, loopback, APIPA, multicast</li>
+        <li>NAT — pourquoi ton IP locale ≠ IP publique, SNAT, DNAT</li>
+        <li>DHCP — processus DORA, ce qui est attribué, risques</li>
+        <li>IPv6 — format, adresses clés, avantages, nouveaux risques</li>
+        <li>Diagnostic — méthode en 6 étapes, ping, traceroute, dig</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🔜 NET·03 — Ce qui t'attend</div>
+      <ul class="bullets">
+        <li><strong>DNS en profondeur</strong> — types d'enregistrements (A, AAAA, MX, TXT, CNAME), résolution récursive, cache poisoning</li>
+        <li><strong>HTTP/HTTPS</strong> — méthodes, codes de statut, headers de sécurité</li>
+        <li><strong>SMTP & email</strong> — SPF, DKIM, DMARC pour lutter contre le spoofing</li>
+        <li><strong>SSH</strong> — authentification par clé, tunneling, bonnes pratiques</li>
+        <li><strong>TLS/SSL</strong> — handshake, certificats, chaîne de confiance</li>
+        <li class="ok">Prérequis acquis : IPv4/IPv6, CIDR, NAT, DHCP</li>
+      </ul>
+      <div class="hdiv">RESSOURCES</div>
+      <ul class="bullets" style="font-size:.78rem">
+        <li><strong>subnet.tools</strong> — calculateur de sous-réseaux en ligne</li>
+        <li><strong>Subnetting Practice</strong> — subnettingpractice.com</li>
+        <li><strong>AFRINIC</strong> — afrinic.net · registre IP africain</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">📡</div>
+    <div class="completion-title" id="comp-title">NET·02 terminé !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="net3.html" class="completion-btn completion-btn-primary">NET·03 : Protocoles →</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 14</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+var QCM = {
+  1: {
+    question: "L'adresse IP 172.16.0.1 appartient à quelle plage et est-elle routable sur Internet ?",
+    options: [
+      "C'est une adresse publique de Classe B routable sur Internet — elle peut être assignée directement par un FAI",
+      "C'est une adresse privée RFC 1918 (172.16.0.0/12) — non routable sur Internet, utilisable uniquement sur un réseau interne",
+      "C'est une adresse de loopback — elle s'adresse uniquement à la machine locale et ne sort jamais de la carte réseau",
+      "C'est une adresse APIPA attribuée automatiquement quand le DHCP est inaccessible"
+    ],
+    correct: 1,
+    explanation: "172.16.0.1 appartient à la plage privée RFC 1918 172.16.0.0/12 (de 172.16.0.0 à 172.31.255.255). Ces adresses ne sont jamais routées sur Internet — les routeurs des ISP les bloquent. Les 3 plages privées RFC 1918 sont : 10.0.0.0/8 (Classe A privée), 172.16.0.0/12 (Classe B privée), 192.168.0.0/16 (Classe C privée). Le loopback est 127.0.0.1, l'APIPA est 169.254.x.x."
+  },
+  4: {
+    question: "Tu dois créer 6 sous-réseaux à partir de 10.0.0.0/24 pour isoler 6 départements. Quel préfixe utiliser et combien d'hôtes par sous-réseau ?",
+    options: [
+      "/25 — 2 sous-réseaux de 126 hôtes chacun — suffisant pour 6 départements",
+      "/27 — 8 sous-réseaux possibles de 30 hôtes chacun — 6 utilisés pour les départements, 2 en réserve",
+      "/30 — 64 sous-réseaux de 2 hôtes — suffisant pour les connexions inter-routeurs des départements",
+      "/26 — 4 sous-réseaux de 62 hôtes — pas assez pour 6 départements"
+    ],
+    correct: 1,
+    explanation: "/27 est la bonne réponse : pour avoir au moins 6 sous-réseaux, il faut 2^n ≥ 6, donc n=3 bits supplémentaires empruntés. /24 + 3 = /27. Avec /27 : 2^3 = 8 sous-réseaux possibles (on en utilise 6, 2 en réserve). Chaque sous-réseau a 2^(32-27) - 2 = 32 - 2 = 30 hôtes utilisables. Les sous-réseaux sont : 10.0.0.0/27, 10.0.0.32/27, 10.0.0.64/27, 10.0.0.96/27, 10.0.0.128/27, 10.0.0.160/27."
+  },
+  6: {
+    question: "Un client en Afrique obtient l'adresse 169.254.45.123 sur son PC. Que signifie cette adresse et quel est le problème ?",
+    options: [
+      "C'est une adresse IPv6 link-local — le PC utilise IPv6 et tout fonctionne normalement",
+      "C'est une adresse APIPA — le DHCP est inaccessible, le PC s'est auto-attribué une IP. Conséquence : pas d'accès Internet ni au réseau local",
+      "C'est une adresse privée RFC 1918 valide — le PC a bien un accès réseau mais l'accès Internet est bloqué par le firewall",
+      "C'est une adresse de broadcast — le PC reçoit le trafic de tous les autres appareils du réseau"
+    ],
+    correct: 1,
+    explanation: "169.254.0.0/16 est la plage APIPA (Automatic Private IP Addressing, RFC 3927). Quand un appareil ne peut pas contacter un serveur DHCP, il s'auto-attribue une adresse dans cette plage après 4 tentatives échouées. Conséquences : (1) Pas d'accès Internet — pas de passerelle, pas de DNS configurés. (2) Communication limitée avec d'autres machines APIPA sur le même LAN seulement. Causes typiques : câble réseau débranché, switch éteint, serveur DHCP planté, port switch désactivé. Solution : vérifier le câble, redémarrer la box, ou configurer une IP statique."
+  },
+  9: {
+    question: "Quelle est la principale différence de sécurité entre IPv4 avec NAT et IPv6 sans NAT, et comment y remédier ?",
+    options: [
+      "IPv6 est plus sécurisé qu'IPv4 car IPsec est natif — aucune mesure supplémentaire n'est nécessaire",
+      "En IPv4, le NAT cache les appareils internes derrière une IP publique. En IPv6 sans NAT, chaque appareil est directement adressable sur Internet — il faut impérativement un firewall IPv6 filtrant le trafic entrant",
+      "Il n'y a aucune différence de sécurité — NAT n'était pas une mesure de sécurité en IPv4 non plus",
+      "IPv6 est moins sécurisé parce que les adresses plus longues sont plus difficiles à mémoriser pour les administrateurs"
+    ],
+    correct: 1,
+    explanation: "C'est un point critique souvent mal compris. En IPv4, le NAT 'cache' involontairement les appareils internes — une machine derrière du NAT n'est pas directement joignable depuis Internet sans port forwarding. En IPv6, chaque appareil a une vraie adresse globale routée sur Internet — ta caméra IP, ton PC, ton IoT device sont tous directement accessibles. La solution : un firewall IPv6 avec une politique 'deny all inbound by default'. IPsec natif en IPv6 aide pour l'authentification et le chiffrement mais ne remplace pas le filtrage de trafic."
+  },
+  13: {
+    question: "Ton collègue te dit : 'Mon ping vers 8.8.8.8 fonctionne mais ping google.com échoue avec "Name or service not known"'. Quel est le problème et comment le diagnostiquer ?",
+    options: [
+      "Le serveur de Google est en panne — le problème vient de leur infrastructure, rien à faire côté client",
+      "C'est un problème DNS — la résolution du nom google.com en adresse IP échoue. Vérifier avec 'cat /etc/resolv.conf' et tester 'nslookup google.com' ou 'dig google.com'",
+      "Le firewall bloque ICMP (ping) vers les noms de domaine mais pas vers les IPs — utiliser curl google.com à la place",
+      "L'adresse IP 8.8.8.8 est down et c'est elle qui héberge google.com — les deux sont liés"
+    ],
+    correct: 1,
+    explanation: "Diagnostic parfait : ping 8.8.8.8 fonctionne = connectivité IP OK, routage OK, Internet accessible. ping google.com échoue avec 'Name or service not known' = la résolution DNS est cassée. Le client ne peut pas traduire 'google.com' en adresse IP. Étapes de diagnostic : (1) cat /etc/resolv.conf → voir les DNS configurés. (2) nslookup google.com → tester la résolution. (3) dig @8.8.8.8 google.com → forcer un DNS spécifique. Solution souvent : corriger /etc/resolv.conf avec nameserver 8.8.8.8, ou relancer le service DHCP pour récupérer les DNS automatiquement."
+  }
+};
+
+var COURSE_ID = 'net2';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){ document.getElementById('comp-icon').textContent='📡'; document.getElementById('comp-title').textContent='Adressage maîtrisé !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Tu sais calculer des sous-réseaux — direction les protocoles !'; }
+  else if(pct>=60){ document.getElementById('comp-icon').textContent='🌐'; document.getElementById('comp-title').textContent='NET·02 terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Revois le subnetting et le NAT avant NET·03.'; }
+  else { document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='NET·02 terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Relis les slides CIDR et IPv6 avant de continuer.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='0192168102425516NAT DHCPCIDRSUBNETIPV6MASK/24/16/810',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,4,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#00aaff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>NET·04 — Architecture & Firewalls · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,4,12,.97);border-bottom:1px solid rgba(0,170,255,.18);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(0,170,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(0,170,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}.tb-back:hover{color:#00aaff}
+.tb-dot{width:6px;height:6px;background:#00aaff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(0,170,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#003189,#00aaff);box-shadow:0 0 8px #00aaff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#00aaff;--blue-border:rgba(0,170,255,.18);--blue-faint:rgba(0,170,255,.05)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#00aaff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(0,170,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(2,10,20,.88);border:1px solid var(--blue-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(200,220,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#00aaff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}.bullets li.ok::before{content:'✅';font-size:.7rem}.bullets li.danger::before{content:'🔴';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.terminal{background:rgba(0,0,4,.7);border:1px solid rgba(0,170,255,.15);border-left:3px solid #00aaff;padding:.8rem 1.1rem;font-family:var(--mono);font-size:.75rem;color:rgba(0,170,255,.8);line-height:1.9;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.75}
+.term-prompt{color:#00aaff}.term-out{color:rgba(255,255,255,.45)}.term-comment{color:rgba(0,170,255,.4);font-style:italic}
+.term-red{color:#ff4466}.term-yellow{color:#ffd700}.term-green{color:#00ff88}
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(0,170,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(0,170,255,.12)}
+.quote{border-left:3px solid #00aaff;padding:.7rem 1rem;background:rgba(0,170,255,.04);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#d0e8ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #00aaff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#00aaff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#00aaff;text-shadow:0 0 8px #00aaff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(200,220,255,.85);line-height:1.5}
+/* Archi zones */
+.zone-stack{display:flex;flex-direction:column;gap:.3rem;max-width:880px;width:100%}
+.zone{padding:.65rem 1rem;display:flex;align-items:center;gap:1rem;border-radius:2px}
+.zone-label{font-family:var(--display);font-size:.72rem;font-weight:700;min-width:140px}
+.zone-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.65);flex:1;line-height:1.4}
+.zone-examples{font-family:var(--mono);font-size:.6rem;padding:.12rem .4rem;border-radius:2px;flex-shrink:0}
+.zone-internet{background:rgba(255,68,102,.06);border:1px solid rgba(255,68,102,.2)}.zone-internet .zone-label{color:#ff4466}.zone-internet .zone-examples{background:rgba(255,68,102,.1);color:#ff4466}
+.zone-dmz{background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.2)}.zone-dmz .zone-label{color:#ffd700}.zone-dmz .zone-examples{background:rgba(255,215,0,.08);color:#ffd700}
+.zone-interne{background:rgba(0,170,255,.05);border:1px solid rgba(0,170,255,.18)}.zone-interne .zone-label{color:#00aaff}.zone-interne .zone-examples{background:rgba(0,170,255,.08);color:#00aaff}
+.zone-critique{background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.18)}.zone-critique .zone-label{color:#00ff88}.zone-critique .zone-examples{background:rgba(0,255,136,.08);color:#00ff88}
+.zone-mgmt{background:rgba(170,68,255,.04);border:1px solid rgba(170,68,255,.18)}.zone-mgmt .zone-label{color:#aa44ff}.zone-mgmt .zone-examples{background:rgba(170,68,255,.08);color:#aa44ff}
+.fw-arrow{text-align:center;font-family:var(--mono);font-size:.62rem;color:rgba(255,68,102,.6);padding:.15rem 0}
+/* VLAN table */
+.vlan-row{display:flex;align-items:center;gap:.8rem;padding:.5rem .9rem;border:1px solid rgba(0,170,255,.1);background:var(--blue-faint)}
+.vlan-id{font-family:var(--display);font-size:.9rem;font-weight:900;color:#00aaff;min-width:60px;text-shadow:0 0 8px rgba(0,170,255,.5)}
+.vlan-name{font-family:var(--mono);font-size:.72rem;color:#ffd700;min-width:110px}
+.vlan-range{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.5);min-width:140px}
+.vlan-desc{font-family:var(--body);font-size:.7rem;color:rgba(200,220,255,.6)}
+/* FW rules */
+.fw-rule{display:flex;gap:.5rem;padding:.4rem .7rem;border-bottom:1px solid rgba(0,170,255,.06);font-family:var(--mono);font-size:.65rem;align-items:center}
+.fw-rule:last-child{border-bottom:none}
+.fw-action-allow{color:#00ff88;min-width:55px;font-weight:700}
+.fw-action-deny{color:#ff4466;min-width:55px;font-weight:700}
+.fw-src{color:#00aaff;min-width:120px}
+.fw-dst{color:#ffd700;min-width:120px}
+.fw-port{color:#ff8800;min-width:80px}
+.fw-comment{color:rgba(0,170,255,.4);font-style:italic;font-size:.6rem}
+/* QCM */
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(2,4,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(2,10,20,.97);border:1px solid rgba(0,170,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(0,170,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(0,170,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.35);margin-bottom:.5rem;display:none}.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(0,4,16,.3);border:1px solid rgba(0,170,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(190,215,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(0,170,255,.35);background:rgba(0,170,255,.06);color:rgba(210,230,255,.95)}
+.qcm-option.correct{border-color:#00aaff!important;background:rgba(0,170,255,.12)!important;color:#00aaff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#00aaff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);color:rgba(210,230,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(0,170,255,.15);border:1px solid rgba(0,170,255,.4);color:#00aaff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(0,170,255,.25);box-shadow:0 0 20px rgba(0,170,255,.2)}.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(2,4,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(0,170,255,.3);background:rgba(2,10,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#00aaff;text-shadow:0 0 20px #00aaff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,220,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#00aaff;color:#000a14}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(0,170,255,.4);color:#00aaff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(2,4,12,.97);border-top:1px solid rgba(0,170,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(0,170,255,.2);color:rgba(0,170,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#00aaff;color:#00aaff}.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#00aaff;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+  <div class="tb-left">
+    <a href="formations.html" class="tb-back">← Formations</a>
+    <span><span class="tb-dot"></span>// NET·04 · Architecture & Firewalls</span>
+  </div>
+  <div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+
+<div id="slides">
+
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// NET·04 · Réseau · SooPHA Learn</div>
+  <h1 class="glitch" style="color:#00aaff!important;text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)!important">ARCHITECTURE<br>& FIREWALLS</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>VLANs · DMZ · Firewalls · Routage · Zones de sécurité · Zero Trust</h3>
+  <div class="card" style="text-align:center;max-width:700px">
+    <ul class="bullets" style="text-align:left">
+      <li><strong>14 slides</strong> · 5 QCM obligatoires · ~65 min</li>
+      <li><strong>VLANs</strong> — segmentation logique, trunk, 802.1Q, inter-VLAN routing</li>
+      <li><strong>Zones de sécurité</strong> — Internet, DMZ, Interne, Critique, Management</li>
+      <li><strong>Firewalls</strong> — stateless, stateful, NGFW, WAF — différences et règles</li>
+      <li><strong>Architecture DMZ</strong> — single/dual firewall, où placer les serveurs</li>
+      <li><strong>ACL</strong> — Access Control Lists sur Cisco et Linux (iptables/nftables)</li>
+      <li><strong>Routage</strong> — statique, dynamique (OSPF, BGP), tables de routage</li>
+      <li><strong>Zero Trust</strong> — le paradigme moderne de la sécurité réseau</li>
+      <li class="ok">Prérequis : NET·01 à NET·03 — IP, protocoles, OSI</li>
+    </ul>
+  </div>
+  <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-blue">NET · Module 4/6</span>
+    <span class="pill pill-green">Intermédiaire</span>
+    <span class="pill pill-orange">VLAN · DMZ · Firewall · NGFW</span>
+    <span class="pill pill-red">Zero Trust · ACL · iptables</span>
+  </div>
+</div>
+
+<!-- SLIDE 1 — QCM : VLAN -->
+<div class="slide" data-index="1">
+  <div class="slide-tag">// Slide 02 · VLANs · Segmentation · 802.1Q · QCM requis</div>
+  <h2>VLANs — Segmenter Sans Câbler</h2>
+  <h3>Virtual Local Area Network — créer des réseaux logiques séparés sur la même infrastructure physique</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔀 Pourquoi segmenter avec des VLANs</div>
+      <ul class="bullets">
+        <li>Sans VLAN : tous les appareils sur le même switch voient tous les broadcasts → un employé peut sniffer le trafic du DAF</li>
+        <li>Avec VLANs : les <strong>domaines de broadcast sont séparés</strong> — VLAN 10 (Compta) ne voit pas le trafic de VLAN 20 (IT)</li>
+        <li>La séparation est <strong>logique</strong>, pas physique — un seul câble trunk porte plusieurs VLANs</li>
+        <li><strong>Standard 802.1Q</strong> — ajoute un tag de 4 octets dans la trame Ethernet identifiant le VLAN (VLAN ID 1-4094)</li>
+        <li class="ok">VLANs = sécurité + performance + flexibilité + réduction des coûts de câblage</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🏷️ Exemple de segmentation VLAN typique</div>
+      <div style="display:flex;flex-direction:column;gap:.28rem">
+        <div class="vlan-row"><span class="vlan-id">10</span><span class="vlan-name">SERVERS</span><span class="vlan-range">10.10.10.0/24</span><span class="vlan-desc">Serveurs internes — ERP, fichiers, base de données</span></div>
+        <div class="vlan-row"><span class="vlan-id">20</span><span class="vlan-name">USERS</span><span class="vlan-range">10.10.20.0/24</span><span class="vlan-desc">Postes de travail employés</span></div>
+        <div class="vlan-row"><span class="vlan-id">30</span><span class="vlan-name">MGMT</span><span class="vlan-range">10.10.30.0/24</span><span class="vlan-desc">Administration réseau (SSH vers switches)</span></div>
+        <div class="vlan-row"><span class="vlan-id">40</span><span class="vlan-name">WIFI-CORP</span><span class="vlan-range">10.10.40.0/24</span><span class="vlan-desc">WiFi des employés authentifiés</span></div>
+        <div class="vlan-row"><span class="vlan-id">50</span><span class="vlan-name">WIFI-GUEST</span><span class="vlan-range">10.10.50.0/24</span><span class="vlan-desc">WiFi visiteurs — Internet uniquement, isolé</span></div>
+        <div class="vlan-row"><span class="vlan-id">60</span><span class="vlan-name">DMZ</span><span class="vlan-range">10.10.60.0/24</span><span class="vlan-desc">Serveurs exposés Internet (web, mail, VPN)</span></div>
+        <div class="vlan-row"><span class="vlan-id">70</span><span class="vlan-name">IOT</span><span class="vlan-range">10.10.70.0/24</span><span class="vlan-desc">Caméras, imprimantes, capteurs — isolés</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2 — VLAN TECHNIQUE -->
+<div class="slide" data-index="2">
+  <div class="slide-tag">// Slide 03 · Trunk · Access · Inter-VLAN · Config Cisco</div>
+  <h2>VLANs — Configuration Technique</h2>
+  <h3>Ports access vs trunk · Inter-VLAN routing · Configuration Cisco et Linux</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">⚙️ Port Access vs Port Trunk</div>
+      <ul class="bullets">
+        <li><strong>Port Access</strong> — connecté à un PC ou serveur. Appartient à un seul VLAN. La trame sort sans tag 802.1Q (le device ne voit pas les VLANs)</li>
+        <li><strong>Port Trunk</strong> — connecté à un autre switch ou routeur. Transporte <strong>plusieurs VLANs</strong>. Les trames sont taguées 802.1Q avec leur VLAN ID</li>
+        <li><strong>Native VLAN</strong> — le VLAN non tagué sur un trunk (défaut : VLAN 1). Changer le Native VLAN pour éviter le VLAN hopping</li>
+        <li class="warn"><strong>VLAN Hopping</strong> — attaque qui permet de sortir de son VLAN en forgeant des double tags 802.1Q</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔧 Config Cisco IOS (switch)</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Créer les VLANs</span><br>
+        <span class="term-prompt">SW1# </span>vlan 10<br>
+        <span class="term-prompt">SW1# </span>name SERVERS<br>
+        <br>
+        <span class="term-comment"># Port Access (vers PC)</span><br>
+        <span class="term-prompt">SW1# </span>interface fa0/1<br>
+        <span class="term-prompt">SW1# </span>switchport mode access<br>
+        <span class="term-prompt">SW1# </span>switchport access vlan 20<br>
+        <br>
+        <span class="term-comment"># Port Trunk (vers routeur)</span><br>
+        <span class="term-prompt">SW1# </span>interface gi0/1<br>
+        <span class="term-prompt">SW1# </span>switchport mode trunk<br>
+        <span class="term-prompt">SW1# </span>switchport trunk allowed vlan 10,20,30<br>
+        <span class="term-prompt">SW1# </span>switchport trunk native vlan 99
+      </div>
+    </div>
+  </div>
+  <div class="terminal sm">
+    <span class="term-comment"># Inter-VLAN routing sur Linux (Router-on-a-Stick)</span><br>
+    <span class="term-prompt">$ </span>ip link add link eth0 name eth0.10 type vlan id 10<br>
+    <span class="term-prompt">$ </span>ip addr add 10.10.10.1/24 dev eth0.10<br>
+    <span class="term-prompt">$ </span>ip link add link eth0 name eth0.20 type vlan id 20<br>
+    <span class="term-prompt">$ </span>ip addr add 10.10.20.1/24 dev eth0.20<br>
+    <span class="term-comment"># Le trafic inter-VLAN passe par le routeur — contrôlé par des ACL/firewall</span>
+  </div>
+</div>
+
+<!-- SLIDE 3 — ZONES DE SÉCURITÉ -->
+<div class="slide" data-index="3">
+  <div class="slide-tag">// Slide 04 · Zones · Internet · DMZ · Interne · Critique · Management</div>
+  <h2>Zones de Sécurité — Structurer le Réseau</h2>
+  <h3>Chaque zone a un niveau de confiance et des règles de flux précises — la base de toute architecture sécurisée</h3>
+  <div class="zone-stack" style="margin-bottom:.8rem">
+    <div class="zone zone-internet">
+      <span class="zone-label">🌐 INTERNET</span>
+      <span class="zone-desc">Réseau non maîtrisé — confiance = 0. Tout ce qui vient d'Internet est suspect par défaut. Aucun flux entrant autorisé sauf sur les services exposés en DMZ.</span>
+      <span class="zone-examples">Confiance : 0/10</span>
+    </div>
+    <div class="fw-arrow">↕ FIREWALL EXTERNE (règles strictes)</div>
+    <div class="zone zone-dmz">
+      <span class="zone-label">🟡 DMZ</span>
+      <span class="zone-desc">Zone démilitarisée — serveurs exposés à Internet mais isolés du réseau interne. Si compromis, l'attaquant ne peut pas aller plus loin. Serveurs web, mail, VPN, reverse proxy.</span>
+      <span class="zone-examples">Confiance : 3/10</span>
+    </div>
+    <div class="fw-arrow">↕ FIREWALL INTERNE (segmentation)</div>
+    <div class="zone zone-interne">
+      <span class="zone-label">🔵 INTERNE</span>
+      <span class="zone-desc">Réseau des employés — postes de travail, imprimantes, partages de fichiers. Flux contrôlés entre départements via VLANs. Accès Internet filtré par proxy. Pas d'accès direct à la zone Critique.</span>
+      <span class="zone-examples">Confiance : 6/10</span>
+    </div>
+    <div class="fw-arrow">↕ SEGMENTATION (ACL/VLAN)</div>
+    <div class="zone zone-critique">
+      <span class="zone-label">🟢 CRITIQUE</span>
+      <span class="zone-desc">Base de données, ERP, données financières, sauvegardes. Accès ultra-restreint — seuls quelques serveurs et admins autorisés. Monitoring intensif. Chiffrement obligatoire des données au repos.</span>
+      <span class="zone-examples">Confiance : 9/10</span>
+    </div>
+    <div class="fw-arrow">↕ ISOLATION TOTALE</div>
+    <div class="zone zone-mgmt">
+      <span class="zone-label">🟣 MANAGEMENT</span>
+      <span class="zone-desc">Administration des équipements réseau et sécurité — switches, firewalls, hyperviseurs. Accès exclusivement via jump server (bastion). MFA obligatoire. Aucune navigation Internet depuis cette zone.</span>
+      <span class="zone-examples">Confiance : 10/10</span>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4 — QCM : FIREWALLS -->
+<div class="slide" data-index="4">
+  <div class="slide-tag">// Slide 05 · Firewalls · Stateless · Stateful · NGFW · WAF · QCM requis</div>
+  <h2>Firewalls — Les 4 Générations</h2>
+  <h3>Chaque génération apporte une intelligence supplémentaire — comprendre ce que chacun peut et ne peut pas faire</h3>
+  <div class="cmd-grid" style="margin-bottom:.8rem">
+    <div class="cmd-card" style="border-color:rgba(255,68,102,.25)">
+      <div class="cmd-name" style="color:#ff4466">1. Packet Filter — Stateless</div>
+      <div class="cmd-desc">Analyse chaque paquet indépendamment — IP source/dest, port, protocole. Ne comprend pas le contexte d'une connexion. Très rapide mais limité. Vulnérable au IP spoofing.</div>
+      <div class="cmd-ex">iptables -A INPUT -p tcp --dport 22 -j ACCEPT<br>nftables, ACL Cisco (ipchains)</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.25)">
+      <div class="cmd-name" style="color:#ffd700">2. Stateful Inspection</div>
+      <div class="cmd-desc">Maintient une <strong>table des connexions actives</strong> (état). Un paquet de retour légitime est autorisé automatiquement. Bloque les paquets hors contexte. Standard depuis les années 2000.</div>
+      <div class="cmd-ex">Cisco ASA, pfSense, Windows Firewall<br>iptables -m state --state ESTABLISHED,RELATED</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+      <div class="cmd-name" style="color:#00aaff">3. NGFW — Next Generation</div>
+      <div class="cmd-desc">Deep Packet Inspection (DPI) — inspecte le contenu applicatif. Identification de l'application (pas juste le port). IPS intégré, détection de malwares, SSL inspection, user-identity awareness.</div>
+      <div class="cmd-ex">Palo Alto, Fortinet FortiGate, Cisco Firepower<br>Check Point, Sophos XG, pfSense + Suricata</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">4. WAF — Web Application Firewall</div>
+      <div class="cmd-desc">Spécialisé couche 7 HTTP/HTTPS. Bloque les attaques web : SQLi, XSS, CSRF, LFI, RFI, traversal de répertoire. Comprend le protocole HTTP en profondeur. Complémentaire au NGFW.</div>
+      <div class="cmd-ex">ModSecurity, AWS WAF, Cloudflare WAF<br>F5 BIG-IP ASM, Imperva · règles OWASP CRS</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.2)">
+      <div class="cmd-name" style="color:#aa44ff">Cloud Firewall / Security Groups</div>
+      <div class="cmd-desc">Firewall défini par logiciel dans les clouds (AWS Security Groups, Azure NSG, GCP Firewall Rules). Attaché à chaque instance. Stateful par défaut. Géré par API/IaC (Terraform).</div>
+      <div class="cmd-ex">AWS Security Group · Azure NSG · GCP Firewall<br>Deny all by default, allow port 443 from 0.0.0.0/0</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,136,0,.2)">
+      <div class="cmd-name" style="color:#ff8800">IDS vs IPS</div>
+      <div class="cmd-desc"><strong>IDS</strong> (Intrusion Detection System) — détecte et alerte sans bloquer. <strong>IPS</strong> (Intrusion Prevention System) — détecte ET bloque en temps réel. Souvent intégré dans les NGFW. Outils : Snort, Suricata, Zeek.</div>
+      <div class="cmd-ex">Suricata · Snort · Zeek (Bro) · Wazuh · OSSEC</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5 — ARCHITECTURE DMZ -->
+<div class="slide" data-index="5">
+  <div class="slide-tag">// Slide 06 · DMZ · Single Firewall · Dual Firewall · Architecture</div>
+  <h2>Architecture DMZ — Exposer sans Sacrifier</h2>
+  <h3>Demilitarized Zone — la zone tampon entre Internet hostile et le réseau interne précieux</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔥 Single Firewall DMZ</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0;font-size:.65rem">
+        <span style="color:#ff4466">Internet</span><br>
+        &nbsp;&nbsp;│<br>
+        <span style="color:#ffd700">[ Firewall unique ]</span> — 3 interfaces :<br>
+        &nbsp;&nbsp;├── interface WAN → Internet<br>
+        &nbsp;&nbsp;├── interface DMZ → 10.10.60.0/24<br>
+        &nbsp;&nbsp;│ &nbsp;&nbsp;&nbsp;├── Serveur Web (Apache/Nginx)<br>
+        &nbsp;&nbsp;│ &nbsp;&nbsp;&nbsp;├── Serveur Mail (Postfix)<br>
+        &nbsp;&nbsp;│ &nbsp;&nbsp;&nbsp;└── Reverse Proxy (Nginx/HAProxy)<br>
+        &nbsp;&nbsp;└── interface LAN → 192.168.1.0/24<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── Postes utilisateurs<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Serveurs internes<br>
+        <br>
+        <span class="term-comment">⚠ Si le firewall est compromis, tout tombe</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🏆 Dual Firewall DMZ (Gold Standard)</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0;font-size:.65rem">
+        <span style="color:#ff4466">Internet</span><br>
+        &nbsp;&nbsp;│<br>
+        <span style="color:#ff4466">[ Firewall EXTERNE ]</span> ← règles strictes<br>
+        &nbsp;&nbsp;│ Allow 80,443 from ANY to DMZ<br>
+        &nbsp;&nbsp;│ Deny ALL from Internet to LAN<br>
+        &nbsp;&nbsp;│<br>
+        <span style="color:#ffd700">DMZ</span> — 10.10.60.0/24<br>
+        &nbsp;&nbsp;├── Web Server, Mail, VPN, Proxy<br>
+        &nbsp;&nbsp;│<br>
+        <span style="color:#00aaff">[ Firewall INTERNE ]</span> ← règles strictes<br>
+        &nbsp;&nbsp;│ Allow DMZ:8080 to DB:3306<br>
+        &nbsp;&nbsp;│ Deny ALL from DMZ to LAN<br>
+        &nbsp;&nbsp;│<br>
+        <span style="color:#00ff88">LAN</span> — 192.168.1.0/24<br>
+        <span class="term-comment">✅ Compromission DMZ ≠ compromission LAN</span>
+      </div>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "La DMZ, c'est le sas d'entrée d'une ambassade. Les visiteurs entrent dans le sas (DMZ), mais ne peuvent pas accéder directement aux bureaux sensibles (LAN). Si un visiteur est dangereux, il est contenu dans le sas."
+  </div>
+</div>
+
+<!-- SLIDE 6 — QCM : RÈGLES FIREWALL -->
+<div class="slide" data-index="6">
+  <div class="slide-tag">// Slide 07 · Règles Firewall · ACL · Politique Deny-All · QCM requis</div>
+  <h2>Règles de Firewall — L'Art de la Politique Deny-All</h2>
+  <h3>La règle d'or : tout ce qui n'est pas explicitement autorisé est interdit — jamais l'inverse</h3>
+  <div class="card" style="margin-bottom:.8rem">
+    <div class="cmd-name" style="margin-bottom:.8rem">📋 Exemple de ruleset firewall — Architecture DMZ dual firewall</div>
+    <div style="background:rgba(0,0,4,.5);border:1px solid rgba(0,170,255,.1);padding:.7rem 1rem">
+      <div style="font-family:var(--mono);font-size:.6rem;color:rgba(0,170,255,.4);margin-bottom:.5rem;letter-spacing:.15em">// FIREWALL EXTERNE — Internet → DMZ</div>
+      <div class="fw-rule"><span class="fw-action-allow">ALLOW</span><span class="fw-src">ANY</span><span class="fw-dst">DMZ:10.10.60.x</span><span class="fw-port">TCP 80,443</span><span class="fw-comment">; trafic web public</span></div>
+      <div class="fw-rule"><span class="fw-action-allow">ALLOW</span><span class="fw-src">ANY</span><span class="fw-dst">DMZ:10.10.60.x</span><span class="fw-port">UDP 1194</span><span class="fw-comment">; VPN clients</span></div>
+      <div class="fw-rule"><span class="fw-action-allow">ALLOW</span><span class="fw-src">ADMIN_IP</span><span class="fw-dst">MGMT_ZONE</span><span class="fw-port">TCP 22</span><span class="fw-comment">; SSH admin seulement</span></div>
+      <div class="fw-rule"><span class="fw-action-deny">DENY</span><span class="fw-src">ANY</span><span class="fw-dst">LAN_192.168.x</span><span class="fw-port">ANY</span><span class="fw-comment">; jamais direct Internet → LAN</span></div>
+      <div class="fw-rule"><span class="fw-action-deny">DENY</span><span class="fw-src">ANY</span><span class="fw-dst">ANY</span><span class="fw-port">ANY</span><span class="fw-comment">; DENY ALL — règle finale implicite</span></div>
+      <div style="font-family:var(--mono);font-size:.6rem;color:rgba(0,170,255,.4);margin:.6rem 0 .3rem;letter-spacing:.15em">// FIREWALL INTERNE — DMZ → LAN</div>
+      <div class="fw-rule"><span class="fw-action-allow">ALLOW</span><span class="fw-src">DMZ:WebSrv</span><span class="fw-dst">LAN:DB</span><span class="fw-port">TCP 3306</span><span class="fw-comment">; web → base de données</span></div>
+      <div class="fw-rule"><span class="fw-action-allow">ALLOW</span><span class="fw-src">LAN</span><span class="fw-dst">DMZ</span><span class="fw-port">TCP 443</span><span class="fw-comment">; accès interne aux apps web</span></div>
+      <div class="fw-rule"><span class="fw-action-allow">ALLOW</span><span class="fw-src">ESTABLISHED</span><span class="fw-dst">ANY</span><span class="fw-port">ANY</span><span class="fw-comment">; connexions établies (stateful)</span></div>
+      <div class="fw-rule"><span class="fw-action-deny">DENY</span><span class="fw-src">DMZ</span><span class="fw-dst">LAN</span><span class="fw-port">ANY</span><span class="fw-comment">; DMZ ne peut pas initier vers LAN</span></div>
+      <div class="fw-rule"><span class="fw-action-deny">DENY</span><span class="fw-src">ANY</span><span class="fw-dst">ANY</span><span class="fw-port">ANY</span><span class="fw-comment">; DENY ALL final</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7 — iptables / nftables -->
+<div class="slide" data-index="7">
+  <div class="slide-tag">// Slide 08 · iptables · nftables · Linux firewall · Pratique</div>
+  <h2>iptables & nftables — Le Firewall Linux</h2>
+  <h3>Maîtriser le firewall Linux — indispensable pour tout admin système et pentester</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔥 iptables — commandes essentielles</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Voir les règles actuelles</span><br>
+        <span class="term-prompt">$ </span>iptables -L -n -v --line-numbers<br>
+        <br>
+        <span class="term-comment"># Politique par défaut DENY ALL</span><br>
+        <span class="term-prompt">$ </span>iptables -P INPUT DROP<br>
+        <span class="term-prompt">$ </span>iptables -P FORWARD DROP<br>
+        <span class="term-prompt">$ </span>iptables -P OUTPUT ACCEPT<br>
+        <br>
+        <span class="term-comment"># Autoriser SSH (port 22)</span><br>
+        <span class="term-prompt">$ </span>iptables -A INPUT -p tcp --dport 22 -j ACCEPT<br>
+        <br>
+        <span class="term-comment"># Autoriser connexions établies</span><br>
+        <span class="term-prompt">$ </span>iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT<br>
+        <br>
+        <span class="term-comment"># Autoriser loopback</span><br>
+        <span class="term-prompt">$ </span>iptables -A INPUT -i lo -j ACCEPT<br>
+        <br>
+        <span class="term-comment"># Rate limiting SSH (anti bruteforce)</span><br>
+        <span class="term-prompt">$ </span>iptables -A INPUT -p tcp --dport 22 -m limit --limit 3/min -j ACCEPT<br>
+        <br>
+        <span class="term-comment"># Sauvegarder les règles</span><br>
+        <span class="term-prompt">$ </span>iptables-save > /etc/iptables/rules.v4
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">⚡ nftables — le successeur moderne</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># nftables remplace iptables, ebtables, arptables</span><br>
+        <span class="term-prompt">$ </span>nft list ruleset<br>
+        <br>
+        <span class="term-comment"># Exemple de config nftables</span><br>
+        <span style="color:#ffd700">table inet filter {</span><br>
+        &nbsp;<span style="color:#00aaff">chain input {</span><br>
+        &nbsp;&nbsp;type filter hook input priority 0;<br>
+        &nbsp;&nbsp;policy drop;<br>
+        &nbsp;&nbsp;iifname lo accept;<br>
+        &nbsp;&nbsp;ct state established,related accept;<br>
+        &nbsp;&nbsp;tcp dport 22 accept;<br>
+        &nbsp;&nbsp;tcp dport {80, 443} accept;<br>
+        &nbsp;&nbsp;icmp type echo-request limit rate 5/second accept;<br>
+        &nbsp;<span style="color:#00aaff">}</span><br>
+        <span style="color:#ffd700">}</span><br>
+        <br>
+        <span class="term-prompt">$ </span>nft -f /etc/nftables.conf
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8 — QCM : ROUTAGE -->
+<div class="slide" data-index="8">
+  <div class="slide-tag">// Slide 09 · Routage · Statique · Dynamique · OSPF · BGP · QCM requis</div>
+  <h2>Routage — Trouver le Meilleur Chemin</h2>
+  <h3>Comment les routeurs décident où envoyer les paquets — statique vs dynamique</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📊 Table de routage — lire et comprendre</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-prompt">$ </span>ip route show<br>
+        <span style="color:#00ff88">default</span> via 192.168.1.1 dev eth0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">← route par défaut</span><br>
+        <span style="color:#00aaff">10.10.20.0/24</span> via 10.10.1.254 dev eth0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">← route statique VLAN 20</span><br>
+        <span style="color:#ffd700">192.168.1.0/24</span> dev eth0 proto kernel &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment">← réseau local (auto)</span><br>
+        <br>
+        <span class="term-comment"># Ajouter une route statique</span><br>
+        <span class="term-prompt">$ </span>ip route add 10.0.0.0/8 via 192.168.1.254<br>
+        <br>
+        <span class="term-comment"># Route persistante (Debian/Ubuntu)</span><br>
+        <span class="term-out"># /etc/netplan/01-config.yaml :</span><br>
+        <span class="term-out">routes: [{to: 10.0.0.0/8, via: 192.168.1.254}]</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔄 Routage dynamique — OSPF & BGP</div>
+      <ul class="bullets">
+        <li><strong>Routage statique</strong> — admin configure manuellement chaque route. Simple pour petits réseaux, ne s'adapte pas aux pannes</li>
+        <li><strong>OSPF</strong> (Open Shortest Path First) — protocole interne (IGP). Algorithme Dijkstra. Convergence rapide. Utilisé dans les réseaux d'entreprise et les campus</li>
+        <li><strong>BGP</strong> (Border Gateway Protocol) — protocole d'Internet. Relie les systèmes autonomes (AS). Utilisé par tous les FAI africains. Vulnérable au BGP Hijacking</li>
+        <li><strong>EIGRP, RIP</strong> — protocoles Cisco propriétaires ou anciens, moins utilisés</li>
+        <li class="warn"><strong>BGP Hijacking</strong> — annoncer frauduleusement des préfixes IP pour détourner le trafic (attaque nationale, espionnage)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9 — LOAD BALANCING & HAUTE DISPO -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// Slide 10 · Load Balancer · HA · VRRP · Redondance</div>
+  <h2>Load Balancing & Haute Disponibilité</h2>
+  <h3>Ne jamais avoir un seul point de défaillance — l'architecture qui reste debout</h3>
+  <div class="cmd-grid" style="margin-bottom:.8rem">
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">Load Balancer — Couche 4 (TCP)</div>
+      <div class="cmd-desc">Distribue le trafic TCP/UDP entre plusieurs serveurs selon leur IP:port. Algorithmes : Round Robin, Least Connections, IP Hash. Aucune connaissance du contenu HTTP.</div>
+      <div class="cmd-ex">HAProxy (mode TCP) · LVS · AWS NLB · Nginx stream</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+      <div class="cmd-name" style="color:#00aaff">Load Balancer — Couche 7 (HTTP)</div>
+      <div class="cmd-desc">Inspect le contenu HTTP — route selon l'URL, les headers, les cookies. Peut faire du SSL termination, de la réécriture d'URL, du caching, de la compression.</div>
+      <div class="cmd-ex">Nginx, HAProxy (mode HTTP), Traefik, AWS ALB, Cloudflare</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+      <div class="cmd-name" style="color:#ffd700">VRRP — Virtual Router Redundancy</div>
+      <div class="cmd-desc">Deux routeurs partagent une IP virtuelle. Le routeur Master répond. Si le Master tombe, le Backup prend automatiquement l'IP virtuelle. Failover en quelques secondes. Standard RFC 5798.</div>
+      <div class="cmd-ex">keepalived sur Linux · Cisco HSRP (propriétaire) · GLBP</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.2)">
+      <div class="cmd-name" style="color:#aa44ff">Bonding / LACP — Agrégation de liens</div>
+      <div class="cmd-desc">Combiner plusieurs interfaces réseau physiques en une interface logique — plus de débit (LACP/802.3ad) et tolérance aux pannes d'un câble. Standard entre serveurs et switches.</div>
+      <div class="cmd-ex">bonding Linux (mode 802.3ad) · Cisco EtherChannel</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">STP — Spanning Tree Protocol</div>
+      <div class="cmd-desc">Élimine les boucles réseau dans les topologies redondantes entre switches. Bloque les ports redondants et les débloque en cas de panne. Versions : STP, RSTP (rapide), MSTP.</div>
+      <div class="cmd-ex">show spanning-tree vlan 10 (Cisco) · RSTP converge en &lt;1s</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,136,0,.2)">
+      <div class="cmd-name" style="color:#ff8800">Anycast — Routage vers le plus proche</div>
+      <div class="cmd-desc">La même adresse IP annoncée depuis plusieurs points de présence (PoP) dans le monde. Le trafic est automatiquement routé vers le PoP le plus proche. Utilisé par Cloudflare, les DNS publics.</div>
+      <div class="cmd-ex">Cloudflare 1.1.1.1 · Google 8.8.8.8 · Anycast BGP</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10 — ZERO TRUST -->
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Slide 11 · Zero Trust · SASE · Micro-segmentation · Identité</div>
+  <h2>Zero Trust — "Ne Jamais Faire Confiance, Toujours Vérifier"</h2>
+  <h3>Le paradigme qui remplace le modèle château-fort — indispensable avec le cloud et le télétravail</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🏰 Ancien modèle vs Zero Trust</div>
+      <ul class="bullets">
+        <li class="danger"><strong>Ancien modèle "château fort"</strong> — périmètre réseau = frontière de confiance. Ce qui est à l'intérieur est de confiance. Une seule brèche = compromission totale</li>
+        <li class="danger">En 2024, le périmètre n'existe plus — cloud, télétravail, BYOD, SaaS ont tout dissous</li>
+        <li class="ok"><strong>Zero Trust</strong> — aucun utilisateur, aucun device, aucun réseau n'est de confiance par défaut, même à l'intérieur</li>
+        <li class="ok">Chaque accès est vérifié : <strong>qui ? quel device ? depuis où ? pour quoi ?</strong></li>
+        <li class="ok">Principe du <strong>moindre privilège</strong> — accès minimal nécessaire, rien de plus</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔑 Les 5 piliers du Zero Trust</div>
+      <ul class="bullets">
+        <li><strong>Identité</strong> — MFA obligatoire, vérification continue (pas juste à la connexion)</li>
+        <li><strong>Device</strong> — vérification de la conformité du device (MDM, EDR, patch level)</li>
+        <li><strong>Réseau</strong> — micro-segmentation, cryptage de tout le trafic est-ouest</li>
+        <li><strong>Application</strong> — accès par application, pas par réseau (ZTNA remplace VPN)</li>
+        <li><strong>Données</strong> — classification, DLP, chiffrement au repos et en transit</li>
+        <li class="ok">Solutions : Cloudflare Zero Trust, Zscaler, Palo Alto Prisma, Microsoft Entra</li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "Le VPN dit : 'Entre dans mon réseau et tu peux tout voir.' ZTNA dit : 'Prouve qui tu es, depuis quel device, et je te donne accès uniquement à cette application spécifique.' Voilà pourquoi les entreprises africaines en croissance adoptent Zero Trust."
+  </div>
+</div>
+
+<!-- SLIDE 11 — QCM : MICRO-SEGMENTATION -->
+<div class="slide" data-index="11">
+  <div class="slide-tag">// Slide 12 · Micro-segmentation · East-West · Defense in Depth · QCM requis</div>
+  <h2>Micro-segmentation & Defense in Depth</h2>
+  <h3>Chaque serveur est son propre périmètre — stopper le mouvement latéral d'un attaquant</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">↔️ Trafic Nord-Sud vs Est-Ouest</div>
+      <ul class="bullets">
+        <li><strong>Trafic Nord-Sud</strong> — entre Internet et le datacenter. Protégé par le firewall périmétrique. Bien contrôlé depuis longtemps.</li>
+        <li><strong>Trafic Est-Ouest</strong> — entre serveurs à l'intérieur du datacenter. Représente 70-80% du trafic total. Historiquement peu ou pas filtré.</li>
+        <li class="danger">Un attaquant qui entre dans un serveur peut se déplacer librement dans le datacenter si le trafic est-ouest n'est pas filtré (lateral movement)</li>
+        <li class="ok"><strong>Micro-segmentation</strong> — chaque workload a son propre firewall. Un serveur web ne peut parler qu'au serveur d'app, pas directement à la BDD.</li>
+        <li class="ok">Solutions : VMware NSX, Cisco ACI, Calico (Kubernetes NetworkPolicy)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🛡️ Defense in Depth — Couches de défense</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem">
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">1</div><div class="step-content" style="font-size:.75rem"><strong>Périmètre</strong> — Firewall externe, WAF, DDoS protection (Cloudflare)</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">2</div><div class="step-content" style="font-size:.75rem"><strong>Réseau interne</strong> — VLANs, firewall interne, IDS/IPS</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">3</div><div class="step-content" style="font-size:.75rem"><strong>Hôte</strong> — EDR/antivirus, patch management, durcissement OS</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">4</div><div class="step-content" style="font-size:.75rem"><strong>Application</strong> — WAF applicatif, validation des inputs, authentification forte</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">5</div><div class="step-content" style="font-size:.75rem"><strong>Données</strong> — Chiffrement, DLP, contrôle d'accès granulaire (IAM)</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12 — ARCHITECTURE TYPIQUE PME AFRIQUE -->
+<div class="slide" data-index="12">
+  <div class="slide-tag">// Slide 13 · Architecture PME Afrique · Exemple réel · Budget</div>
+  <h2>Architecture Réseau Typique — PME Africaine</h2>
+  <h3>Un exemple concret adapté aux contraintes et réalités du contexte africain en 2026</h3>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🏗️ Architecture recommandée (budget moyen)</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0;font-size:.63rem">
+        <span style="color:#ff4466">Fibre/4G FAI</span> (2 opérateurs pour redondance)<br>
+        &nbsp;&nbsp;↓<br>
+        <span style="color:#ffd700">Routeur pfSense ou Mikrotik</span><br>
+        &nbsp;&nbsp;· Firewall stateful<br>
+        &nbsp;&nbsp;· VPN WireGuard (télétravail)<br>
+        &nbsp;&nbsp;· Load balancing 2 FAI<br>
+        &nbsp;&nbsp;↓<br>
+        <span style="color:#00aaff">Switch managé (Mikrotik CRS ou Cisco SG)</span><br>
+        &nbsp;&nbsp;· VLAN 10: Serveurs (NAS, ERP)<br>
+        &nbsp;&nbsp;· VLAN 20: Postes employés<br>
+        &nbsp;&nbsp;· VLAN 30: WiFi invités (isolé)<br>
+        &nbsp;&nbsp;· VLAN 40: Management<br>
+        &nbsp;&nbsp;· VLAN 50: Caméras/IoT<br>
+        &nbsp;&nbsp;↓<br>
+        <span style="color:#00ff88">WAF Cloudflare</span> (plan gratuit → Pro)<br>
+        &nbsp;&nbsp;· DDoS protection<br>
+        &nbsp;&nbsp;· SSL/TLS automatique<br>
+        &nbsp;&nbsp;· Cache CDN Afrique
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">💡 Conseils pratiques contexte africain</div>
+      <ul class="bullets">
+        <li><strong>Double opérateur</strong> — MTN + Airtel/Orange pour la redondance. pfSense gère le failover automatique</li>
+        <li><strong>Cloudflare gratuit</strong> — DDoS, WAF basique, CDN, DNS, SSL. Indispensable pour toute PME exposée sur Internet</li>
+        <li><strong>Mikrotik</strong> — excellent rapport qualité/prix, très répandu en Afrique, communauté active en français</li>
+        <li><strong>UPS obligatoire</strong> — les coupures de courant détruisent les équipements réseau sans onduleur</li>
+        <li><strong>Backup 3-2-1</strong> — 3 copies, 2 supports différents, 1 hors site (cloud chiffré)</li>
+        <li class="ok"><strong>NAS Synology</strong> — stockage centralisé, VPN intégré, snapshots automatiques, accessible budget africain</li>
+        <li class="warn">Éviter les équipements contrefaits (faux Cisco) — firmware inconnu = backdoor potentielle</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 13 — QCM FINAL -->
+<div class="slide" data-index="13">
+  <div class="slide-tag">// Slide 14 · Conclusion · NET·05 s'ouvre · QCM final</div>
+  <h2>Architecture Maîtrisée — Direction Wireshark 🔬</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🎓 Ce que tu maîtrises — NET·04</div>
+      <ul class="bullets">
+        <li>VLANs — segmentation, 802.1Q, trunk vs access, inter-VLAN routing</li>
+        <li>Zones de sécurité — Internet, DMZ, Interne, Critique, Management</li>
+        <li>Firewalls — stateless, stateful, NGFW, WAF, Cloud Security Groups</li>
+        <li>Architecture DMZ — single firewall vs dual firewall, flux autorisés</li>
+        <li>Règles firewall — politique deny-all, ruleset complet DMZ</li>
+        <li>iptables & nftables — commandes Linux firewall en pratique</li>
+        <li>Routage — tables de routage, statique, OSPF, BGP, BGP Hijacking</li>
+        <li>Load balancing — L4/L7, VRRP, bonding, STP, anycast</li>
+        <li>Zero Trust — 5 piliers, ZTNA vs VPN, micro-segmentation</li>
+        <li>Architecture PME Afrique — pfSense, Mikrotik, Cloudflare, NAS</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🔜 NET·05 — Ce qui t'attend</div>
+      <ul class="bullets">
+        <li><strong>Wireshark complet</strong> — captures sur toutes les interfaces, navigation dans les paquets</li>
+        <li><strong>Filtres BPF avancés</strong> — cibler précisément le trafic qui t'intéresse</li>
+        <li><strong>Follow TCP/UDP Stream</strong> — reconstruire des conversations complètes</li>
+        <li><strong>tcpdump</strong> — capturer en ligne de commande sur un serveur distant</li>
+        <li><strong>Analyse .pcap</strong> — ouvrir des captures CTF et identifier les anomalies</li>
+        <li><strong>Détecter ARP Spoofing, scans Nmap</strong> dans une capture réseau</li>
+        <li class="ok">Prérequis acquis : protocoles, VLANs, firewalls, zones de sécurité</li>
+      </ul>
+      <div class="hdiv">RESSOURCES</div>
+      <ul class="bullets" style="font-size:.78rem">
+        <li><strong>pfSense.org</strong> — documentation et tutoriels firewall open source</li>
+        <li><strong>eve-ng.net</strong> — émulateur réseau pour pratiquer Cisco/Mikrotik</li>
+        <li><strong>mikrotik.com/training</strong> — certifications MTCNA gratuites en ligne</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏗️</div>
+    <div class="completion-title" id="comp-title">NET·04 terminé !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="net5.html" class="completion-btn completion-btn-primary">NET·05 : Wireshark →</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 14</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+var QCM = {
+  1: {
+    question: "Dans une entreprise, le VLAN 50 (WiFi invités) et le VLAN 10 (Serveurs) sont sur le même switch. Un visiteur sur le WiFi invités peut-il accéder aux serveurs internes ?",
+    options: [
+      "Oui — les VLANs sont logiques mais le trafic peut passer d'un VLAN à l'autre via le switch",
+      "Non — les VLANs créent des domaines de broadcast séparés. Le trafic entre VLAN 50 et VLAN 10 doit passer par un routeur ou firewall qui peut l'interdire",
+      "Oui si le visiteur connaît l'adresse IP du serveur — les VLANs ne filtrent pas par adresse IP",
+      "Ça dépend du switch — les switches bas de gamme ne supportent pas l'isolation VLAN"
+    ],
+    correct: 1,
+    explanation: "Les VLANs créent des domaines de broadcast complètement séparés au niveau de la couche 2. Un device sur VLAN 50 ne peut pas communiquer avec VLAN 10 sans passer par un routeur ou un firewall (inter-VLAN routing). C'est ce routeur/firewall qui décide si le flux est autorisé. Dans une bonne configuration, la règle sera : DENY ALL from VLAN 50 (Guest WiFi) to VLAN 10 (Servers). Le visiteur est isolé — même s'il connaît l'IP du serveur, ses paquets seront bloqués au niveau du routeur inter-VLAN."
+  },
+  4: {
+    question: "Un serveur web en DMZ est compromis. L'attaquant essaie d'accéder à la base de données sur le réseau interne (LAN). Quelle règle firewall l'en empêche ?",
+    options: [
+      "La règle ALLOW DMZ:WebSrv → LAN:DB TCP 3306 — cette règle autorise le serveur web à parler à la base de données",
+      "La règle DENY DMZ → LAN ANY sur le firewall interne — même si le serveur web est compromis, il ne peut pas initier de nouvelles connexions vers d'autres machines du LAN",
+      "Le firewall externe bloque automatiquement ce trafic car il vient de la DMZ",
+      "L'attaquant ne peut pas sortir de la DMZ car les serveurs en DMZ n'ont pas de passerelle par défaut"
+    ],
+    correct: 1,
+    explanation: "C'est l'essence de l'architecture dual firewall DMZ : le firewall INTERNE a une règle DENY ALL from DMZ to LAN, sauf les flux strictement nécessaires (ex: WebSrv:8080 → DB:3306 uniquement). Si le serveur web est compromis, l'attaquant peut essayer d'initier des connexions vers d'autres serveurs du LAN — mais le firewall interne les bloque. Seules les connexions vers la base de données sur le port 3306 sont autorisées, et seulement depuis l'IP du serveur web. Cette règle de moindre privilège limite le blast radius de la compromission."
+  },
+  8: {
+    question: "Tu dois configurer un routeur Linux pour acheminer le trafic vers le réseau 10.0.0.0/8 via la passerelle 192.168.1.254. Quelle commande est correcte ?",
+    options: [
+      "route add 10.0.0.0 mask 255.0.0.0 192.168.1.254 — syntaxe Windows valide sur Linux",
+      "ip route add 10.0.0.0/8 via 192.168.1.254 — syntaxe iproute2 standard Linux",
+      "netstat -r add 10.0.0.0/8 gw 192.168.1.254 — netstat gère les routes sur Linux",
+      "ifconfig route add 10.0.0.0/8 192.168.1.254 — ifconfig est l'outil standard pour les routes"
+    ],
+    correct: 1,
+    explanation: "ip route add 10.0.0.0/8 via 192.168.1.254 est la commande correcte iproute2 (paquet iproute2, successeur de net-tools). La syntaxe est : ip route add [réseau]/[préfixe] via [passerelle]. Cette route est temporaire — disparaît au redémarrage. Pour la rendre persistante sur Debian/Ubuntu : ajouter dans /etc/netplan/. Sur RHEL/CentOS : dans /etc/sysconfig/network-scripts/. ifconfig ne gère pas les routes (c'est pour les interfaces), netstat est pour afficher les connexions, et la syntaxe Windows avec 'mask' ne fonctionne pas sur Linux."
+  },
+  11: {
+    question: "Quelle est la différence fondamentale entre Zero Trust Network Access (ZTNA) et un VPN traditionnel ?",
+    options: [
+      "Le ZTNA chiffre mieux le trafic que le VPN — il utilise un chiffrement AES-256 vs AES-128 pour le VPN",
+      "Le VPN donne accès à tout le réseau interne une fois connecté. Le ZTNA donne accès uniquement à l'application spécifique autorisée, après vérification de l'identité ET de la conformité du device à chaque connexion",
+      "Le ZTNA est moins sécurisé que le VPN car il ne crée pas de tunnel chiffré entre l'utilisateur et le réseau",
+      "Il n'y a pas de différence pratique — ZTNA est juste un terme marketing pour un VPN moderne"
+    ],
+    correct: 1,
+    explanation: "C'est une distinction fondamentale. VPN traditionnel : l'utilisateur s'authentifie une fois, obtient une IP du réseau interne, et peut potentiellement accéder à tout le réseau (latéral movement facilité). ZTNA (Zero Trust Network Access) : (1) Vérification continue de l'identité (MFA). (2) Vérification de la conformité du device (patch level, EDR actif, MDM enrollé). (3) Accès granulaire uniquement à l'application autorisée — l'utilisateur ne 'voit' pas le réseau. (4) Réévaluation à chaque session. Si un credential VPN est volé, l'attaquant entre dans tout le réseau. Si un credential ZTNA est volé sans le device conforme, l'accès est refusé."
+  },
+  13: {
+    question: "Dans une PME africaine avec des coupures de courant fréquentes, quel est le risque principal pour l'infrastructure réseau et comment l'atténuer ?",
+    options: [
+      "Les coupures de courant n'affectent pas les équipements réseau — ils ont tous des condensateurs internes qui les protègent",
+      "Les coupures fréquentes provoquent des corruptions de filesystem sur les équipements sans alimentation de secours et des pannes matérielles prématurées. Atténuation : UPS (onduleur) pour les équipements critiques, générateur pour les longues coupures, config auto-backup des équipements",
+      "Le risque principal est la perte de la connexion Internet uniquement — les équipements locaux ne sont pas affectés",
+      "Il faut acheter des équipements Cisco enterprise — ils sont conçus pour résister aux coupures de courant sans UPS"
+    ],
+    correct: 1,
+    explanation: "Les coupures de courant fréquentes (réalité de nombreux pays africains) créent plusieurs risques pour les réseaux : (1) Corruption du système de fichiers des routeurs/firewalls qui stockent leur config sur flash/eMMC — une coupure pendant une écriture = config corrompue, équipement qui ne redémarre plus. (2) Dégradation des condensateurs et alimentations des switches. (3) Pertes de données sur les NAS/serveurs sans arrêt propre. Solutions : UPS pour tous les équipements actifs, sauvegarde automatique des configurations (Mikrotik : export/backup automatique), générateur pour les datarooms, protection par parafoudre. Budget UPS = investissement critique, pas optionnel."
+  }
+};
+
+var COURSE_ID = 'net4';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){ document.getElementById('comp-icon').textContent='🏗️'; document.getElementById('comp-title').textContent='Architecte réseau !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. VLANs, DMZ, Zero Trust — tu conçois des réseaux sécurisés !'; }
+  else if(pct>=60){ document.getElementById('comp-icon').textContent='🔧'; document.getElementById('comp-title').textContent='NET·04 terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Revois les règles firewall et Zero Trust avant NET·05.'; }
+  else { document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='NET·04 terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Relis les VLANs et l\'architecture DMZ avant de continuer.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='VLANDMZFIREWALLNGTPFACLROUTEOSPFBGPZEROTRUST01DENY',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,4,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#00aaff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>

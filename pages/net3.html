@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>NET·03 — Protocoles & Services · SooPHA Learn</title>
+<link rel="stylesheet" href="../css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<style>
+html,body{overflow:hidden;height:100%}
+body::before{height:3px}
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,4,12,.97);border-bottom:1px solid rgba(0,170,255,.18);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(0,170,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-back{color:rgba(0,170,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}.tb-back:hover{color:#00aaff}
+.tb-dot{width:6px;height:6px;background:#00aaff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.4)}
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(0,170,255,.06)}
+#progress-fill{height:100%;background:linear-gradient(90deg,#003189,#00aaff);box-shadow:0 0 8px #00aaff;transition:width .5s ease}
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}.slide.exit{opacity:0;transform:translateX(-40px)}
+:root{--acc:#00aaff;--blue-border:rgba(0,170,255,.18);--blue-faint:rgba(0,170,255,.05)}
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display)!important;font-weight:900!important;font-size:clamp(1.8rem,3.5vw,2.8rem)!important;color:#fff!important;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem!important}
+.slide h2{font-family:var(--display)!important;font-weight:700!important;font-size:clamp(1.1rem,2vw,1.7rem)!important;color:#00aaff!important;letter-spacing:.08em;margin-bottom:1rem!important}
+.slide h3{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(.8rem,1.2vw,1rem)!important;color:rgba(0,170,255,.55)!important;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem!important}
+.card{background:rgba(2,10,20,.88);border:1px solid var(--blue-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.95rem);color:rgba(200,220,255,.85);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#00aaff;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}.bullets li.warn::before{content:'⚠';color:#ffd700;font-size:.7rem}.bullets li.ok::before{content:'✅';font-size:.7rem}.bullets li.danger::before{content:'🔴';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;letter-spacing:.06em;border-radius:2px;font-family:var(--mono)}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.terminal{background:rgba(0,0,4,.7);border:1px solid rgba(0,170,255,.15);border-left:3px solid #00aaff;padding:.8rem 1.1rem;font-family:var(--mono);font-size:.75rem;color:rgba(0,170,255,.8);line-height:1.9;max-width:880px;width:100%}
+.terminal.sm{font-size:.68rem;line-height:1.75}
+.term-prompt{color:#00aaff}.term-out{color:rgba(255,255,255,.45)}.term-comment{color:rgba(0,170,255,.4);font-style:italic}
+.term-red{color:#ff4466}.term-yellow{color:#ffd700}.term-green{color:#00ff88}
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(0,170,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(0,170,255,.12)}
+.quote{border-left:3px solid #00aaff;padding:.7rem 1rem;background:rgba(0,170,255,.04);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#d0e8ff;line-height:1.6}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #00aaff;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;max-width:880px;width:100%}
+.cmd-card{padding:.7rem .9rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.cmd-name{font-family:var(--mono);font-size:.78rem;color:#00aaff;margin-bottom:.25rem}
+.cmd-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.6);line-height:1.4}
+.cmd-ex{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);margin-top:.3rem}
+.step{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem 1rem;border:1px solid rgba(0,170,255,.12);background:var(--blue-faint)}
+.step-num{font-family:var(--display);font-size:1rem;font-weight:900;color:#00aaff;text-shadow:0 0 8px #00aaff;min-width:24px}
+.step-content{font-family:var(--body);font-size:.83rem;color:rgba(200,220,255,.85);line-height:1.5}
+.attack-card{padding:.8rem 1rem;border:1px solid rgba(255,68,102,.2);background:rgba(255,68,102,.04);position:relative}
+.attack-card::before{content:'';position:absolute;top:-1px;left:-1px;width:10px;height:10px;border-top:2px solid #ff4466;border-left:2px solid #ff4466}
+.attack-name{font-family:var(--mono);font-size:.75rem;color:#ff4466;margin-bottom:.25rem}
+.attack-desc{font-family:var(--body);font-size:.7rem;color:rgba(200,170,255,.55);line-height:1.4}
+.attack-fix{font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.5);margin-top:.3rem}
+/* DNS flow */
+.dns-flow{display:flex;flex-direction:column;gap:.3rem;max-width:880px;width:100%}
+.dns-step{display:flex;align-items:center;gap:.8rem;padding:.45rem .9rem;border:1px solid rgba(0,170,255,.1);background:var(--blue-faint)}
+.dns-num{font-family:var(--display);font-size:.75rem;font-weight:900;color:#00aaff;min-width:22px;text-align:center}
+.dns-arrow{color:rgba(0,170,255,.3);font-size:.8rem}
+.dns-from{font-family:var(--mono);font-size:.65rem;color:#ffd700;min-width:120px}
+.dns-to{font-family:var(--mono);font-size:.65rem;color:#00aaff;min-width:150px}
+.dns-msg{font-family:var(--body);font-size:.7rem;color:rgba(200,220,255,.6)}
+/* Port table */
+.port-row{display:flex;align-items:center;gap:.7rem;padding:.45rem .8rem;border:1px solid rgba(0,170,255,.1);background:rgba(0,170,255,.03)}
+.port-num{font-family:var(--display);font-size:.82rem;font-weight:700;color:#00aaff;min-width:50px;text-shadow:0 0 8px #00aaff}
+.port-proto{font-family:var(--mono);font-size:.62rem;min-width:55px;flex-shrink:0}
+.port-desc{font-family:var(--body);font-size:.72rem;color:rgba(200,220,255,.7);flex:1}
+.port-risk{font-family:var(--mono);font-size:.58rem;padding:.1rem .4rem;border-radius:2px;flex-shrink:0}
+.risk-ok{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.risk-warn{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.risk-bad{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+/* QCM */
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(2,4,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(2,10,20,.97);border:1px solid rgba(0,170,255,.25);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(0,170,255,.1)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(0,170,255,.15)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,170,255,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(0,170,255,.35);margin-bottom:.5rem;display:none}.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(0,4,16,.3);border:1px solid rgba(0,170,255,.1);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(190,215,255,.75);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(0,170,255,.35);background:rgba(0,170,255,.06);color:rgba(210,230,255,.95)}
+.qcm-option.correct{border-color:#00aaff!important;background:rgba(0,170,255,.12)!important;color:#00aaff!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.08)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-weight:700;font-size:.8rem;color:#00aaff;min-width:18px;flex-shrink:0}
+.qcm-feedback{margin-bottom:1rem;padding:.9rem 1.1rem;border-radius:2px;font-family:var(--body);font-size:.82rem;line-height:1.5;display:none}
+.qcm-feedback.correct{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.3);color:rgba(210,230,255,.9)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.07);border:1px solid rgba(255,68,102,.25);color:rgba(255,200,200,.85)}
+.qcm-btn{display:none;font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.15em;padding:.7rem 2rem;background:rgba(0,170,255,.15);border:1px solid rgba(0,170,255,.4);color:#00aaff;cursor:pointer;transition:all .2s}
+.qcm-btn:hover{background:rgba(0,170,255,.25);box-shadow:0 0 20px rgba(0,170,255,.2)}.qcm-btn.show{display:inline-block}
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(2,4,12,.97);display:none;align-items:center;justify-content:center}
+#completion-modal.show{display:flex}
+.completion-box{max-width:500px;width:100%;text-align:center;padding:3rem 2rem;border:1px solid rgba(0,170,255,.3);background:rgba(2,10,20,.98);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #00aaff;border-left:2px solid #00aaff}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #00aaff;border-right:2px solid #00aaff}
+.completion-icon{font-size:3.5rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.3rem;font-weight:900;color:#fff;letter-spacing:.1em;margin-bottom:.6rem}
+.completion-score{font-family:var(--display);font-size:3rem;font-weight:900;color:#00aaff;text-shadow:0 0 20px #00aaff;margin-bottom:.4rem}
+.completion-sub{font-family:var(--body);font-size:.85rem;color:rgba(200,220,255,.6);margin-bottom:1rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.4);letter-spacing:.08em;margin-bottom:2rem}
+.completion-btn{display:inline-block;margin:.3rem;font-family:var(--display);font-size:.72rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.5rem;text-decoration:none;cursor:pointer;transition:all .2s;border:none}
+.completion-btn-primary{background:#00aaff;color:#000a14}
+.completion-btn-secondary{background:transparent;border:1px solid rgba(0,170,255,.4);color:#00aaff}
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.55rem 1.5rem;background:rgba(2,4,12,.97);border-top:1px solid rgba(0,170,255,.1)}
+.nav-btn{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;padding:.4rem 1rem;background:transparent;border:1px solid rgba(0,170,255,.2);color:rgba(0,170,255,.5);cursor:pointer;transition:all .2s}
+.nav-btn:hover:not(:disabled){border-color:#00aaff;color:#00aaff}.nav-btn:disabled{opacity:.2;cursor:default}
+#slide-counter{font-family:var(--mono);font-size:.65rem;color:rgba(0,170,255,.35);letter-spacing:.1em}
+.qcm-indicator{font-family:var(--mono);font-size:.6rem;color:#00aaff;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="topbar">
+  <div class="tb-left">
+    <a href="formations.html" class="tb-back">← Formations</a>
+    <span><span class="tb-dot"></span>// NET·03 · Protocoles & Services</span>
+  </div>
+  <div class="tb-right"><span class="tb-user" id="tb-username">@user</span></div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:7.14%"></div></div>
+
+<div id="slides">
+
+<!-- SLIDE 0 — INTRO -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// NET·03 · Réseau · SooPHA Learn</div>
+  <h1 class="glitch" style="color:#00aaff!important;text-shadow:0 0 40px #00aaff,0 0 80px rgba(0,170,255,.2)!important">PROTOCOLES<br>& SERVICES</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>DNS · HTTP/S · SMTP · SSH · FTP · TLS · ARP · Ports essentiels</h3>
+  <div class="card" style="text-align:center;max-width:700px">
+    <ul class="bullets" style="text-align:left">
+      <li><strong>14 slides</strong> · 5 QCM obligatoires · ~65 min</li>
+      <li><strong>DNS</strong> — résolution de noms, types d'enregistrements, cache poisoning</li>
+      <li><strong>HTTP & HTTPS</strong> — méthodes, codes de statut, headers de sécurité</li>
+      <li><strong>TLS/SSL</strong> — handshake, certificats, chaîne de confiance</li>
+      <li><strong>SMTP & Email</strong> — SPF, DKIM, DMARC pour stopper le spoofing</li>
+      <li><strong>SSH</strong> — authentification par clé, tunneling, hardening</li>
+      <li><strong>FTP vs SFTP</strong> — pourquoi FTP est dangereux, alternatives</li>
+      <li><strong>ARP</strong> — résolution MAC, ARP spoofing en détail</li>
+      <li class="ok">Prérequis : NET·01 (OSI, protocoles) · NET·02 (IP, ports)</li>
+    </ul>
+  </div>
+  <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-blue">NET · Module 3/6</span>
+    <span class="pill pill-green">Intermédiaire</span>
+    <span class="pill pill-orange">DNS · HTTP · TLS · SSH · SMTP</span>
+    <span class="pill pill-red">SPF · DKIM · DMARC · ARP Spoof</span>
+  </div>
+</div>
+
+<!-- SLIDE 1 — PORTS ESSENTIELS -->
+<div class="slide" data-index="1">
+  <div class="slide-tag">// Slide 02 · Ports · Protocoles · Référence complète</div>
+  <h2>Les Ports Essentiels — La Carte du Réseau</h2>
+  <h3>Chaque service écoute sur un port précis — les connaître par cœur, c'est lire le réseau à vue</h3>
+  <div style="display:flex;flex-direction:column;gap:.28rem;max-width:880px;width:100%;margin-bottom:.6rem">
+    <div class="port-row"><span class="port-num">20/21</span><span class="port-proto" style="color:#ff4466">FTP</span><span class="port-desc">Transfert de fichiers <strong style="color:#ff4466">non chiffré</strong> — données + credentials lisibles en clair</span><span class="port-risk risk-bad">⚠ BANNIR</span></div>
+    <div class="port-row"><span class="port-num">22</span><span class="port-proto" style="color:#00ff88">SSH</span><span class="port-desc">Accès distant chiffré — standard de facto pour l'administration Linux/Unix</span><span class="port-risk risk-ok">✓ SÛR</span></div>
+    <div class="port-row"><span class="port-num">23</span><span class="port-proto" style="color:#ff4466">Telnet</span><span class="port-desc">Accès distant <strong style="color:#ff4466">non chiffré</strong> — totalement obsolète, encore présent sur vieux équipements</span><span class="port-risk risk-bad">⚠ BANNIR</span></div>
+    <div class="port-row"><span class="port-num">25</span><span class="port-proto" style="color:#ffd700">SMTP</span><span class="port-desc">Envoi d'emails entre serveurs — souvent mal configuré, source de spoofing et relais ouvert</span><span class="port-risk risk-warn">⚠ VÉRIFIER</span></div>
+    <div class="port-row"><span class="port-num">53</span><span class="port-proto" style="color:#00aaff">DNS</span><span class="port-desc">Résolution de noms de domaine — UDP (requêtes), TCP (zone transfers). Cible du cache poisoning</span><span class="port-risk risk-warn">⚠ SURVEILLER</span></div>
+    <div class="port-row"><span class="port-num">80</span><span class="port-proto" style="color:#ff4466">HTTP</span><span class="port-desc">Web <strong style="color:#ff4466">non chiffré</strong> — tout le trafic visible sur WiFi. HTTPS obligatoire depuis 2018</span><span class="port-risk risk-bad">⚠ DANGER</span></div>
+    <div class="port-row"><span class="port-num">110/995</span><span class="port-proto" style="color:#ffd700">POP3/S</span><span class="port-desc">Réception emails — télécharge et supprime du serveur. 995 = POP3 over TLS</span><span class="port-risk risk-warn">// LEGACY</span></div>
+    <div class="port-row"><span class="port-num">143/993</span><span class="port-proto" style="color:#ffd700">IMAP/S</span><span class="port-desc">Réception emails — synchronisation multi-appareils. 993 = IMAP over TLS (recommandé)</span><span class="port-risk risk-ok">✓ IMAP/S</span></div>
+    <div class="port-row"><span class="port-num">443</span><span class="port-proto" style="color:#00ff88">HTTPS</span><span class="port-desc">Web chiffré TLS — standard obligatoire. Let's Encrypt a rendu les certificats gratuits</span><span class="port-risk risk-ok">✓ STANDARD</span></div>
+    <div class="port-row"><span class="port-num">3306</span><span class="port-proto" style="color:#ff4466">MySQL</span><span class="port-desc">Base de données MySQL/MariaDB — <strong style="color:#ff4466">ne jamais exposer</strong> sur Internet. Local uniquement</span><span class="port-risk risk-bad">⚠ LOCAL!</span></div>
+    <div class="port-row"><span class="port-num">3389</span><span class="port-proto" style="color:#ff4466">RDP</span><span class="port-desc">Bureau à distance Windows — cible #1 des ransomwares. BlueKeep (CVE-2019-0708)</span><span class="port-risk risk-bad">⚠ CIBLE #1</span></div>
+    <div class="port-row"><span class="port-num">8080/8443</span><span class="port-proto" style="color:#aa44ff">Alt HTTP/S</span><span class="port-desc">Ports alternatifs HTTP/HTTPS — serveurs de dev, proxies, Kubernetes ingress</span><span class="port-risk risk-warn">// DEV</span></div>
+  </div>
+</div>
+
+<!-- SLIDE 2 — QCM : DNS COMPLET -->
+<div class="slide" data-index="2">
+  <div class="slide-tag">// Slide 03 · DNS · Résolution · Types d'enregistrements · QCM requis</div>
+  <h2>DNS — L'Annuaire d'Internet</h2>
+  <h3>Domain Name System — traduire soopha-learn.com en 172.66.x.x en moins de 50ms</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📋 Types d'enregistrements DNS</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span style="color:#00ff88">A</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-out">domaine → adresse IPv4</span><br>
+        <span style="color:#00ff88">AAAA</span> &nbsp;&nbsp;<span class="term-out">domaine → adresse IPv6</span><br>
+        <span style="color:#00aaff">CNAME</span> &nbsp;<span class="term-out">alias → domaine canonique</span><br>
+        <span style="color:#ffd700">MX</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="term-out">serveur de messagerie email</span><br>
+        <span style="color:#ffd700">TXT</span> &nbsp;&nbsp;&nbsp;<span class="term-out">données texte (SPF, DKIM, vérif)</span><br>
+        <span style="color:#ff8800">NS</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="term-out">serveurs de noms autoritaires</span><br>
+        <span style="color:#ff8800">SOA</span> &nbsp;&nbsp;&nbsp;<span class="term-out">Start of Authority — infos de zone</span><br>
+        <span style="color:#aa44ff">PTR</span> &nbsp;&nbsp;&nbsp;<span class="term-out">IP → domaine (DNS inverse)</span><br>
+        <span style="color:#aa44ff">SRV</span> &nbsp;&nbsp;&nbsp;<span class="term-out">localiser un service (SIP, XMPP)</span><br>
+        <span style="color:#ff4466">CAA</span> &nbsp;&nbsp;&nbsp;<span class="term-out">autorités habilitées à émettre des certs SSL</span><br>
+        <br>
+        <span class="term-prompt">$ </span>dig soopha-learn.com A<br>
+        <span class="term-prompt">$ </span>dig soopha-learn.com MX<br>
+        <span class="term-prompt">$ </span>dig -x 172.66.x.x &nbsp;<span class="term-comment"># PTR reverse</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔄 Résolution DNS récursive</div>
+      <div class="dns-flow">
+        <div class="dns-step"><span class="dns-num">1</span><span class="dns-from">Ton PC</span><span class="dns-arrow">→</span><span class="dns-to">Résolveur FAI</span><span class="dns-msg">"C'est quoi l'IP de soopha-learn.com ?"</span></div>
+        <div class="dns-step"><span class="dns-num">2</span><span class="dns-from">Résolveur</span><span class="dns-arrow">→</span><span class="dns-to">Root Server (.)</span><span class="dns-msg">"Qui gère .com ?"</span></div>
+        <div class="dns-step"><span class="dns-num">3</span><span class="dns-from">Root Server</span><span class="dns-arrow">→</span><span class="dns-to">Résolveur</span><span class="dns-msg">"Les TLD .com servers : a.gtld-servers.net"</span></div>
+        <div class="dns-step"><span class="dns-num">4</span><span class="dns-from">Résolveur</span><span class="dns-arrow">→</span><span class="dns-to">TLD .com Server</span><span class="dns-msg">"Qui gère soopha-learn.com ?"</span></div>
+        <div class="dns-step"><span class="dns-num">5</span><span class="dns-from">TLD Server</span><span class="dns-arrow">→</span><span class="dns-to">Résolveur</span><span class="dns-msg">"NS: melany.ns.cloudflare.com"</span></div>
+        <div class="dns-step"><span class="dns-num">6</span><span class="dns-from">Résolveur</span><span class="dns-arrow">→</span><span class="dns-to">Cloudflare NS</span><span class="dns-msg">"IP de soopha-learn.com ?"</span></div>
+        <div class="dns-step"><span class="dns-num">7</span><span class="dns-from">Cloudflare</span><span class="dns-arrow">→</span><span class="dns-to">Résolveur → PC</span><span class="dns-msg" style="color:#00ff88">"172.66.x.x — TTL 300s"</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3 — ATTAQUES DNS -->
+<div class="slide" data-index="3">
+  <div class="slide-tag">// Slide 04 · Attaques DNS · Cache Poisoning · DNS Hijacking · DNSSEC</div>
+  <h2>Attaques DNS — Quand l'Annuaire Ment</h2>
+  <h3>Le DNS est critique et souvent peu sécurisé — comprendre les attaques pour mieux défendre</h3>
+  <div class="cmd-grid" style="margin-bottom:.8rem">
+    <div class="attack-card">
+      <div class="attack-name">DNS Cache Poisoning</div>
+      <div class="attack-desc">Injecter de fausses réponses DNS dans le cache d'un résolveur. Tous les utilisateurs de ce résolveur sont redirigés vers un faux site. Attaque Kaminsky (2008) : exploit du port UDP prévisible.</div>
+      <div class="attack-fix">✅ Fix : DNSSEC · randomisation du port source · DNS over HTTPS (DoH)</div>
+    </div>
+    <div class="attack-card">
+      <div class="attack-name">DNS Hijacking</div>
+      <div class="attack-desc">Modifier les enregistrements DNS directement chez le registrar en compromettant le compte d'administration. Rediriger un domaine entier vers une infrastructure malveillante. Très utilisé par des APT.</div>
+      <div class="attack-fix">✅ Fix : 2FA obligatoire sur le compte registrar · Registry Lock</div>
+    </div>
+    <div class="attack-card">
+      <div class="attack-name">DNS Amplification (DDoS)</div>
+      <div class="attack-desc">Envoyer des requêtes DNS avec IP source forgée (IP de la victime) vers des serveurs DNS ouverts. Les réponses (100x plus grandes que les requêtes) inondent la victime. Facteur d'amplification × 50.</div>
+      <div class="attack-fix">✅ Fix : Désactiver les open resolvers · BCP38 anti-spoofing</div>
+    </div>
+    <div class="attack-card">
+      <div class="attack-name">DNS Tunneling</div>
+      <div class="attack-desc">Encapsuler des données non-DNS dans des requêtes DNS pour exfiltrer des données ou créer un canal C2. Fonctionne même derrière des firewalls qui bloquent tout sauf le port 53. Outil : iodine, dnscat2.</div>
+      <div class="attack-fix">✅ Fix : DNS inspection · analyser la taille et fréquence des requêtes</div>
+    </div>
+    <div class="attack-card">
+      <div class="attack-name">Typosquatting</div>
+      <div class="attack-desc">Enregistrer des domaines similaires à des sites légitimes (g00gle.com, soopha-leam.com). Les utilisateurs qui font une faute de frappe atterrissent sur un site malveillant — phishing, malware.</div>
+      <div class="attack-fix">✅ Fix : Surveiller les domaines similaires · DMARC · formation utilisateurs</div>
+    </div>
+    <div class="attack-card">
+      <div class="attack-name">Zone Transfer (AXFR)</div>
+      <div class="attack-desc">Si le serveur DNS est mal configuré, un attaquant peut demander un transfert de zone complet — obtenir tous les sous-domaines, IPs internes, architecture réseau en une seule requête.</div>
+      <div class="attack-fix">✅ Fix : Autoriser AXFR uniquement aux serveurs NS secondaires légitimes</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4 — HTTP/HTTPS -->
+<div class="slide" data-index="4">
+  <div class="slide-tag">// Slide 05 · HTTP · Méthodes · Codes · Headers sécurité</div>
+  <h2>HTTP — Le Protocole du Web</h2>
+  <h3>HyperText Transfer Protocol — comprendre chaque échange entre navigateur et serveur</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📡 Méthodes HTTP</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span style="color:#00ff88">GET</span> &nbsp;&nbsp;<span class="term-out">Récupérer une ressource · idempotent</span><br>
+        <span style="color:#00aaff">POST</span> &nbsp;<span class="term-out">Créer/envoyer données · corps de requête</span><br>
+        <span style="color:#ffd700">PUT</span> &nbsp;&nbsp;<span class="term-out">Remplacer une ressource complètement</span><br>
+        <span style="color:#ffd700">PATCH</span><span class="term-out"> Modifier partiellement une ressource</span><br>
+        <span style="color:#ff4466">DELETE</span><span class="term-out">Supprimer une ressource</span><br>
+        <span style="color:#aa44ff">HEAD</span> &nbsp;<span class="term-out">Comme GET sans le corps (headers only)</span><br>
+        <span style="color:#aa44ff">OPTIONS</span><span class="term-out">Méthodes autorisées sur la ressource</span><br>
+        <span style="color:#ff8800">TRACE</span><span class="term-out">Debug — <strong style="color:#ff4466">désactiver en prod (XST attack)</strong></span><br>
+        <br>
+        <span class="term-comment"># Exemple de requête complète</span><br>
+        <span class="term-prompt">$ </span>curl -v -X POST https://api.soopha.com/login<br>
+        <span class="term-out">&nbsp;&nbsp;-H "Content-Type: application/json"</span><br>
+        <span class="term-out">&nbsp;&nbsp;-d '{"email":"user@mail.com","password":"***"}'</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔢 Codes de statut HTTP</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span style="color:#00ff88">2xx Succès</span><br>
+        <span class="term-out">200 OK · 201 Created · 204 No Content</span><br>
+        <br>
+        <span style="color:#00aaff">3xx Redirection</span><br>
+        <span class="term-out">301 Moved Permanently · 302 Found</span><br>
+        <span class="term-out">304 Not Modified (cache) · 307 Temp</span><br>
+        <br>
+        <span style="color:#ffd700">4xx Erreur client</span><br>
+        <span class="term-out">400 Bad Request · <span style="color:#ff4466">401 Unauthorized</span></span><br>
+        <span class="term-out"><span style="color:#ff4466">403 Forbidden</span> · <span style="color:#ff4466">404 Not Found</span></span><br>
+        <span class="term-out"><span style="color:#ff4466">429 Too Many Requests</span> (rate limiting)</span><br>
+        <br>
+        <span style="color:#ff4466">5xx Erreur serveur</span><br>
+        <span class="term-out">500 Internal Server Error</span><br>
+        <span class="term-out">502 Bad Gateway · 503 Service Unavailable</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5 — QCM : TLS/HTTPS -->
+<div class="slide" data-index="5">
+  <div class="slide-tag">// Slide 06 · TLS · Handshake · Certificats · Chaîne de confiance · QCM requis</div>
+  <h2>TLS — Comment HTTPS Chiffre Vraiment</h2>
+  <h3>Transport Layer Security — le protocole qui sécurise 95% des communications web mondiales</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🤝 TLS Handshake — établir le tunnel chiffré</div>
+      <div style="display:flex;flex-direction:column;gap:.3rem">
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">1</div><div class="step-content" style="font-size:.74rem"><strong>ClientHello</strong> — le navigateur envoie les versions TLS supportées, les cipher suites, un nombre aléatoire (client random)</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">2</div><div class="step-content" style="font-size:.74rem"><strong>ServerHello</strong> — le serveur choisit la version TLS + cipher suite + envoie son certificat X.509</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">3</div><div class="step-content" style="font-size:.74rem"><strong>Vérification du certificat</strong> — le navigateur vérifie la signature de l'AC (Autorité de Certification) dans sa liste de confiance</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">4</div><div class="step-content" style="font-size:.74rem"><strong>Échange de clé</strong> — Diffie-Hellman ou RSA → génération du <strong>session key</strong> partagée (sans jamais la transmettre)</div></div>
+        <div class="step" style="padding:.4rem .7rem"><div class="step-num" style="font-size:.8rem">5</div><div class="step-content" style="font-size:.74rem"><strong>Tunnel établi</strong> — toutes les communications chiffrées avec AES-256-GCM (symmetric encryption)</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🏅 Headers de sécurité HTTP essentiels</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0;font-size:.62rem">
+        <span class="term-comment"># Forcer HTTPS pour 1 an</span><br>
+        <span style="color:#00ff88">Strict-Transport-Security: max-age=31536000</span><br>
+        <br>
+        <span class="term-comment"># Protéger contre le clickjacking</span><br>
+        <span style="color:#00aaff">X-Frame-Options: DENY</span><br>
+        <br>
+        <span class="term-comment"># Bloquer le MIME sniffing</span><br>
+        <span style="color:#00aaff">X-Content-Type-Options: nosniff</span><br>
+        <br>
+        <span class="term-comment"># Contrôler les sources autorisées</span><br>
+        <span style="color:#ffd700">Content-Security-Policy: default-src 'self'</span><br>
+        <br>
+        <span class="term-comment"># Limiter les infos de référent</span><br>
+        <span style="color:#ffd700">Referrer-Policy: strict-origin</span><br>
+        <br>
+        <span class="term-comment"># Vérifier avec</span><br>
+        <span class="term-prompt">$ </span>curl -I https://soopha-learn.com
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6 — SMTP & EMAIL -->
+<div class="slide" data-index="6">
+  <div class="slide-tag">// Slide 07 · SMTP · Email · SPF · DKIM · DMARC</div>
+  <h2>SMTP & Sécurité Email — Stopper le Spoofing</h2>
+  <h3>Simple Mail Transfer Protocol — comprendre comment les emails voyagent et comment les sécuriser</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">📧 Le voyage d'un email</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0;font-size:.65rem">
+        <span style="color:#00aaff">Expéditeur</span> → MUA (Outlook/Gmail)<br>
+        &nbsp;&nbsp;↓ Submission port <span style="color:#ffd700">587</span> (STARTTLS)<br>
+        <span style="color:#00aaff">MTA expéditeur</span> (Mail Transfer Agent)<br>
+        &nbsp;&nbsp;↓ Lookup DNS MX du destinataire<br>
+        &nbsp;&nbsp;↓ Connexion SMTP port <span style="color:#ffd700">25</span><br>
+        <span style="color:#00aaff">MTA destinataire</span><br>
+        &nbsp;&nbsp;↓ Livraison dans la boîte<br>
+        <span style="color:#00aaff">Destinataire</span> → récupère via <span style="color:#ffd700">IMAP/993</span><br>
+        <br>
+        <span class="term-comment"># Tester manuellement SMTP</span><br>
+        <span class="term-prompt">$ </span>telnet mail.example.com 25<br>
+        <span class="term-out">EHLO test.com</span><br>
+        <span class="term-out">MAIL FROM: &lt;test@test.com&gt;</span><br>
+        <span class="term-out">RCPT TO: &lt;victim@example.com&gt;</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🛡️ SPF + DKIM + DMARC — la triade anti-spoofing</div>
+      <ul class="bullets">
+        <li><strong>SPF</strong> (Sender Policy Framework) — enregistrement TXT DNS qui liste les serveurs autorisés à envoyer pour ton domaine. Un email d'une IP non listée = échec SPF<br><code style="color:#00aaff;font-family:var(--mono);font-size:.65rem">v=spf1 include:_spf.google.com ~all</code></li>
+        <li><strong>DKIM</strong> (DomainKeys Identified Mail) — signature cryptographique ajoutée à chaque email. Le destinataire vérifie la signature via la clé publique en DNS. Prouve que l'email n'a pas été modifié</li>
+        <li><strong>DMARC</strong> — définit quoi faire si SPF ET DKIM échouent : none (surveiller), quarantine (spam), reject (bloquer). Envoie des rapports sur les tentatives de spoofing<br><code style="color:#00aaff;font-family:var(--mono);font-size:.65rem">v=DMARC1; p=reject; rua=mailto:dmarc@soopha.com</code></li>
+        <li class="warn">Sans ces 3 protections : <strong>n'importe qui peut envoyer des emails au nom de ton domaine</strong></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7 — QCM : SSH -->
+<div class="slide" data-index="7">
+  <div class="slide-tag">// Slide 08 · SSH · Authentification par clé · Tunneling · QCM requis</div>
+  <h2>SSH — L'Accès Distant Sécurisé</h2>
+  <h3>Secure Shell — le protocole indispensable de tout administrateur Linux et pentester</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔑 Authentification par clé — la bonne pratique</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># 1. Générer une paire de clés</span><br>
+        <span class="term-prompt">$ </span>ssh-keygen -t ed25519 -C "beni@soopha.com"<br>
+        <span class="term-out">→ ~/.ssh/id_ed25519 (clé privée — JAMAIS PARTAGER)</span><br>
+        <span class="term-out">→ ~/.ssh/id_ed25519.pub (clé publique — OK à partager)</span><br>
+        <br>
+        <span class="term-comment"># 2. Copier la clé publique sur le serveur</span><br>
+        <span class="term-prompt">$ </span>ssh-copy-id user@serveur.com<br>
+        <span class="term-comment"># → ajoute dans ~/.ssh/authorized_keys</span><br>
+        <br>
+        <span class="term-comment"># 3. Se connecter sans mot de passe</span><br>
+        <span class="term-prompt">$ </span>ssh user@serveur.com<br>
+        <br>
+        <span class="term-comment"># 4. Désactiver l'auth par mot de passe</span><br>
+        <span class="term-out">PasswordAuthentication no /etc/ssh/sshd_config</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔧 SSH — Au-delà de la connexion</div>
+      <div class="terminal sm" style="margin:0;border:none;background:transparent;padding:.3rem 0">
+        <span class="term-comment"># Copier des fichiers</span><br>
+        <span class="term-prompt">$ </span>scp fichier.txt user@serveur:/tmp/<br>
+        <span class="term-prompt">$ </span>rsync -avz ./dossier user@serveur:/backup/<br>
+        <br>
+        <span class="term-comment"># Tunneling local (SOCKS proxy)</span><br>
+        <span class="term-prompt">$ </span>ssh -D 9050 user@serveur.com<br>
+        <span class="term-comment"># → tout le trafic via le serveur SSH</span><br>
+        <br>
+        <span class="term-comment"># Port forwarding local</span><br>
+        <span class="term-prompt">$ </span>ssh -L 8080:localhost:80 user@serveur<br>
+        <span class="term-comment"># → localhost:8080 = serveur:80</span><br>
+        <br>
+        <span class="term-comment"># Exécuter une commande à distance</span><br>
+        <span class="term-prompt">$ </span>ssh user@serveur "df -h && uptime"
+      </div>
+    </div>
+  </div>
+  <div class="quote" style="max-width:880px;width:100%">
+    "Hardening SSH : changer le port (ex: 2222), désactiver root login, utiliser ed25519 (plus sûr que RSA-2048), activer fail2ban, limiter les IPs autorisées avec AllowUsers. Ces 5 mesures éliminent 99% des attaques bruteforce automatisées."
+  </div>
+</div>
+
+<!-- SLIDE 8 — FTP vs SFTP -->
+<div class="slide" data-index="8">
+  <div class="slide-tag">// Slide 09 · FTP · SFTP · FTPS · Comparaison · Risques</div>
+  <h2>FTP vs SFTP vs FTPS — Ne Plus Jamais Utiliser FTP</h2>
+  <h3>File Transfer Protocol — comprendre pourquoi FTP est une catastrophe sécuritaire</h3>
+  <div class="cmd-grid" style="margin-bottom:.8rem">
+    <div class="cmd-card" style="border-color:rgba(255,68,102,.35)">
+      <div class="cmd-name" style="color:#ff4466">FTP — Port 20/21</div>
+      <div class="cmd-desc">Protocole de 1971 — <strong style="color:#ff4466">aucun chiffrement</strong>. Identifiants (login/mot de passe) et données transmis en clair. N'importe qui sur le réseau peut les capturer avec Wireshark. Deux modes : actif (problèmes NAT) et passif.</div>
+      <div class="cmd-ex">⚠ BANNIR DÉFINITIVEMENT — remplacer par SFTP ou FTPS</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">SFTP — Port 22</div>
+      <div class="cmd-desc">SSH File Transfer Protocol — <strong style="color:#fff">pas un FTP chiffré</strong> mais un protocole de transfert de fichiers intégré à SSH. Tout est chiffré. Un seul port. Authentification par clé SSH possible. Le standard recommandé.</div>
+      <div class="cmd-ex">sftp user@serveur.com · Filezilla (mode SFTP) · WinSCP</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+      <div class="cmd-name" style="color:#ffd700">FTPS — Port 990 (Explicit: 21)</div>
+      <div class="cmd-desc">FTP over TLS/SSL — le vrai FTP chiffré. Deux modes : Explicit (STARTTLS sur port 21) et Implicit (port 990). Compatible avec les infrastructures FTP existantes. Complexe à configurer avec le NAT et les firewalls.</div>
+      <div class="cmd-ex">Acceptable si SFTP impossible — FileZilla supporte les deux</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.2)">
+      <div class="cmd-name" style="color:#00aaff">SCP — Port 22</div>
+      <div class="cmd-desc">Secure Copy Protocol — transfert de fichiers via SSH, simple et efficace. Pas d'interface, juste une commande. Déprécié dans OpenSSH au profit de SFTP mais toujours très utilisé.</div>
+      <div class="cmd-ex">scp fichier.txt user@host:/dest/ · scp -r dossier/</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.2)">
+      <div class="cmd-name" style="color:#aa44ff">RSYNC — Port 873 ou SSH</div>
+      <div class="cmd-desc">Synchronisation efficace de fichiers — ne transfère que les différences (delta). Via SSH pour le chiffrement. Idéal pour les sauvegardes incrémentales, la synchronisation de serveurs.</div>
+      <div class="cmd-ex">rsync -avz --delete src/ user@host:/dest/</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">Démo Wireshark : FTP vs SFTP</div>
+      <div class="cmd-desc">En capturant du trafic FTP dans Wireshark, on voit : USER admin → PASS MonMotDePasse123 en clair dans les paquets. En SFTP : données chiffrées, impossible à lire.</div>
+      <div class="cmd-ex">filter: ftp → voir les credentials en clair · ssh → chiffré</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9 — ARP EN DÉTAIL -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// Slide 10 · ARP · Address Resolution Protocol · ARP Spoofing · MITM</div>
+  <h2>ARP — La Résolution MAC et ses Failles</h2>
+  <h3>Address Resolution Protocol — trouver l'adresse MAC d'une IP locale et l'attaque MITM classique</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card">
+      <div class="cmd-name" style="margin-bottom:.7rem">🔍 Comment ARP fonctionne</div>
+      <ul class="bullets">
+        <li>Quand tu pingues <code style="color:#00aaff;font-family:var(--mono)">192.168.1.1</code>, ton OS a besoin de l'adresse <strong>MAC du routeur</strong> pour construire la trame Ethernet</li>
+        <li><strong>ARP Request</strong> — broadcast : <em>"Qui a l'IP 192.168.1.1 ? Réponds à AA:BB:CC:11:22:33"</em></li>
+        <li><strong>ARP Reply</strong> — le routeur répond : <em>"C'est moi ! Mon MAC est 11:22:33:44:55:66"</em></li>
+        <li>La correspondance IP↔MAC est stockée dans la <strong>table ARP</strong> (cache pendant ~2 min)</li>
+        <li class="warn">ARP est <strong>stateless et sans authentification</strong> — n'importe qui peut répondre à la place du routeur</li>
+      </ul>
+      <div class="terminal sm" style="margin-top:.6rem;border:none;background:transparent;padding:.2rem 0">
+        <span class="term-prompt">$ </span>arp -a &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="term-comment"># voir la table ARP</span><br>
+        <span class="term-prompt">$ </span>arping 192.168.1.1 &nbsp;<span class="term-comment"># requête ARP manuelle</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="color:#ff4466;margin-bottom:.7rem">⚔️ ARP Spoofing / ARP Poisoning</div>
+      <ul class="bullets">
+        <li>L'attaquant envoie de <strong>fausses ARP Replies</strong> sans qu'on lui ait posé de question (Gratuitous ARP)</li>
+        <li>Il dit à Alice : <em>"L'IP du routeur (192.168.1.1) c'est MON MAC"</em></li>
+        <li>Il dit au routeur : <em>"L'IP d'Alice (192.168.1.10) c'est MON MAC"</em></li>
+        <li>Résultat : <strong>tout le trafic d'Alice passe par l'attaquant</strong> → MITM (Man in the Middle)</li>
+        <li class="warn">Sur WiFi ouvert avec un hub, c'est trivial. Outil : arpspoof, Ettercap, Bettercap</li>
+      </ul>
+      <div class="terminal sm" style="margin-top:.6rem;border:none;background:transparent;padding:.2rem 0">
+        <span class="term-prompt"># </span>Détecter ARP spoofing<br>
+        <span class="term-prompt">$ </span>arp -a | grep -c "192.168.1.1"<br>
+        <span class="term-comment"># Si &gt;1 MAC pour la même IP → ARP spoof!</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10 — QCM : SMTP/SPF/DKIM -->
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Slide 11 · Protections email · SPF DKIM DMARC en pratique · QCM requis</div>
+  <h2>SPF · DKIM · DMARC — La Triade Anti-Spoofing</h2>
+  <h3>Sans ces 3 protections, n'importe qui peut envoyer des emails en ton nom — voici comment les configurer</h3>
+  <div class="card" style="margin-bottom:.8rem">
+    <div class="cmd-name" style="margin-bottom:.8rem">🔧 Configuration concrète pour soopha-learn.com</div>
+    <div class="terminal sm">
+      <span class="term-comment"># 1. Enregistrement SPF (dans DNS TXT)</span><br>
+      <span style="color:#00ff88">v=spf1 include:_spf.google.com include:sendgrid.net ip4:41.243.x.x -all</span><br>
+      <span class="term-comment"># → autorise Google, SendGrid, et l'IP fixe. -all = rejeter tout le reste</span><br>
+      <br>
+      <span class="term-comment"># 2. Enregistrement DKIM (dans DNS TXT, clé publique)</span><br>
+      <span style="color:#00aaff">mail._domainkey.soopha-learn.com TXT "v=DKIM1; k=rsa; p=MIIBIjAN..."</span><br>
+      <span class="term-comment"># → le serveur mail signe chaque email avec la clé privée correspondante</span><br>
+      <br>
+      <span class="term-comment"># 3. Enregistrement DMARC (dans DNS TXT)</span><br>
+      <span style="color:#ffd700">_dmarc.soopha-learn.com TXT "v=DMARC1; p=reject; rua=mailto:dmarc@soopha.com"</span><br>
+      <span class="term-comment"># → rejeter les emails qui échouent SPF ET DKIM · recevoir des rapports</span><br>
+      <br>
+      <span class="term-comment"># Vérifier la config</span><br>
+      <span class="term-prompt">$ </span>dig soopha-learn.com TXT | grep spf<br>
+      <span class="term-prompt">$ </span>dig _dmarc.soopha-learn.com TXT
+    </div>
+  </div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center">
+    <span class="pill pill-green">SPF = qui peut envoyer</span>
+    <span class="pill pill-blue">DKIM = signature du contenu</span>
+    <span class="pill pill-orange">DMARC = quoi faire si ça échoue</span>
+  </div>
+</div>
+
+<!-- SLIDE 11 — PROTOCOLES MODERNES -->
+<div class="slide" data-index="11">
+  <div class="slide-tag">// Slide 12 · DNS over HTTPS · QUIC · HTTP/3 · WireGuard</div>
+  <h2>Protocoles Modernes — L'Évolution de la Sécurité Réseau</h2>
+  <h3>Les protocoles qui remplacent les anciens et renforcent la confidentialité du réseau</h3>
+  <div class="cmd-grid">
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.2)">
+      <div class="cmd-name" style="color:#00ff88">DoH — DNS over HTTPS</div>
+      <div class="cmd-desc">Les requêtes DNS chiffrées via HTTPS (port 443). Empêche le FAI et les intermédiaires de voir quels domaines tu consultes. Cloudflare (1.1.1.1), Google (8.8.8.8) et Mozilla le supportent.</div>
+      <div class="cmd-ex">Activer dans Firefox : Paramètres → DNS over HTTPS</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,170,255,.3)">
+      <div class="cmd-name" style="color:#00aaff">DoT — DNS over TLS</div>
+      <div class="cmd-desc">DNS chiffré via TLS sur le port 853. Alternative à DoH — plus simple à configurer au niveau du réseau/routeur. Cloudflare, Quad9 (9.9.9.9) le supportent.</div>
+      <div class="cmd-ex">systemd-resolved · Unbound · port 853</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(170,68,255,.2)">
+      <div class="cmd-name" style="color:#aa44ff">QUIC / HTTP/3</div>
+      <div class="cmd-desc">Protocole de transport de Google basé sur UDP (pas TCP). Intègre TLS 1.3 nativement, 0-RTT connection (moins de latence), multiplexage sans head-of-line blocking. Utilisé par 30%+ d'Internet.</div>
+      <div class="cmd-ex">curl --http3 https://google.com · port UDP 443</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(0,255,136,.3)">
+      <div class="cmd-name" style="color:#00ff88">WireGuard</div>
+      <div class="cmd-desc">VPN moderne — 4000 lignes de code vs 70 000 pour OpenVPN. ChaCha20 + Poly1305 + Curve25519. Performance 2-3x supérieure à OpenVPN. Intégré au kernel Linux depuis 5.6.</div>
+      <div class="cmd-ex">wg genkey · wg pubkey · port UDP 51820</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,215,0,.2)">
+      <div class="cmd-name" style="color:#ffd700">STARTTLS vs SSL/TLS implicite</div>
+      <div class="cmd-desc">STARTTLS = connexion en clair puis upgrade chiffré (ports 25, 587, 143). SSL/TLS implicite = chiffré dès le départ (ports 465, 993, 995). STARTTLS vulnérable au downgrade attack.</div>
+      <div class="cmd-ex">Préférer ports implicites : 993 (IMAP/S) · 465 (SMTPS)</div>
+    </div>
+    <div class="cmd-card" style="border-color:rgba(255,136,0,.2)">
+      <div class="cmd-name" style="color:#ff8800">mTLS — Mutual TLS</div>
+      <div class="cmd-desc">TLS bidirectionnel — non seulement le serveur prouve son identité, mais le client aussi. Utilisé entre microservices, dans les architectures Zero Trust, l'API banking. Le serveur rejette les clients sans certificat valide.</div>
+      <div class="cmd-ex">Kubernetes Istio · API M-Pesa · architecture Zero Trust</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12 — SYNTHÈSE PROTOCOLES -->
+<div class="slide" data-index="12">
+  <div class="slide-tag">// Slide 13 · Synthèse · Sécurisé vs Non sécurisé · Décisions</div>
+  <h2>Récapitulatif — Sécurisé vs À Bannir</h2>
+  <h3>La carte de décision rapide pour choisir le bon protocole à chaque situation</h3>
+  <div class="grid2" style="margin-bottom:.8rem">
+    <div class="card" style="border-color:rgba(255,68,102,.25)">
+      <div class="cmd-name" style="color:#ff4466;margin-bottom:.7rem">🔴 Bannir définitivement</div>
+      <ul class="bullets">
+        <li><strong>FTP</strong> (ports 20/21) — remplacer par SFTP ou FTPS</li>
+        <li><strong>Telnet</strong> (port 23) — remplacer par SSH</li>
+        <li><strong>HTTP</strong> (port 80) — forcer HTTPS avec HSTS</li>
+        <li><strong>SMTP sans chiffrement</strong> (port 25 ouvert) — utiliser 587+STARTTLS ou 465</li>
+        <li><strong>WEP/WPA WiFi</strong> — passer à WPA3 ou WPA2+AES minimum</li>
+        <li><strong>MD5/SHA1 pour les certificats</strong> — utiliser SHA-256 minimum</li>
+        <li><strong>SSL 2.0/3.0, TLS 1.0/1.1</strong> — désactiver, utiliser TLS 1.2+ uniquement</li>
+        <li><strong>Mot de passe root SSH</strong> — authentification par clé obligatoire</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:rgba(0,255,136,.25)">
+      <div class="cmd-name" style="color:#00ff88;margin-bottom:.7rem">✅ Standards recommandés</div>
+      <ul class="bullets">
+        <li><strong>SFTP</strong> (port 22) — transfert de fichiers chiffré</li>
+        <li><strong>SSH</strong> (port 22) avec clé ed25519 — accès distant</li>
+        <li><strong>HTTPS</strong> (port 443) avec TLS 1.3 — web</li>
+        <li><strong>IMAP/S</strong> (port 993) — réception email</li>
+        <li><strong>SMTP/S</strong> (port 465) ou 587+STARTTLS — envoi email</li>
+        <li><strong>SPF + DKIM + DMARC</strong> — anti-spoofing email</li>
+        <li><strong>DNS over HTTPS/TLS</strong> — résolution DNS privée</li>
+        <li><strong>WireGuard ou OpenVPN</strong> — VPN moderne</li>
+        <li class="ok">Headers de sécurité HTTP : HSTS, CSP, X-Frame-Options</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 13 — QCM FINAL -->
+<div class="slide" data-index="13">
+  <div class="slide-tag">// Slide 14 · Conclusion · NET·04 s'ouvre · QCM final</div>
+  <h2>Protocoles Maîtrisés — Direction l'Architecture 🏗️</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🎓 Ce que tu maîtrises — NET·03</div>
+      <ul class="bullets">
+        <li>Ports essentiels — 22, 25, 53, 80, 443, 3306, 3389 et leur niveau de risque</li>
+        <li>DNS complet — types d'enregistrements (A, MX, TXT, CNAME, PTR), résolution récursive</li>
+        <li>Attaques DNS — cache poisoning, hijacking, amplification, tunneling</li>
+        <li>HTTP — méthodes (GET/POST/PUT/DELETE), codes de statut 2xx/3xx/4xx/5xx</li>
+        <li>TLS — handshake en 5 étapes, headers de sécurité HTTP</li>
+        <li>SMTP — SPF, DKIM, DMARC — la triade anti-spoofing</li>
+        <li>SSH — authentification par clé ed25519, port forwarding, SCP, SFTP</li>
+        <li>FTP vs SFTP — pourquoi FTP est banni, alternatives</li>
+        <li>ARP — résolution MAC, ARP spoofing, détection MITM</li>
+        <li>Protocoles modernes — DoH, QUIC/HTTP3, WireGuard, mTLS</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="cmd-name" style="font-size:.82rem;margin-bottom:.8rem">🔜 NET·04 — Ce qui t'attend</div>
+      <ul class="bullets">
+        <li>Switches managés — VLANs, STP, port security, 802.1X</li>
+        <li>Routeurs — tables de routage statique et dynamique (OSPF, BGP)</li>
+        <li>Firewalls stateless vs stateful vs NGFW — règles, NAT, inspection</li>
+        <li>Architecture DMZ — zones de sécurité, segmentation réseau</li>
+        <li>ACL (Access Control Lists) — filtrage sur Cisco et Linux</li>
+        <li class="ok">Prérequis acquis : protocoles, DNS, HTTP, SSH, TLS, SMTP</li>
+      </ul>
+      <div class="hdiv">OUTILS</div>
+      <ul class="bullets" style="font-size:.78rem">
+        <li><strong>mxtoolbox.com</strong> — vérifier SPF, DKIM, DMARC</li>
+        <li><strong>ssllabs.com/ssltest</strong> — analyser la config TLS d'un site</li>
+        <li><strong>shodan.io</strong> — voir les ports exposés sur Internet</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- QCM OVERLAY -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🔐</div>
+    <div class="completion-title" id="comp-title">NET·03 terminé !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="net4.html" class="completion-btn completion-btn-primary">NET·04 : Architecture →</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 14</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+var QCM = {
+  2: {
+    question: "Lors de la résolution DNS de 'soopha-learn.com', dans quel ordre exact les serveurs DNS sont-ils contactés par le résolveur récursif ?",
+    options: [
+      "Serveur DNS du FAI → Serveur TLD .com → Root Server → Serveur autoritaire Cloudflare",
+      "Root Server (.) → Serveur TLD .com → Serveur autoritaire Cloudflare (NS) → réponse finale",
+      "Serveur autoritaire Cloudflare directement → le résolveur connaît déjà qui gère .com",
+      "Serveur TLD .com → Root Server → Serveur autoritaire → Cache du FAI"
+    ],
+    correct: 1,
+    explanation: "La résolution DNS récursive suit toujours cet ordre : (1) Le résolveur vérifie son cache. Si pas en cache : (2) il contacte un Root Server (.) qui lui dit qui gère .com. (3) Il contacte le serveur TLD .com qui lui donne les NS (name servers) de soopha-learn.com. (4) Il contacte Cloudflare NS qui répond avec l'IP. Ce processus est caché derrière un cache — la plupart des requêtes sont répondues depuis le cache sans aller jusqu'au Root. Les 13 clusters de Root Servers sont distribués mondialement, y compris en Afrique."
+  },
+  5: {
+    question: "Lors d'un TLS handshake avec soopha-learn.com, comment le navigateur vérifie-t-il que le certificat est légitime et non forgé ?",
+    options: [
+      "Le navigateur contacte Let's Encrypt pour demander si le certificat est valide à chaque connexion",
+      "Le certificat est signé par une Autorité de Certification (AC) dont la clé publique est pré-installée dans le navigateur — le navigateur vérifie la signature cryptographique sans contacter l'AC",
+      "Le navigateur compare le certificat avec une base de données centralisée de certificats valides hébergée par Google",
+      "Le navigateur accepte tout certificat tant que la connexion est chiffrée — la validation n'est qu'optionnelle"
+    ],
+    correct: 1,
+    explanation: "Le navigateur embarque une liste de ~150 Autorités de Certification (AC) racines de confiance (Mozilla Root Store, Microsoft Root Store...). Quand le serveur envoie son certificat, le navigateur vérifie : (1) Le certificat est signé par une AC de confiance ou par une AC intermédiaire dont la chaîne remonte à une AC racine de confiance. (2) Le certificat n'est pas révoqué (CRL/OCSP). (3) Le nom de domaine correspond (CN ou SAN). (4) La date de validité est correcte. Tout cela est vérifié localement, cryptographiquement, sans contacter Let's Encrypt à chaque fois."
+  },
+  7: {
+    question: "Tu gères un serveur Linux. Quelle combinaison de mesures SSH réduit le plus efficacement le risque de compromission ?",
+    options: [
+      "Changer le port SSH de 22 à 2222 — les attaquants ne scanneront pas les ports non standard",
+      "Authentification par clé ed25519, désactiver PasswordAuthentication, désactiver PermitRootLogin, activer fail2ban et limiter les IPs sources dans le firewall",
+      "Utiliser un mot de passe très long (20 caractères) — plus sécurisé qu'une clé SSH",
+      "Installer un certificat SSL sur le serveur SSH — le chiffrement TLS remplace la clé SSH"
+    ],
+    correct: 1,
+    explanation: "La défense en profondeur SSH est la combinaison de plusieurs mesures : (1) Clé ed25519 + PasswordAuthentication no → élimine les attaques bruteforce par mot de passe. (2) PermitRootLogin no → même si une clé est compromise, l'attaquant ne peut pas être root directement. (3) fail2ban → bloque les IPs après N tentatives échouées. (4) Firewall limitant les IPs sources → seuls les IPs connues peuvent tenter une connexion SSH. Changer le port (A) réduit le bruit des logs mais ne sécurise pas réellement — les scanners comme Shodan scannent tous les ports. Les mots de passe (C) sont vulnérables au bruteforce. TLS (D) n'a rien à voir avec SSH."
+  },
+  10: {
+    question: "Un attaquant envoie un email depuis 'support@soopha-learn.com' alors que vous gérez ce domaine. Quelle configuration l'aurait bloqué côté destinataire ?",
+    options: [
+      "Un certificat SSL sur le site web — il prouve que le domaine est légitime et les emails frauduleux sont automatiquement rejetés",
+      "DMARC avec p=reject, combiné avec SPF (listant les serveurs autorisés) et DKIM (signature cryptographique) — le serveur destinataire rejette l'email si l'IP expéditrice n'est pas dans le SPF ET la signature DKIM est invalide",
+      "Un firewall réseau qui bloque le port 25 entrant — les emails frauduleux ne peuvent pas entrer",
+      "HTTPS sur le domaine — la présence du cadenas prouve aux destinataires que les emails sont légitimes"
+    ],
+    correct: 1,
+    explanation: "C'est exactement le rôle de la triade SPF+DKIM+DMARC : (1) SPF vérifie si l'IP du serveur expéditeur est autorisée à envoyer pour soopha-learn.com. (2) DKIM vérifie la signature cryptographique de l'email — seul le serveur avec la clé privée peut signer correctement. (3) DMARC définit la politique : p=reject = si SPF OU DKIM échouent, rejeter l'email. Sans DMARC, même si SPF et DKIM sont configurés, le destinataire peut quand même accepter l'email. SSL/HTTPS (A, D) ne protège pas les emails — c'est pour le web. Bloquer le port 25 entrant (C) empêcherait aussi les vrais emails d'arriver."
+  },
+  13: {
+    question: "Sur un réseau local, l'attaque ARP Spoofing permet à un attaquant de faire une attaque MITM (Man in the Middle). Quelle méthode détecte cette attaque ?",
+    options: [
+      "Scanner les ports avec Nmap — un port ouvert supplémentaire apparaît quand ARP Spoofing est actif",
+      "Vérifier la table ARP (arp -a) — si deux entrées différentes ont la même adresse MAC, ou si la passerelle a changé de MAC, c'est suspect. Des outils comme arpwatch alertent en temps réel sur les changements MAC",
+      "Pinger la passerelle — si le temps de réponse augmente de quelques ms, c'est le signe d'un intermédiaire",
+      "Vérifier les logs du serveur DNS — le DNS Spoofing accompagne toujours l'ARP Spoofing"
+    ],
+    correct: 1,
+    explanation: "L'ARP Spoofing se détecte en analysant la table ARP. Signes d'alerte : (1) Deux IPs différentes ont la même adresse MAC dans la table ARP (l'attaquant répond pour deux victimes). (2) L'adresse MAC de la passerelle (routeur) a changé sans intervention réseau. Outils : arpwatch (surveille les changements MAC en temps réel et alerte par email), XArp (Windows/Linux), Wireshark (filtrer 'arp' et chercher les Gratuitous ARP répétés). Contre-mesures : entrées ARP statiques pour les équipements critiques, Dynamic ARP Inspection (DAI) sur les switches managés, VLAN segmentation."
+  }
+};
+
+var COURSE_ID = 'net3';
+var TOTAL = 14;
+var current = 0;
+var currentUser = null;
+var qcmAnswered = {};
+var qcmScores = {};
+var currentQcmSlide = null;
+
+async function init() {
+  currentUser = await requireAuth();
+  if (!currentUser) return;
+  var profile = await getProfile(currentUser.id);
+  document.getElementById('tb-username').textContent = '@' + ((profile && profile.username) || 'user');
+  var saved = await getCourseProgress(currentUser.id, COURSE_ID);
+  saved.forEach(function(r){ qcmAnswered[r.slide_index]=true; qcmScores[r.slide_index]=r.is_correct?1:0; });
+  updateUI();
+}
+function navigate(dir) {
+  var next = current + dir;
+  if (next < 0 || next >= TOTAL) return;
+  if (dir > 0 && QCM[current] && !qcmAnswered[current]) { showQcm(current); return; }
+  var curEl = document.querySelector('.slide.active');
+  var nextEl = document.querySelector('.slide[data-index="' + next + '"]');
+  if (!curEl || !nextEl) return;
+  curEl.classList.remove('active'); curEl.classList.add('exit');
+  setTimeout(function(){ curEl.classList.remove('exit'); }, 400);
+  nextEl.classList.add('active');
+  current = next; updateUI();
+}
+function updateUI() {
+  document.getElementById('slide-counter').textContent = String(current+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL-1;
+  document.getElementById('progress-fill').style.width = ((current+1)/TOTAL*100)+'%';
+  var ind = document.getElementById('qcm-ind');
+  if (QCM[current]) ind.textContent = qcmAnswered[current] ? (qcmScores[current]===1?'✅ QCM répondu':'❌ QCM répondu') : '⚡ QCM requis';
+  else ind.textContent = '';
+}
+function showQcm(idx) {
+  var qcm = QCM[idx]; if (!qcm) return;
+  currentQcmSlide = idx;
+  document.getElementById('qcm-prog').textContent = 'QCM '+(Object.keys(qcmAnswered).length+1)+' / '+Object.keys(QCM).length;
+  document.getElementById('qcm-question').textContent = qcm.question;
+  document.getElementById('qcm-feedback').style.display='none';
+  document.getElementById('qcm-feedback').className='qcm-feedback';
+  document.getElementById('qcm-next-btn').classList.remove('show');
+  document.getElementById('qcm-saving').classList.remove('show');
+  var letters=['A','B','C','D'], html='';
+  qcm.options.forEach(function(opt,i){ html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+'</span>'+opt+'</div>'; });
+  document.getElementById('qcm-options').innerHTML=html;
+  if (qcmAnswered[idx]) { restoreQcmState(idx); document.getElementById('qcm-next-btn').classList.add('show'); }
+  document.getElementById('qcm-overlay').classList.add('show');
+}
+async function selectOption(el, optIdx) {
+  if (qcmAnswered[currentQcmSlide]) return;
+  var qcm = QCM[currentQcmSlide], correct = optIdx === qcm.correct;
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  if (!correct) el.classList.add('wrong');
+  var fb = document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(correct?'correct':'wrong');
+  fb.textContent=(correct?'✅ Correct ! ':'❌ Incorrect. ')+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true; qcmScores[currentQcmSlide]=correct?1:0; updateUI();
+  if (currentUser) {
+    document.getElementById('qcm-saving').classList.add('show');
+    await saveQcmProgress(currentUser.id, COURSE_ID, currentQcmSlide, correct);
+    document.getElementById('qcm-saving').classList.remove('show');
+    if (Object.keys(qcmAnswered).length === Object.keys(QCM).length) {
+      var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length, pct=(c/tot)*100;
+      await completeCourse(currentUser.id, COURSE_ID, pct);
+      setTimeout(function(){ closeQcmAndAdvance(); showCompletion(pct); }, 1200); return;
+    }
+  }
+  document.getElementById('qcm-next-btn').classList.add('show');
+}
+function restoreQcmState(idx) {
+  var qcm=QCM[idx], score=qcmScores[idx];
+  document.querySelectorAll('.qcm-option').forEach(function(o,i){ o.classList.add('disabled'); if(i===qcm.correct) o.classList.add('correct'); });
+  var fb=document.getElementById('qcm-feedback');
+  fb.style.display='block'; fb.className='qcm-feedback '+(score===1?'correct':'wrong');
+  fb.textContent=(score===1?'✅ Déjà répondu. ':'❌ Réponse incorrecte. ')+qcm.explanation;
+}
+function closeQcmAndAdvance() {
+  document.getElementById('qcm-overlay').classList.remove('show');
+  if (currentQcmSlide===current && current<TOTAL-1) {
+    var next=current+1, curEl=document.querySelector('.slide.active'), nextEl=document.querySelector('.slide[data-index="'+next+'"]');
+    if (!curEl || !nextEl) return;
+    curEl.classList.remove('active'); curEl.classList.add('exit');
+    setTimeout(function(){ curEl.classList.remove('exit'); },400);
+    nextEl.classList.add('active'); current=next; updateUI();
+  }
+}
+function showCompletion(pct) {
+  var tot=Object.keys(QCM).length, c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById('comp-score').textContent=Math.round(pct)+'%';
+  if(pct>=80){ document.getElementById('comp-icon').textContent='🔐'; document.getElementById('comp-title').textContent='Protocoles maîtrisés !'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. DNS, TLS, SSH, SPF/DKIM/DMARC — tu sais tout. Direction l\'architecture !'; }
+  else if(pct>=60){ document.getElementById('comp-icon').textContent='📡'; document.getElementById('comp-title').textContent='NET·03 terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Revois TLS et SPF/DKIM/DMARC avant NET·04.'; }
+  else { document.getElementById('comp-icon').textContent='📚'; document.getElementById('comp-title').textContent='NET·03 terminé'; document.getElementById('comp-sub').textContent=c+' / '+tot+' bonnes réponses. Relis DNS et SSH — ce sont les bases du NET·04.'; }
+  document.getElementById('completion-modal').classList.add('show');
+}
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('qcm-overlay').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1);}
+  if(e.key==='ArrowLeft') navigate(-1);
+});
+var touchX=0;
+document.addEventListener('touchstart',function(e){touchX=e.touches[0].clientX;});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById('qcm-overlay').classList.contains('show')) navigate(dx<0?1:-1);
+});
+(function(){
+  var c=document.getElementById('matrix'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var chars='DNSHTTPTLSSSHSMTPFTPARPSSLSPFDKIMDMARC01443228053',fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops(); window.addEventListener('resize',initDrops);
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,4,12,0.05)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#00aaff';ctx.font=fs+'px monospace';
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+init();
+</script>
+</body>
+</html>
