@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud Security Engineer · Cours Complet · SooPHA Learn</title>
+<style>
+:root {
+  --green:#00ff88; --green-border:rgba(0,255,136,.13);
+  --red:#ff4466; --yellow:#ffd700; --blue:#4488ff; --cyan:#00ddff;
+  --orange:#ff8800; --purple:#aa44ff; --teal:#00c8a0;
+  --bg:#020a08; --bg2:rgba(2,14,10,.92);
+  --mono:'Courier New',Courier,monospace;
+  --display:'Georgia','Times New Roman',serif;
+  --body:'Arial',sans-serif;
+  --transition:.2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow:hidden;height:100%;background:var(--bg);color:#e0fff8;font-family:var(--body);font-size:14px}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--cyan),var(--teal),transparent);z-index:999}
+
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,14,10,.97);border-bottom:1px solid rgba(0,221,255,.13);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(0,221,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-right{display:flex;gap:1.2rem;align-items:center}
+.tb-back{color:rgba(0,221,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}.tb-back:hover{color:var(--cyan)}
+.tb-dot{width:6px;height:6px;background:var(--cyan);border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(0,221,255,.4)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(0,221,255,.06)}
+#progress-fill{height:100%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);transition:width .5s ease}
+
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,221,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display);font-weight:900;font-size:clamp(1.8rem,3.5vw,2.8rem);color:#fff;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem;text-shadow:0 0 40px var(--cyan),0 0 80px rgba(0,221,255,.25)}
+.slide h2{font-family:var(--display);font-weight:700;font-size:clamp(1.1rem,2vw,1.7rem);color:var(--cyan);letter-spacing:.08em;margin-bottom:1rem}
+.slide h3{font-family:var(--display);font-weight:400;font-size:clamp(.8rem,1.2vw,1rem);color:rgba(0,221,255,.5);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px var(--cyan),0 0 80px rgba(0,221,255,.25)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ff88;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ff88;transform:translate(2px)}95%{text-shadow:0 0 40px var(--cyan);transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;max-width:880px;width:100%}
+.card{background:rgba(2,14,10,.9);border:1px solid rgba(0,221,255,.13);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid var(--cyan);border-left:2px solid var(--cyan)}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid var(--cyan);border-right:2px solid var(--cyan)}
+.card-red{border-color:rgba(255,68,102,.18)}.card-red::before,.card-red::after{border-color:var(--red)}
+.card-green{border-color:rgba(0,255,136,.18)}.card-green::before,.card-green::after{border-color:var(--green)}
+.card-blue{border-color:rgba(68,136,255,.18)}.card-blue::before,.card-blue::after{border-color:var(--blue)}
+.card-yellow{border-color:rgba(255,215,0,.18)}.card-yellow::before,.card-yellow::after{border-color:var(--yellow)}
+.card-orange{border-color:rgba(255,136,0,.18)}.card-orange::before,.card-orange::after{border-color:var(--orange)}
+.card-purple{border-color:rgba(170,68,255,.18)}.card-purple::before,.card-purple::after{border-color:var(--purple)}
+.card-teal{border-color:rgba(0,200,160,.2)}.card-teal::before,.card-teal::after{border-color:var(--teal)}
+
+.blabel{font-family:var(--mono);font-size:.58rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(0,221,255,.35);margin-bottom:.6rem}
+.blabel::before{content:'// ';color:rgba(0,221,255,.18)}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.92rem);color:rgba(200,255,245,.8);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:var(--cyan);font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}
+.bullets li.ok::before{content:'✅';font-size:.7rem}
+.bullets li.bad::before{content:'❌';font-size:.7rem}
+.bullets li.warn::before{content:'⚠';color:var(--yellow);font-size:.65rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+
+.quote{border-left:3px solid var(--cyan);padding:.7rem 1rem;background:rgba(0,221,255,.04);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#e0fff8;line-height:1.6}
+.quote-red{border-color:var(--red);background:rgba(255,68,102,.04);color:#ffd0d8}
+.quote-yellow{border-color:var(--yellow);background:rgba(255,215,0,.04);color:#fff8d0}
+.quote-orange{border-color:var(--orange);background:rgba(255,136,0,.04);color:#ffe0c0}
+.quote-green{border-color:var(--green);background:rgba(0,255,136,.04);color:#e0ffe8}
+.quote-teal{border-color:var(--teal);background:rgba(0,200,160,.04);color:#d0fff5}
+
+.terminal{background:rgba(0,6,4,.75);border:1px solid rgba(0,221,255,.1);border-left:3px solid var(--cyan);padding:.8rem 1.1rem;font-family:var(--mono);font-size:.75rem;color:rgba(0,221,255,.75);line-height:1.8}
+.terminal-red{border-left-color:var(--red);color:rgba(255,68,102,.75)}
+.terminal-green{border-left-color:var(--green);color:rgba(0,255,136,.75)}
+.terminal-yellow{border-left-color:var(--yellow);color:rgba(255,215,0,.75)}
+.terminal-orange{border-left-color:var(--orange);color:rgba(255,136,0,.75)}
+.terminal-purple{border-left-color:var(--purple);color:rgba(170,68,255,.75)}
+.terminal-teal{border-left-color:var(--teal);color:rgba(0,200,160,.8)}
+.term-prompt{color:var(--cyan)}.term-out{color:rgba(200,255,245,.4)}.term-warn{color:var(--yellow)}.term-err{color:var(--red)}.term-ok{color:var(--green)}
+
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(0,221,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0;font-family:var(--mono)}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(0,221,255,.1)}
+
+.tag-list{display:flex;flex-wrap:wrap;gap:.35rem}
+.tag{font-family:var(--mono);font-size:.62rem;padding:.22rem .55rem;border:1px solid rgba(0,221,255,.18);background:rgba(0,221,255,.05);color:rgba(0,221,255,.7)}
+.tag-g{border-color:rgba(0,255,136,.14);background:rgba(0,255,136,.04);color:rgba(0,255,136,.65)}
+.tag-r{border-color:rgba(255,68,102,.2);background:rgba(255,68,102,.05);color:rgba(255,68,102,.75)}
+.tag-y{border-color:rgba(255,215,0,.2);background:rgba(255,215,0,.04);color:rgba(255,215,0,.7)}
+.tag-b{border-color:rgba(68,136,255,.2);background:rgba(68,136,255,.05);color:rgba(100,160,255,.8)}
+.tag-o{border-color:rgba(255,136,0,.2);background:rgba(255,136,0,.05);color:rgba(255,136,0,.8)}
+.tag-p{border-color:rgba(170,68,255,.2);background:rgba(170,68,255,.05);color:rgba(170,68,255,.8)}
+.tag-t{border-color:rgba(0,200,160,.2);background:rgba(0,200,160,.05);color:rgba(0,200,160,.8)}
+
+.sval{font-family:var(--display);font-size:1.4rem;font-weight:700;margin-bottom:.2rem}
+.ssub{font-family:var(--mono);font-size:.6rem;color:rgba(0,221,255,.35);line-height:1.6}
+.arow{display:flex;align-items:flex-start;gap:.6rem}
+.arow .em{font-size:1.1rem;flex-shrink:0;margin-top:.1rem}
+.arow p{font-family:var(--mono);font-size:.64rem;color:rgba(200,255,245,.5);line-height:1.6}
+
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;border-radius:2px;font-family:var(--mono)}
+.pill-cyan{background:rgba(0,221,255,.1);border:1px solid rgba(0,221,255,.3);color:var(--cyan)}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-blue{background:rgba(68,136,255,.1);border:1px solid rgba(68,136,255,.3);color:#4488ff}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.pill-teal{background:rgba(0,200,160,.1);border:1px solid rgba(0,200,160,.3);color:var(--teal)}
+
+.cas-badge{display:inline-flex;align-items:center;gap:.4rem;font-family:var(--mono);font-size:.58rem;letter-spacing:.15em;padding:.28rem .8rem;background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.22);color:var(--red);margin-bottom:.6rem}
+.step-list{display:flex;flex-direction:column;gap:.5rem}
+.step{display:flex;align-items:flex-start;gap:.7rem}
+.step-num{font-family:var(--mono);font-size:.65rem;color:var(--cyan);min-width:1.4rem;padding-top:.05rem;flex-shrink:0}
+.step-txt{font-size:.83rem;color:rgba(200,255,245,.8);line-height:1.5}
+.step-txt strong{color:#fff}
+.timeline{display:flex;flex-direction:column;gap:.45rem}
+.tl-item{display:flex;gap:.8rem;align-items:flex-start}
+.tl-time{font-family:var(--mono);font-size:.6rem;color:var(--cyan);min-width:4.2rem;flex-shrink:0;padding-top:.1rem}
+.tl-content{font-size:.82rem;color:rgba(200,255,245,.8);line-height:1.45}
+.tl-content strong{color:#fff}
+
+/* Shared responsibility matrix */
+.matrix-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:.3rem;margin-bottom:.3rem;font-family:var(--mono);font-size:.62rem}
+.matrix-hdr{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;padding:.3rem .5rem}
+.matrix-cell{padding:.35rem .5rem;text-align:center;border-radius:2px}
+.cell-cust{background:rgba(255,68,102,.12);color:rgba(255,68,102,.9);border:1px solid rgba(255,68,102,.2)}
+.cell-cloud{background:rgba(0,221,255,.1);color:rgba(0,221,255,.85);border:1px solid rgba(0,221,255,.2)}
+.cell-shared{background:rgba(255,215,0,.08);color:rgba(255,215,0,.8);border:1px solid rgba(255,215,0,.2)}
+.matrix-label{padding:.35rem .5rem;color:rgba(200,255,245,.6)}
+
+/* Provider cards */
+.provider-card{padding:.8rem 1rem;border-radius:2px;border:1px solid rgba(0,221,255,.12);background:rgba(0,10,8,.5);margin-bottom:.4rem}
+.provider-name{font-family:var(--display);font-weight:700;font-size:.85rem;color:#fff;margin-bottom:.3rem}
+
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(2,8,6,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(2,14,10,.97);border:1px solid rgba(0,255,136,.2);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(0,255,136,.08)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #00ff88;border-left:2px solid #00ff88}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #00ff88;border-right:2px solid #00ff88}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(0,255,136,.1)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,255,136,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(0,255,136,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.35);margin-bottom:.5rem;display:none}
+.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(0,8,4,.3);border:1px solid rgba(0,255,136,.08);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(200,255,220,.7);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);color:rgba(220,255,230,.95)}
+.qcm-option.correct{border-color:#00ff88!important;background:rgba(0,255,136,.1)!important;color:#00ff88!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.07)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-size:.68rem;font-weight:700;color:rgba(0,255,136,.4);min-width:18px;flex-shrink:0;margin-top:.1rem}
+.qcm-option.correct .option-letter,.qcm-option.wrong .option-letter{color:inherit}
+.qcm-feedback{padding:.8rem 1rem;border-radius:2px;font-family:var(--mono);font-size:.78rem;line-height:1.5;display:none;margin-bottom:1.2rem}
+.qcm-feedback.correct{background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.18);color:rgba(0,255,136,.85)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.05);border:1px solid rgba(255,68,102,.18);color:rgba(255,100,130,.85)}
+.qcm-btn{font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.8rem;background:#00ff88;color:#020c06;border:none;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all .2s;text-transform:uppercase;display:none}
+.qcm-btn.show{display:inline-block}
+.qcm-btn:hover{background:rgba(0,255,136,.85)}
+
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;padding:2rem}
+#completion-modal.show{display:flex;animation:fadeInOv .3s ease}
+.completion-box{max-width:500px;width:100%;background:rgba(2,14,10,.98);border:1px solid rgba(0,255,136,.25);border-radius:2px;padding:3rem 2.5rem;text-align:center;box-shadow:0 0 60px rgba(0,255,136,.1);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #00ff88;border-left:2px solid #00ff88}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #00ff88;border-right:2px solid #00ff88}
+.completion-icon{font-size:4rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.5rem;font-weight:900;color:#fff;margin-bottom:.5rem}
+.completion-score{font-family:var(--display);font-size:3.5rem;font-weight:900;color:#00ff88;text-shadow:0 0 30px #00ff88;margin:1rem 0}
+.completion-sub{font-family:var(--mono);font-size:.78rem;color:rgba(0,255,136,.5);margin-bottom:.5rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.68rem;color:rgba(0,255,136,.3);margin-bottom:1.5rem}
+.completion-btn{font-family:var(--display);font-size:.78rem;font-weight:700;letter-spacing:.12em;padding:.8rem 1.8rem;text-decoration:none;display:inline-block;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);cursor:pointer;border:none;margin:.3rem;text-transform:uppercase;transition:all .2s}
+.completion-btn-primary{background:#00ff88;color:#020c06}
+.completion-btn-secondary{background:transparent;color:#00ff88;border:1px solid rgba(0,255,136,.25)!important;clip-path:none;border-radius:2px}
+
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,10,6,.97);border-top:1px solid rgba(0,255,136,.1);backdrop-filter:blur(12px)}
+.nav-btn{background:transparent;border:1px solid rgba(0,255,136,.18);color:rgba(0,255,136,.5);padding:.32rem .9rem;font-family:var(--mono);font-size:.65rem;cursor:pointer;transition:all .2s;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%)}
+.nav-btn:hover{border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,.05)}
+.nav-btn:disabled{opacity:.2;cursor:not-allowed}
+#slide-counter{font-family:var(--display);font-size:.72rem;color:#00ff88}
+.qcm-indicator{font-family:var(--mono);font-size:.62rem;color:rgba(255,215,0,.5);letter-spacing:.08em}
+@media(max-width:768px){.slide{padding:1rem 1.2rem}.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>Cloud Security · Cours Complet</span>
+  </div>
+  <div class="tb-right">
+    <span class="tb-user" id="tb-username">@apprenant</span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+
+<div id="slides">
+
+<!-- ■ SLIDE 0 · COVER ── -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// Cybersécurité · Cloud Security · Cours Complet</div>
+  <h1 class="glitch">☁️ CLOUD SECURITY<br>ENGINEER</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Sécuriser l'infrastructure qui fait tourner le monde</h3>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin:.8rem 0">
+    <span class="pill pill-cyan">🏗 Architecture</span>
+    <span class="pill pill-teal">🔐 IAM Cloud</span>
+    <span class="pill pill-yellow">🔍 CSPM</span>
+    <span class="pill pill-orange">🚀 DevSecOps</span>
+    <span class="pill pill-red">🔴 Cas Concrets</span>
+  </div>
+  <div style="max-width:720px;width:100%;margin-top:.5rem" class="card">
+    <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;margin-bottom:.8rem">
+      <div style="text-align:center"><div class="sval" style="color:var(--red);font-size:2rem">82%</div><div class="ssub">des entreprises ont subi<br>au moins un incident<br>cloud · Thales 2024</div></div>
+      <div style="text-align:center"><div class="sval" style="color:var(--cyan);font-size:2rem">60K€</div><div class="ssub">salaire junior<br>Cloud Security<br>France · rémunération rapide</div></div>
+      <div style="text-align:center"><div class="sval" style="color:var(--green);font-size:2rem">750€</div><div class="ssub">TJM moyen<br>freelance Cloud Sec<br>France & Europe</div></div>
+    </div>
+    <div class="terminal">
+      <span class="term-prompt">cloud@soopha:~$ </span>
+      <span class="term-out">// "Le cloud n'est pas moins sécurisé que le on-premise. Il est différemment mal configuré."</span>
+    </div>
+  </div>
+  <div style="margin-top:1rem;font-size:.68rem;color:rgba(0,221,255,.25);letter-spacing:.15em">← → POUR NAVIGUER · ESPACE POUR AVANCER</div>
+</div>
+
+<!-- ■ SLIDE 1 · ÉCOSYSTÈME ── -->
+<div class="slide" data-index="1" data-qcm="1">
+  <div class="slide-tag">// 01 · Cartographie</div>
+  <h2>L'écosystème Cloud Security : modèles, acteurs, outils</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Responsabilité partagée — le contrat fondamental</div>
+        <p style="font-size:.82rem;color:rgba(200,255,245,.8);line-height:1.5;margin-bottom:.7rem">En cloud, la sécurité est une <strong>responsabilité partagée</strong> entre le provider et le client. La frontière varie selon le modèle de service.</p>
+        <div class="matrix-row"><div class="matrix-hdr" style="color:rgba(0,221,255,.4)">Couche</div><div class="matrix-hdr" style="color:var(--red);text-align:center">IaaS</div><div class="matrix-hdr" style="color:var(--yellow);text-align:center">PaaS</div><div class="matrix-hdr" style="color:var(--cyan);text-align:center">SaaS</div></div>
+        <div class="matrix-row"><div class="matrix-label">Données &amp; IAM</div><div class="matrix-cell cell-cust">Client</div><div class="matrix-cell cell-cust">Client</div><div class="matrix-cell cell-cust">Client</div></div>
+        <div class="matrix-row"><div class="matrix-label">Application</div><div class="matrix-cell cell-cust">Client</div><div class="matrix-cell cell-cust">Client</div><div class="matrix-cell cell-cloud">Cloud</div></div>
+        <div class="matrix-row"><div class="matrix-label">Runtime / OS</div><div class="matrix-cell cell-cust">Client</div><div class="matrix-cell cell-cloud">Cloud</div><div class="matrix-cell cell-cloud">Cloud</div></div>
+        <div class="matrix-row"><div class="matrix-label">Infra physique</div><div class="matrix-cell cell-cloud">Cloud</div><div class="matrix-cell cell-cloud">Cloud</div><div class="matrix-cell cell-cloud">Cloud</div></div>
+        <div style="font-family:var(--mono);font-size:.6rem;color:rgba(255,68,102,.5);margin-top:.5rem">⚠ La majorité des incidents viennent de la partie "Client" — misconfiguration, IAM trop permissif, secrets exposés.</div>
+      </div>
+      <div class="card card-teal">
+        <div class="blabel" style="color:rgba(0,200,160,.4)">Les 3 grands providers</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem">
+          <div class="provider-card"><div class="provider-name">☁ AWS — Amazon Web Services</div><div class="tag-list"><span class="tag">IAM</span><span class="tag">Security Hub</span><span class="tag">GuardDuty</span><span class="tag">CloudTrail</span><span class="tag">KMS</span><span class="tag">WAF</span></div></div>
+          <div class="provider-card"><div class="provider-name">🔷 Azure — Microsoft</div><div class="tag-list"><span class="tag">Entra ID</span><span class="tag">Defender for Cloud</span><span class="tag">Sentinel</span><span class="tag">Key Vault</span><span class="tag">Policy</span></div></div>
+          <div class="provider-card"><div class="provider-name">🟢 GCP — Google Cloud</div><div class="tag-list"><span class="tag">IAM</span><span class="tag">Security Command Center</span><span class="tag">Chronicle</span><span class="tag">Cloud Armor</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">CSPM — Cloud Security Posture Management</div>
+        <p style="font-size:.82rem;color:rgba(200,255,245,.8);line-height:1.5;margin-bottom:.5rem">Outil qui <strong>scanne en continu</strong> la configuration de votre cloud pour détecter les écarts par rapport aux bonnes pratiques (CIS Benchmarks, ISO 27001, SOC2). Détecte les buckets publics, les ports ouverts, les credentials exposés.</p>
+        <div class="tag-list"><span class="tag tag-y">Prisma Cloud</span><span class="tag tag-y">Orca Security</span><span class="tag tag-y">Wiz</span><span class="tag tag-y">Defender for Cloud</span></div>
+      </div>
+      <div class="card card-orange">
+        <div class="blabel" style="color:rgba(255,136,0,.4)">CWPP — Cloud Workload Protection Platform</div>
+        <p style="font-size:.82rem;color:rgba(200,255,245,.8);line-height:1.5;margin-bottom:.5rem">Protection des <strong>workloads</strong> : VMs, containers, fonctions serverless. Analyse de vulnérabilités, détection de comportements anormaux à l'exécution (RASP), scan d'images Docker.</p>
+        <div class="tag-list"><span class="tag tag-o">Aqua Security</span><span class="tag tag-o">Sysdig</span><span class="tag tag-o">CrowdStrike Cloud</span></div>
+      </div>
+      <div class="card card-purple">
+        <div class="blabel" style="color:rgba(170,68,255,.4)">CIEM — Cloud Infrastructure Entitlement Management</div>
+        <p style="font-size:.82rem;color:rgba(200,255,245,.8);line-height:1.5;margin-bottom:.5rem">L'<strong>IAM appliqué au cloud</strong>. Détecte les identités sur-privilégiées, les rôles inutilisés, les permissions excessives dans AWS IAM, Entra ID, GCP IAM. Le Least Privilege à l'échelle cloud.</p>
+        <div class="tag-list"><span class="tag tag-p">Sonrai Security</span><span class="tag tag-p">CyberArk CIEM</span><span class="tag tag-p">Wiz CIEM</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 2 · FONDAMENTAUX ── -->
+<div class="slide" data-index="2" data-qcm="2">
+  <div class="slide-tag">// 02 · Fondamentaux</div>
+  <h2>Les 4 piliers de la Cloud Security</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">🚫 Zero Trust Architecture</div>
+        <div class="quote quote-teal" style="margin-bottom:.6rem;font-size:.85rem">"Never trust, always verify."<br>Aucun utilisateur, aucun service, aucun réseau n'est implicitement de confiance — même en interne.</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>Vérifier l'identité</strong> à chaque requête — MFA fort, certificates, SPIFFE/SPIRE</li>
+          <li><strong>Valider l'état du device</strong> — posture check avant tout accès (MDM, compliance)</li>
+          <li><strong>Least Privilege</strong> — accès juste-à-temps (JIT), juste assez (JAE)</li>
+          <li><strong>Micro-segmentation</strong> — isolation des workloads, East-West traffic control</li>
+          <li><strong>Chiffrement de bout en bout</strong> — in transit (TLS 1.3) et at rest (AES-256)</li>
+        </ul>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">🏗 Defense in Depth — Couches de sécurité</div>
+        <div class="terminal" style="font-size:.64rem;line-height:1.95">
+          <span class="term-prompt">Périmètre    </span><span class="term-out">WAF · DDoS protection · CDN</span><br>
+          <span class="term-prompt">Réseau       </span><span class="term-out">VPC · Security Groups · NACL · Private Link</span><br>
+          <span class="term-prompt">Compute      </span><span class="term-out">EDR Cloud · Hardening OS · Patch mgmt</span><br>
+          <span class="term-prompt">Application  </span><span class="term-out">SAST · DAST · SCA · API Gateway</span><br>
+          <span class="term-prompt">Données      </span><span class="term-out">Chiffrement · DLP · Classification</span><br>
+          <span class="term-prompt">Identités    </span><span class="term-out">IAM · PAM · MFA · SSO · CIEM</span><br>
+          <span class="term-prompt">Logs &amp; SIEM  </span><span class="term-out">CloudTrail · GuardDuty · Sentinel</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-orange">
+        <div class="blabel" style="color:rgba(255,136,0,.4)">🔑 IAM Cloud — Les pièges classiques</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li class="bad"><strong>Root account non protégé</strong> — Le compte root AWS / super-admin Azure doit avoir un MFA hardware et ne jamais générer d'access keys</li>
+          <li class="bad"><strong>Access keys en dur dans le code</strong> — La fuite #1 sur GitHub. AWS Secret Scanner, GitGuardian détectent ça</li>
+          <li class="bad"><strong>Rôles IAM trop permissifs</strong> — AdministratorAccess pour un Lambda qui lit juste un fichier S3</li>
+          <li class="bad"><strong>Service accounts partagés</strong> — Pas de traçabilité des actions. Un service = un rôle IAM dédié</li>
+          <li class="ok"><strong>Solution</strong> — IAM Roles (pas d'Access Keys), Instance Profiles, IRSA (Kubernetes), Workload Identity</li>
+        </ul>
+      </div>
+      <div class="card card-green">
+        <div class="blabel" style="color:rgba(0,255,136,.35)">🚀 DevSecOps — Shift Left Security</div>
+        <p style="font-size:.82rem;color:rgba(200,255,245,.8);line-height:1.5;margin-bottom:.5rem">Intégrer la sécurité <strong>dès le début du cycle de développement</strong>, pas en fin de livraison. Coût d'une faille détectée en prod = 30× celui détecté pendant le dev.</p>
+        <div class="terminal terminal-green" style="font-size:.64rem;line-height:1.9">
+          <span class="term-ok">Plan       </span><span class="term-out">→ Threat modeling dès la conception</span><br>
+          <span class="term-ok">Code       </span><span class="term-out">→ SAST (Semgrep, SonarQube)</span><br>
+          <span class="term-ok">Build      </span><span class="term-out">→ SCA (Snyk), scan d'image Docker</span><br>
+          <span class="term-ok">Test       </span><span class="term-out">→ DAST (OWASP ZAP, Burp API scan)</span><br>
+          <span class="term-ok">Deploy     </span><span class="term-out">→ IaC scan (tfsec, Checkov)</span><br>
+          <span class="term-ok">Operate    </span><span class="term-out">→ CSPM + CWPP + runtime protection</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 3 · JOURNÉE TYPE ── -->
+<div class="slide" data-index="3" data-qcm="3">
+  <div class="slide-tag">// 03 · Terrain</div>
+  <h2>Journée type · Cloud Security Engineer</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="blabel">Planning d'une journée en entreprise tech</div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-time">09:00</div><div class="tl-content"><strong>Revue des alertes CSPM</strong> — Dashboard Prisma Cloud / Defender for Cloud : nouvelles misconfiguration détectées la nuit, ressources exposées, scores de posture. Triage par criticité.</div></div>
+        <div class="tl-item"><div class="tl-time">09:45</div><div class="tl-content"><strong>Standup DevSecOps</strong> — Point avec les équipes dev et ops : résultats des pipelines CI/CD, findings SAST bloquants, CVE critiques dans les images Docker à patcher.</div></div>
+        <div class="tl-item"><div class="tl-time">10:15</div><div class="tl-content"><strong>Revue IAM / CIEM</strong> — Audit des permissions IAM : rôles inutilisés depuis 90j, access keys à rotation, détection de privilege escalation paths via CIEM.</div></div>
+        <div class="tl-item"><div class="tl-time">11:00</div><div class="tl-content"><strong>Architecture review</strong> — Participation à une revue de sécurité d'une nouvelle feature : threat modeling, validation des choix d'architecture (VPC peering vs. Private Link, chiffrement KMS).</div></div>
+        <div class="tl-item"><div class="tl-time">14:00</div><div class="tl-content"><strong>Infrastructure as Code (IaC)</strong> — Écriture et review de modules Terraform sécurisés, scan avec Checkov / tfsec, mise en place de guardrails AWS Organizations / Azure Policy.</div></div>
+        <div class="tl-item"><div class="tl-time">15:30</div><div class="tl-content"><strong>Incident response cloud</strong> — Analyse d'un GuardDuty finding : accès API inhabituel depuis une IP TOR sur un rôle IAM. Investigation CloudTrail, isolation du rôle, forensics.</div></div>
+        <div class="tl-item"><div class="tl-time">17:00</div><div class="tl-content"><strong>Documentation &amp; veille</strong> — Mise à jour du runbook cloud IR, lecture des bulletins de sécurité AWS / Azure, veille CVE Kubernetes, mise à jour des politiques de sécurité.</div></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">Interlocuteurs quotidiens</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>Développeurs</strong> — Intégration sécurité dans le code, revue de PR sécurité</li>
+          <li><strong>Ops / SRE</strong> — Configuration des workloads, gestion des incidents runtime</li>
+          <li><strong>Architects cloud</strong> — Design des VPC, choix des services, modèles IAM</li>
+          <li><strong>RSSI</strong> — Reporting posture, escalade incidents critiques, budgets outils</li>
+          <li><strong>Équipes compliance</strong> — Preuves SOC2, ISO 27001, RGPD pour les audits</li>
+        </ul>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Stack technique maîtrisée au quotidien</div>
+        <div class="tag-list">
+          <span class="tag tag-y">Terraform / IaC</span><span class="tag tag-y">AWS CLI / SDK</span>
+          <span class="tag tag-y">kubectl / Helm</span><span class="tag tag-y">Python / Boto3</span>
+          <span class="tag tag-y">Checkov / tfsec</span><span class="tag tag-y">Snyk</span>
+          <span class="tag tag-y">Prisma Cloud</span><span class="tag tag-y">CloudTrail / GuardDuty</span>
+          <span class="tag tag-y">HashiCorp Vault</span><span class="tag tag-y">GitHub Actions</span>
+        </div>
+      </div>
+      <div class="terminal">
+        <span class="term-prompt">// </span><span class="term-out">Le Cloud Security Engineer est un hybride :<br>moitié développeur, moitié expert sécurité.<br>Il parle le langage des devs ET celui des RSSI.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 4 · CAS CONCRET 1 · BUCKET S3 ── -->
+<div class="slide" data-index="4" data-qcm="4">
+  <div class="slide-tag">// 04 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #1</span>
+    <h2 style="margin-bottom:.1rem">Bucket S3 public — données sensibles exposées</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(0,221,255,.3)">La misconfiguration cloud la plus fréquente · Des millions de records exposés chaque année</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Le scénario</div>
+        <div class="quote quote-red" style="margin-bottom:.6rem;font-size:.82rem">
+          Un développeur crée un bucket S3 pour stocker les exports RH.<br>
+          Il coche <strong>"Public Access"</strong> pour tester rapidement depuis son laptop.<br>
+          Il oublie de le désactiver. Le bucket contient 45 000 fiches employés.<br>
+          Un chercheur en sécurité le découvre via <strong>GrayhatWarfare</strong> 3 semaines plus tard.<br>
+          L'entreprise l'apprend par un tweet public.
+        </div>
+        <ul class="bullets" style="gap:.3rem">
+          <li class="bad"><strong>Cause :</strong> "Block Public Access" désactivé au niveau bucket ET au niveau account</li>
+          <li class="bad"><strong>Cause :</strong> Bucket policy trop permissive <code style="font-size:.72rem;color:var(--red)">"Principal": "*"</code></li>
+          <li class="bad"><strong>Cause :</strong> Aucun CSPM en place pour détecter les ressources publiques</li>
+          <li class="bad"><strong>Cause :</strong> Données non chiffrées avec KMS (SSE-KMS désactivé)</li>
+          <li class="warn"><strong>Impact :</strong> RGPD — notification CNIL 72h · risque amende 4% CA · perte de confiance</li>
+        </ul>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Détection et remédiation</div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">01</span><div class="step-txt"><strong>Détection CSPM</strong> — Prisma Cloud génère un finding "S3 Bucket is Publicly Accessible" — sévérité CRITICAL. En l'absence de CSPM, on le détecte grâce à AWS Security Hub + AWS Config rule.</div></div>
+          <div class="step"><span class="step-num">02</span><div class="step-txt"><strong>Containment immédiat</strong> — Activer "Block All Public Access" en une commande CLI. Le bucket devient privé instantanément, même si la bucket policy reste permissive.</div></div>
+          <div class="step"><span class="step-num">03</span><div class="step-txt"><strong>Analyse d'exposition</strong> — Vérifier les CloudTrail logs : qui a accédé au bucket ? Depuis quand ? Quels objets ? Volume de données potentiellement exfiltrées.</div></div>
+          <div class="step"><span class="step-num">04</span><div class="step-txt"><strong>Chiffrement retroactif</strong> — Activer SSE-KMS sur tous les objets existants. Rotation de clé KMS. S3 Object Lock pour les données sensibles.</div></div>
+          <div class="step"><span class="step-num">05</span><div class="step-txt"><strong>Prévention systémique</strong> — SCP (Service Control Policy) au niveau AWS Organizations bloquant tout bucket public dans tous les comptes de l'organisation.</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-teal">
+        <div class="blabel" style="color:rgba(0,200,160,.4)">AWS CLI — Remédiation en 30 secondes</div>
+        <div class="terminal terminal-teal" style="font-size:.62rem;line-height:1.9">
+          <span class="term-out"># 1. Bloquer tout accès public</span><br>
+          <span style="color:var(--teal)">aws</span><span class="term-out"> s3api put-public-access-block \</span><br>
+          <span class="term-out">&nbsp;&nbsp;--bucket mon-bucket-rh \</span><br>
+          <span class="term-out">&nbsp;&nbsp;--public-access-block-configuration \</span><br>
+          <span class="term-out">&nbsp;&nbsp;"BlockPublicAcls=true,IgnorePublicAcls=true,</span><br>
+          <span class="term-out">&nbsp;&nbsp;BlockPublicPolicy=true,RestrictPublicBuckets=true"</span><br>
+          <span class="term-out">&nbsp;</span><br>
+          <span class="term-out"># 2. Activer le chiffrement SSE-KMS</span><br>
+          <span style="color:var(--teal)">aws</span><span class="term-out"> s3api put-bucket-encryption \</span><br>
+          <span class="term-out">&nbsp;&nbsp;--bucket mon-bucket-rh \</span><br>
+          <span class="term-out">&nbsp;&nbsp;--server-side-encryption-configuration \</span><br>
+          <span class="term-out">&nbsp;&nbsp;'{"Rules":[{"ApplyServerSideEncryption</span><br>
+          <span class="term-out">&nbsp;&nbsp;ByDefault":{"SSEAlgorithm":"aws:kms"}}]}'</span>
+        </div>
+      </div>
+      <div class="card card-green">
+        <div class="blabel" style="color:rgba(0,255,136,.35)">Terraform — Bucket S3 sécurisé by design</div>
+        <div class="terminal terminal-green" style="font-size:.62rem;line-height:1.85">
+          <span class="term-ok">resource "aws_s3_bucket" "rh_data" {</span><br>
+          <span class="term-out">&nbsp;&nbsp;bucket = "corp-rh-exports-prod"</span><br>
+          <span class="term-out">}</span><br>
+          <span class="term-ok">resource "aws_s3_bucket_public_access_block" "rh" {</span><br>
+          <span class="term-out">&nbsp;&nbsp;bucket                  = aws_s3_bucket.rh_data.id</span><br>
+          <span class="term-out">&nbsp;&nbsp;block_public_acls       = true</span><br>
+          <span class="term-out">&nbsp;&nbsp;block_public_policy     = true</span><br>
+          <span class="term-out">&nbsp;&nbsp;ignore_public_acls      = true</span><br>
+          <span class="term-out">&nbsp;&nbsp;restrict_public_buckets = true</span><br>
+          <span class="term-out">}</span>
+        </div>
+      </div>
+      <div class="terminal">
+        <span class="term-prompt">// Leçon clé : </span><br>
+        <span class="term-out">Infrastructure as Code + CSPM = Sécurité proactive.<br>Détecter en 5 minutes ce qui prenait<br>3 semaines sans outillage.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 5 · CAS CONCRET 2 · IAM PRIVILEGE ESCALATION ── -->
+<div class="slide" data-index="5" data-qcm="5">
+  <div class="slide-tag">// 05 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #2</span>
+    <h2 style="margin-bottom:.1rem">Escalade de privilèges AWS IAM</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(0,221,255,.3)">La technique préférée des attaquants en cloud · Souvent possible en 3 étapes</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Le vecteur — Access Key exposée sur GitHub</div>
+        <div class="terminal terminal-red" style="font-size:.66rem;line-height:1.85;margin-bottom:.6rem">
+          <span class="term-err"># Dans un commit public GitHub — détecté par un bot</span><br>
+          <span class="term-out">AWS_ACCESS_KEY_ID=AKIA4XXXXXXXXXXX</span><br>
+          <span class="term-out">AWS_SECRET_ACCESS_KEY=abc123xxxxxxxxxxxxxxxxxxxxxxxxxxxx</span><br>
+          <span class="term-warn"># L'attaquant clone le repo 4 minutes après le push</span><br>
+          <span class="term-warn"># AWS détecte l'utilisation 6h plus tard (trop tard)</span>
+        </div>
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Chaîne d'escalade de privilèges</div>
+        <div class="step-list" style="font-size:.8rem">
+          <div class="step"><span class="step-num" style="color:var(--red)">01</span><div class="step-txt"><strong>Énumération</strong> — <code style="color:var(--red);font-size:.72rem">iam:GetUser, iam:ListAttachedUserPolicies</code> → l'attaquant voit que l'utilisateur a <code style="color:var(--red);font-size:.72rem">iam:AttachUserPolicy</code></div></div>
+          <div class="step"><span class="step-num" style="color:var(--orange)">02</span><div class="step-txt"><strong>Escalade</strong> — Il s'attache la policy <code style="color:var(--orange);font-size:.72rem">AdministratorAccess</code> à son propre utilisateur. En une commande, il devient admin.</div></div>
+          <div class="step"><span class="step-num" style="color:var(--red)">03</span><div class="step-txt"><strong>Persistence</strong> — Crée un nouvel utilisateur IAM avec des credentials frais. Même si la clé initiale est révoquée, il conserve l'accès.</div></div>
+          <div class="step"><span class="step-num" style="color:var(--red)">04</span><div class="step-txt"><strong>Action</strong> — Lance des centaines d'instances EC2 pour du crypto-mining. Facture cloud : 47 000€ en 72h.</div></div>
+        </div>
+      </div>
+      <div class="card card-orange">
+        <div class="blabel" style="color:rgba(255,136,0,.4)">Les permissions IAM dangereuses à surveiller</div>
+        <div class="terminal terminal-orange" style="font-size:.63rem;line-height:1.85">
+          <span class="term-warn">iam:AttachUserPolicy       </span><span class="term-out">→ Escalade directe</span><br>
+          <span class="term-warn">iam:CreateAccessKey        </span><span class="term-out">→ Persistence</span><br>
+          <span class="term-warn">iam:PassRole               </span><span class="term-out">→ Escalade via services</span><br>
+          <span class="term-warn">sts:AssumeRole             </span><span class="term-out">→ Pivot inter-comptes</span><br>
+          <span class="term-warn">lambda:CreateFunction      </span><span class="term-out">→ Code exec avec rôle</span><br>
+          <span class="term-warn">iam:CreatePolicyVersion    </span><span class="term-out">→ Modifier une policy</span><br>
+          <span class="term-warn">ec2:RunInstances           </span><span class="term-out">→ Crypto-mining</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Détection &amp; Réponse</div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">01</span><div class="step-txt"><strong>AWS GuardDuty</strong> — Finding "UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration" + "Policy:IAMUser/RootCredentialUsage". Alerte en quasi-temps réel.</div></div>
+          <div class="step"><span class="step-num">02</span><div class="step-txt"><strong>CloudTrail forensics</strong> — Requêter tous les événements IAM des dernières 24h depuis l'access key compromise : quel API calls, depuis quelle IP, à quelle heure.</div></div>
+          <div class="step"><span class="step-num">03</span><div class="step-txt"><strong>Containment</strong> — Désactiver l'access key, attacher une Deny policy explicite à l'utilisateur, révoquer toutes les sessions STS actives (IAM : DeleteServiceSpecificCredential).</div></div>
+          <div class="step"><span class="step-num">04</span><div class="step-txt"><strong>Scope</strong> — L'attaquant a-t-il créé de nouveaux utilisateurs/rôles ? Accédé à d'autres services (S3, RDS, Secrets Manager) ? Exfiltré des données ?</div></div>
+          <div class="step"><span class="step-num">05</span><div class="step-txt"><strong>Prévention</strong> — AWS Organizations SCP bloquant iam:CreateAccessKey pour tous les comptes. GitHub secret scanning activé. Rotation automatique des secrets via AWS Secrets Manager.</div></div>
+        </div>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">AWS Config — Règle de détection des keys non rotées</div>
+        <div class="terminal" style="font-size:.62rem;line-height:1.85">
+          <span class="term-prompt"># Lister les access keys de plus de 90 jours</span><br>
+          <span class="term-out">aws iam generate-credential-report</span><br>
+          <span class="term-out">aws iam get-credential-report \</span><br>
+          <span class="term-out">&nbsp;&nbsp;--query 'Content' --output text | base64 -d \</span><br>
+          <span class="term-out">&nbsp;&nbsp;| awk -F',' '$9=="true" &amp;&amp;</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;(systime()-mktime(...)>7776000)' </span><br>
+          <span class="term-prompt"># AWS Config Rule native :</span><br>
+          <span class="term-out">access-keys-rotated (maxAccessKeyAge: 90)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 6 · CAS CONCRET 3 · KUBERNETES ESCAPE ── -->
+<div class="slide" data-index="6" data-qcm="6">
+  <div class="slide-tag">// 06 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #3</span>
+    <h2 style="margin-bottom:.1rem">Container Escape &amp; Kubernetes Misconfiguration</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(0,221,255,.3)">L'attaque qui sort du container pour compromettre le nœud — et tout le cluster</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Le scénario — Container mal configuré</div>
+        <div class="quote quote-red" style="margin-bottom:.6rem;font-size:.82rem">
+          Un pod Kubernetes est déployé avec <strong>privileged: true</strong> et un montage du <strong>socket Docker</strong>.<br>
+          L'attaquant exploite une vulnérabilité dans l'app web.<br>
+          Depuis le container, il monte le filesystem du nœud hôte,<br>
+          lit les credentials de tous les autres pods du cluster,<br>
+          puis rebondit vers AWS via l'IMDS pour voler les credentials EC2.
+        </div>
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Les misconfigurations Kubernetes les plus dangereuses</div>
+        <div class="terminal terminal-red" style="font-size:.63rem;line-height:1.85">
+          <span class="term-err">privileged: true          </span><span class="term-out">→ Accès kernel hôte</span><br>
+          <span class="term-err">hostPID: true             </span><span class="term-out">→ Voir tous les process hôte</span><br>
+          <span class="term-err">hostNetwork: true         </span><span class="term-out">→ Réseau hôte, bypass Network Policy</span><br>
+          <span class="term-err">volumeMounts: /var/run/docker.sock</span><span class="term-out">→ Docker escape</span><br>
+          <span class="term-err">automountServiceAccount: true</span><span class="term-out">→ Token RBAC exposé</span><br>
+          <span class="term-err">RBAC: ClusterAdmin all SA </span><span class="term-out">→ Compromission totale</span>
+        </div>
+      </div>
+      <div class="card card-orange">
+        <div class="blabel" style="color:rgba(255,136,0,.4)">L'attaque IMDS — Instance Metadata Service</div>
+        <div class="step-list" style="font-size:.8rem">
+          <div class="step"><span class="step-num" style="color:var(--red)">01</span><div class="step-txt"><strong>Depuis le container</strong> — Appel IMDS v1 : <code style="color:var(--orange);font-size:.72rem">curl http://169.254.169.254/latest/meta-data/iam/security-credentials/node-role</code></div></div>
+          <div class="step"><span class="step-num" style="color:var(--orange)">02</span><div class="step-txt"><strong>Récupération credentials</strong> — AccessKeyId + SecretAccessKey + Token temporaire du rôle IAM de l'instance EC2.</div></div>
+          <div class="step"><span class="step-num" style="color:var(--red)">03</span><div class="step-txt"><strong>Pivot cloud</strong> — L'attaquant utilise ces credentials depuis n'importe où. Il accède à tous les services AWS accessibles au nœud EC2.</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Pod Security — Remédiation</div>
+        <div class="terminal terminal-green" style="font-size:.62rem;line-height:1.85;margin-bottom:.6rem">
+          <span class="term-ok">securityContext:</span><br>
+          <span class="term-out">&nbsp;&nbsp;runAsNonRoot: true          # jamais root</span><br>
+          <span class="term-out">&nbsp;&nbsp;runAsUser: 10001            # UID non-root</span><br>
+          <span class="term-out">&nbsp;&nbsp;readOnlyRootFilesystem: true # FS lecture seule</span><br>
+          <span class="term-out">&nbsp;&nbsp;allowPrivilegeEscalation: false</span><br>
+          <span class="term-out">&nbsp;&nbsp;capabilities:</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;drop: ["ALL"]           # aucune capability Linux</span><br>
+          <span class="term-ok">automountServiceAccountToken: false # pas de token RBAC</span>
+        </div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">01</span><div class="step-txt"><strong>Admission Controllers</strong> — OPA/Gatekeeper ou Kyverno pour bloquer les pods privileged avant déploiement.</div></div>
+          <div class="step"><span class="step-num">02</span><div class="step-txt"><strong>IMDSv2 obligatoire</strong> — Forcer IMDSv2 (requiert un token HTTP) sur toutes les instances EC2. Bloque les appels IMDS depuis les containers sans configuration explicite.</div></div>
+          <div class="step"><span class="step-num">03</span><div class="step-txt"><strong>Network Policies</strong> — Bloquer le trafic sortant vers 169.254.169.254 depuis les namespaces applicatifs.</div></div>
+          <div class="step"><span class="step-num">04</span><div class="step-txt"><strong>IRSA / Workload Identity</strong> — Donner des credentials IAM directement aux pods via OIDC — sans passer par les credentials du nœud EC2.</div></div>
+        </div>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">Outils Kubernetes Security</div>
+        <div class="tag-list">
+          <span class="tag tag-b">kube-bench · CIS checks</span>
+          <span class="tag tag-b">Falco · Runtime detection</span>
+          <span class="tag tag-b">Trivy · Image scanning</span>
+          <span class="tag tag-b">Kyverno · Policy engine</span>
+          <span class="tag tag-b">OPA/Gatekeeper</span>
+          <span class="tag tag-b">KubeAudit</span>
+          <span class="tag tag-b">Checkov · IaC scan</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 7 · OUTILS ── -->
+<div class="slide" data-index="7" data-qcm="7">
+  <div class="slide-tag">// 07 · Stack technique</div>
+  <h2>Outils Cloud Security en profondeur</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card" style="border-color:rgba(0,221,255,.25);background:rgba(0,221,255,.03)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:#fff">☁ AWS Security Hub</div>
+          <span class="pill pill-green" style="font-size:.55rem">Natif AWS</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,245,.55);line-height:1.5;margin-bottom:.5rem">Agrège les findings de GuardDuty, Inspector, Macie, IAM Access Analyzer, Config. Score de sécurité basé sur CIS Benchmarks et AWS Foundational Best Practices. Dashboard unifié multi-comptes.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">Intégration native, zéro déploiement</li>
+          <li class="ok">Multi-account via AWS Organizations</li>
+          <li class="bad">Limité à l'écosystème AWS</li>
+        </ul>
+      </div>
+      <div class="card card-blue">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:var(--blue)">🔷 Microsoft Defender for Cloud</div>
+          <span class="pill pill-blue" style="font-size:.55rem">Multi-Cloud</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,245,.55);line-height:1.5;margin-bottom:.5rem">CSPM + CWPP unifié pour Azure, AWS et GCP. Secure Score, recommandations priorisées, threat detection en temps réel, conformité (RGPD, SOC2, ISO 27001). Standard enterprise multi-cloud.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">Multi-cloud natif (AWS + GCP + Azure)</li>
+          <li class="ok">Intégration Sentinel SIEM directe</li>
+          <li class="bad">Coût à l'heure par ressource protégée</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-yellow">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:var(--yellow)">⭐ Wiz</div>
+          <span class="pill pill-red" style="font-size:.55rem">Expert</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,245,.55);line-height:1.5;margin-bottom:.5rem">Le CSPM de nouvelle génération. Analyse l'ensemble du graph de sécurité cloud (IAM + réseau + données + vulnérabilités) pour identifier les <strong>chemins d'attaque critiques</strong> — pas juste des findings isolés. Leader du marché 2024.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">Security Graph : vision holistique des risques</li>
+          <li class="ok">Détection des chemins d'escalade IAM complexes</li>
+          <li class="ok">Sans agent (API only) — déploiement en minutes</li>
+          <li class="bad">Très onéreux (startups &amp; grandes entreprises)</li>
+        </ul>
+      </div>
+      <div class="card card-green">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:var(--green)">HashiCorp Vault</div>
+          <span class="pill pill-green" style="font-size:.55rem">Open Source</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,245,.55);line-height:1.5;margin-bottom:.5rem">Gestion des secrets cloud-native. Chiffrement des données, rotation automatique des credentials DB/cloud, génération de credentials dynamiques à durée de vie limitée. Le standard du secret management en DevSecOps.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">Credentials dynamiques : plus de secrets statiques</li>
+          <li class="ok">Intégration Kubernetes native (Vault Agent Injector)</li>
+          <li class="ok">Open source (Core) — Enterprise disponible</li>
+        </ul>
+        <div class="tag-list" style="margin-top:.5rem"><span class="tag tag-g">AWS Secrets Manager</span><span class="tag tag-g">Azure Key Vault</span><span class="tag tag-g">GCP Secret Mgr</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 8 · DEVSECOPS ── -->
+<div class="slide" data-index="8" data-qcm="8">
+  <div class="slide-tag">// 08 · DevSecOps</div>
+  <h2>DevSecOps — Intégrer la sécurité dans le pipeline CI/CD</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-teal">
+        <div class="blabel" style="color:rgba(0,200,160,.4)">Pipeline CI/CD sécurisé — Vue d'ensemble</div>
+        <div class="terminal terminal-teal" style="font-size:.63rem;line-height:2.1">
+          <span style="color:var(--teal)">git push</span><span class="term-out"> → GitHub Actions déclenché</span><br>
+          <span class="term-out">├── SAST      </span><span class="term-out">Semgrep · SonarQube (vulnérabilités code)</span><br>
+          <span class="term-out">├── Secrets   </span><span class="term-out">GitGuardian · Gitleaks (credentials exposés)</span><br>
+          <span class="term-out">├── SCA       </span><span class="term-out">Snyk · Dependabot (CVE dépendances)</span><br>
+          <span class="term-out">├── IaC Scan  </span><span class="term-out">Checkov · tfsec (Terraform misconfiguration)</span><br>
+          <span class="term-out">├── Image     </span><span class="term-out">Trivy · Grype (vulnérabilités Docker)</span><br>
+          <span class="term-out">├── DAST      </span><span class="term-out">OWASP ZAP (injection, XSS, auth)</span><br>
+          <span style="color:var(--teal)">└── Deploy</span><span class="term-out"> → Seulement si ZERO finding CRIT/HIGH</span>
+        </div>
+      </div>
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Le vrai problème : les secrets dans le code</div>
+        <div class="quote quote-red" style="margin-bottom:.6rem;font-size:.82rem">
+          GitHub a détecté <strong>12,8 millions de secrets</strong> dans les dépôts publics en 2023.<br>
+          Un secret pushé sur GitHub est <strong>scrapé en moins de 60 secondes</strong><br>par des bots automatisés.
+        </div>
+        <div class="terminal terminal-red" style="font-size:.63rem;line-height:1.85">
+          <span class="term-err"># JAMAIS dans le code</span><br>
+          <span class="term-out">DB_PASSWORD = "Azerty123!"</span><br>
+          <span class="term-out">AWS_SECRET  = "abc123xxxxx"</span><br>
+          <span class="term-ok"># TOUJOURS via des variables d'env sécurisées</span><br>
+          <span class="term-out">DB_PASSWORD = os.environ["DB_PASSWORD"]</span><br>
+          <span class="term-out"># Ou via Vault / AWS Secrets Manager</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">GitHub Actions — Security Gate complet</div>
+        <div class="terminal" style="font-size:.61rem;line-height:1.85">
+          <span class="term-prompt">name: Security Pipeline</span><br>
+          <span class="term-out">on: [push, pull_request]</span><br>
+          <span class="term-out">jobs:</span><br>
+          <span class="term-out">&nbsp;&nbsp;security:</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;runs-on: ubuntu-latest</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;steps:</span><br>
+          <span class="term-ok">&nbsp;&nbsp;&nbsp;&nbsp;- name: Secret scanning</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uses: gitleaks/gitleaks-action@v2</span><br>
+          <span class="term-ok">&nbsp;&nbsp;&nbsp;&nbsp;- name: SAST — Semgrep</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uses: semgrep/semgrep-action@v1</span><br>
+          <span class="term-ok">&nbsp;&nbsp;&nbsp;&nbsp;- name: IaC scan — Checkov</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uses: bridgecrewio/checkov-action@master</span><br>
+          <span class="term-ok">&nbsp;&nbsp;&nbsp;&nbsp;- name: Docker image — Trivy</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uses: aquasecurity/trivy-action@master</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;with: {severity: 'CRITICAL,HIGH'}</span>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Threat Modeling — STRIDE appliqué au cloud</div>
+        <div class="terminal terminal-yellow" style="font-size:.63rem;line-height:1.95">
+          <span class="term-warn">S </span><span class="term-out">Spoofing      → Usurpation d'identité IAM</span><br>
+          <span class="term-warn">T </span><span class="term-out">Tampering     → Modification données S3 non chiffrés</span><br>
+          <span class="term-warn">R </span><span class="term-out">Repudiation   → Logs CloudTrail désactivés</span><br>
+          <span class="term-warn">I </span><span class="term-out">Info Disclsr  → Bucket public, metadata exposés</span><br>
+          <span class="term-warn">D </span><span class="term-out">DoS           → Throttling API non protégé</span><br>
+          <span class="term-warn">E </span><span class="term-out">Escalation    → IAM privilege escalation paths</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 9 · CARRIÈRE ── -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// 09 · Carrière</div>
+  <h2>Parcours de carrière · Cloud Security Engineer</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Progression type</div>
+        <div class="step-list" style="gap:.75rem">
+          <div class="step"><span class="step-num" style="background:rgba(0,221,255,.07);padding:.2rem .45rem;color:var(--cyan);min-width:3.5rem;text-align:center">AN 1-2</span><div class="step-txt"><strong>Cloud Security Analyst / Junior Engineer</strong><br><span style="color:rgba(200,255,245,.5);font-size:.78rem">CSPM, alertes, remédiation. Cibles : <span class="tag tag-y" style="padding:.1rem .35rem">AZ-500</span> <span class="tag tag-y" style="padding:.1rem .35rem">AWS Security Specialty</span></span></div></div>
+          <div class="step"><span class="step-num" style="background:rgba(255,215,0,.06);padding:.2rem .45rem;color:var(--yellow);min-width:3.5rem;text-align:center">AN 3-5</span><div class="step-txt"><strong>Cloud Security Engineer</strong><br><span style="color:rgba(200,255,245,.5);font-size:.78rem">DevSecOps, IaC, architecture Zero Trust. Cible : <span class="tag tag-y" style="padding:.1rem .35rem">CCSP</span></span></div></div>
+          <div class="step"><span class="step-num" style="background:rgba(255,136,0,.07);padding:.2rem .45rem;color:var(--orange);min-width:3.5rem;text-align:center">AN 5-8</span><div class="step-txt"><strong>Senior / Cloud Security Architect</strong><br><span style="color:rgba(200,255,245,.5);font-size:.78rem">Design multi-cloud, pilotage équipes, avant-vente. Freelance : 800–1200€/j</span></div></div>
+          <div class="step"><span class="step-num" style="background:rgba(170,68,255,.07);padding:.2rem .45rem;color:var(--purple);min-width:3.5rem;text-align:center">AN 8+</span><div class="step-txt"><strong>CISO Cloud / Cloud Security Lead</strong><br><span style="color:rgba(200,255,245,.5);font-size:.78rem">Stratégie, gouvernance multi-cloud, direction d'équipe sécurité</span></div></div>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Certifications par niveau</div>
+        <div class="tag-list">
+          <span class="tag tag-y">AZ-500 · Azure Security</span>
+          <span class="tag tag-y">AWS Security Specialty</span>
+          <span class="tag tag-y">GCP Professional Cloud Security</span>
+          <span class="tag tag-y">CCSP · ISC²</span>
+          <span class="tag tag-y">CKS · Kubernetes Security</span>
+          <span class="tag tag-y">CISSP · Management</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Rémunérations</div>
+        <div class="hdiv">Europe · France</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.7rem">
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(0,221,255,.25);background:rgba(0,221,255,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,245,.55)">Junior (0–2 ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--cyan)">45–62K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,215,0,.25);background:rgba(255,215,0,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,245,.55)">Confirmé (2–5 ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--yellow)">65–90K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,136,0,.25);background:rgba(255,136,0,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,245,.55)">Senior / Architecte (5+ ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--orange)">95–140K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,68,102,.25);background:rgba(255,68,102,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,245,.55)">Freelance TJM</span><span style="font-family:var(--display);font-weight:700;color:var(--red)">700–1200€/j</span></div>
+        </div>
+        <div class="hdiv">Afrique Francophone</div>
+        <div class="arow"><span class="em">🌍</span><p>Migration cloud massive en Afrique : banques, télécoms, startups fintech sur AWS et Azure. <strong>AWS Free Tier + Azure for Students</strong> permettent de pratiquer gratuitement. L'AZ-500 se passe en ligne. Profil très demandé dans les entreprises africaines en transformation digitale — et les cabinets de conseil européens recrutent des experts cloud à distance.</p></div>
+      </div>
+      <div class="card card-cyan">
+        <div class="blabel">Plan d'action pour débuter</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>Mois 1–3 :</strong> AWS Free Tier — déployer un VPC, IAM, S3, EC2 sécurisés</li>
+          <li><strong>Mois 3–5 :</strong> Apprendre Terraform (terraform.io/learn — gratuit)</li>
+          <li><strong>Mois 5–8 :</strong> Passer AZ-500 ou AWS Security Specialty (~300€)</li>
+          <li><strong>Mois 8–12 :</strong> Lab Kubernetes (k3s local) + Trivy + Falco</li>
+          <li><strong>AN 2 :</strong> Contribuer à des projets open source sécurité cloud (Prowler, Steampipe)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 10 · RÉCAP ── -->
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Récap · Cloud Security</div>
+  <h2>Ce qu'il faut retenir</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(0,221,255,.4);margin-bottom:.7rem">✅ LES 5 COMMANDEMENTS DU CLOUD SECURITY</div>
+        <ul class="bullets">
+          <li class="ok"><strong>Responsabilité partagée</strong> — Le provider sécurise l'infra, toi tu sécurises tout le reste</li>
+          <li class="ok"><strong>Least Privilege IAM</strong> — Aucun rôle, aucune politique avec * en Action ou Resource sans justification</li>
+          <li class="ok"><strong>Tout en IaC</strong> — Aucune ressource créée manuellement en production. Terraform + Git = traçabilité totale</li>
+          <li class="ok"><strong>Secrets dans un vault</strong> — Zéro secret statique dans le code, les variables d'env des CI/CD, les images Docker</li>
+          <li class="ok"><strong>CSPM activé 24/7</strong> — Tu ne peux pas sécuriser ce que tu ne vois pas. Scanning continu, pas trimestriel</li>
+        </ul>
+      </div>
+      <div class="card card-red">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.7rem">⚠ LES 3 ERREURS QUI COÛTENT UNE FORTUNE</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li class="bad"><strong>Bucket S3 / Blob Storage public</strong> — Données sensibles exposées, RGPD, amende. La misconfiguration #1 depuis 10 ans.</li>
+          <li class="bad"><strong>Access Keys IAM longue durée</strong> — Sur GitHub = compromission en 60 secondes. Utiliser des rôles IAM, jamais des keys.</li>
+          <li class="bad"><strong>Containers privileged en prod</strong> — Container escape → accès hôte → cluster compromis. Toujours enforcer une Pod Security policy.</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-yellow">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.7rem">📚 RESSOURCES POUR PROGRESSER</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>flaws.cloud</strong> — Labs AWS misconfiguration (gratuit, Scott Piper)</li>
+          <li><strong>CloudGoat (Rhino Security)</strong> — Environnement AWS vulnérable intentionnellement</li>
+          <li><strong>Kubernetes Goat</strong> — Lab K8s sécurité interactif · github.com/madhuakula</li>
+          <li><strong>AWS Security Workshops</strong> — workshops.aws · gratuit</li>
+          <li><strong>Prowler</strong> — CLI open source d'audit AWS/Azure/GCP</li>
+          <li><strong>Cloud Security Alliance</strong> — Guides CCSP, frameworks référence</li>
+        </ul>
+      </div>
+      <div class="card" style="background:rgba(0,221,255,.03);border-color:rgba(0,221,255,.2)">
+        <div class="blabel">Les autres cours SooPHA Learn · Cyber</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.8rem">
+          <span class="pill pill-green">🪪 IAM</span>
+          <span class="pill pill-blue">🔍 SOC</span>
+          <span class="pill pill-red">⚔️ Pentester</span>
+          <span class="pill pill-orange">🛡️ RSSI</span>
+          <span class="pill pill-purple">🔬 DFIR</span>
+          <span class="pill pill-yellow">⚖️ DPO</span>
+          <span class="pill pill-teal">🕵️ CTI</span>
+        </div>
+        <div class="terminal" style="font-size:.66rem">
+          <span class="term-prompt">// </span><span class="term-out">Le cloud a déplacé le périmètre.<br>Il n'y a plus de frontière réseau.<br>L'identité ET la configuration sont le nouveau périmètre.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:1rem;max-width:880px;width:100%;text-align:center">
+    <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+    <div style="font-family:var(--mono);font-size:.6rem;color:rgba(0,221,255,.2);margin-top:.6rem;letter-spacing:.1em">SooPHA Learn × Cloud Security × Afrique Francophone</div>
+  </div>
+</div>
+
+</div>
+
+<!-- QCM -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- COMPLETION -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Cours terminé !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOMBAR -->
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 11</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+/* ── QCM · réponses : C A D B C A D B ── */
+var QCM={
+  1:{question:"Selon le modèle de responsabilité partagée, qu'est-ce que le client reste TOUJOURS responsable, quel que soit le modèle (IaaS, PaaS ou SaaS) ?",
+    options:["La sécurité physique des data centers et des serveurs hébergeant ses données","La sécurité de l'hyperviseur et de la couche de virtualisation cloud","La gestion des identités, des accès et la protection des données qu'il stocke dans le cloud","La disponibilité et la résilience de l'infrastructure réseau sous-jacente"],
+    correct:2,explanation:"Dans tous les modèles cloud (IaaS, PaaS, SaaS), le client reste systématiquement responsable de ses données et de la gestion des identités/accès (IAM). C'est le principe fondamental de la responsabilité partagée : le provider sécurise 'le cloud' (infrastructure, hyperviseur, réseau physique), mais la sécurité 'dans le cloud' (données, IAM, configuration des services) appartient au client. C'est pourquoi la plupart des incidents cloud (80%+) sont dus à des misconfigurations côté client, pas à des failles du provider."},
+  2:{question:"Zero Trust Architecture signifie concrètement qu'un utilisateur connecté au réseau d'entreprise (VPN ou bureau) peut accéder à toutes les ressources internes sans vérification supplémentaire.",
+    options:["Faux — Zero Trust impose de vérifier l'identité, l'état du device et les permissions à chaque requête, même depuis le réseau interne. Aucune confiance implicite n'est accordée selon la localisation réseau.","Vrai — le réseau interne est considéré comme une zone de confiance dans le modèle Zero Trust, c'est pourquoi on utilise un VPN pour y accéder","Faux — Zero Trust s'applique uniquement aux accès depuis Internet, pas aux utilisateurs internes sur site","Vrai — la vérification renforcée ne concerne que les applications SaaS externes, pas les ressources on-premise"],
+    correct:0,explanation:"Zero Trust repose sur le principe 'never trust, always verify' — y compris depuis le réseau interne. L'approche traditionnelle (Castle-and-moat) considérait tout le trafic interne comme de confiance : c'est exactement ce que Zero Trust remet en question. Dans un modèle ZTA, chaque requête est authentifiée (MFA), le device est vérifié (posture check MDM), les permissions sont minimales (least privilege) et le trafic est inspecté — que l'utilisateur soit au bureau, en VPN ou depuis un café. SolarWinds et de nombreuses attaques par mouvement latéral ont exploité la confiance implicite du réseau interne."},
+  3:{question:"Un Cloud Security Engineer détecte via CSPM un rôle IAM AWS avec la permission 'iam:AttachUserPolicy' accordée à un service Lambda. Pourquoi est-ce critique ?",
+    options:["Ce n'est pas critique — les Lambdas ont besoin de permissions IAM pour fonctionner correctement","Cette permission est obsolète dans les versions récentes d'AWS IAM et génère une fausse alerte du CSPM","Cette permission n'est problématique que si elle est combinée avec iam:CreateUser et iam:ListUsers","Cette permission permet au Lambda (ou à un attaquant qui le compromet) de s'attribuer n'importe quelle policy, y compris AdministratorAccess — c'est une voie d'escalade de privilèges directe vers l'admin total du compte AWS"],
+    correct:3,explanation:"iam:AttachUserPolicy est l'une des permissions IAM les plus dangereuses. Elle permet à celui qui la possède de s'attacher la policy AdministratorAccess à n'importe quel utilisateur IAM — y compris à lui-même. En une seule commande 'aws iam attach-user-policy --user-name attacker --policy-arn arn:aws:iam::aws:policy/AdministratorAccess', l'attaquant devient admin complet du compte. Si un Lambda expose cette permission et qu'une vulnérabilité est exploitée dans son code, l'attaquant peut pivoter vers l'escalade de privilèges complète. C'est un chemin d'attaque documenté par Rhino Security Labs."},
+  4:{question:"Quelle est la méthode CORRECTE pour donner des credentials AWS à une application tournant sur EC2 ?",
+    options:["Créer un accès key IAM et le stocker dans les variables d'environnement du serveur EC2","Utiliser un Instance Profile (rôle IAM attaché à l'EC2) pour que l'application récupère automatiquement des credentials temporaires via l'IMDS — sans clé statique","Créer un fichier ~/.aws/credentials sur l'EC2 avec un accès key IAM dédié à l'application","Encoder l'accès key en base64 et la stocker dans le code source de l'application pour l'obfusquer"],
+    correct:1,explanation:"Un Instance Profile (IAM Role attaché à l'EC2) est la méthode sécurisée standard. L'application récupère automatiquement des credentials temporaires via l'Instance Metadata Service (IMDS) — qui change régulièrement et n'expirent jamais si utilisés correctement. Pas de clé statique à gérer, pas de risque d'exposition sur GitHub, rotation automatique. Les accès keys statiques (réponses A, C) sont les vecteurs d'attaque #1 en cloud AWS selon l'OWASP Cloud Security Top 10. La base64 (réponse D) n'est pas du chiffrement et ne protège absolument pas les secrets."},
+  5:{question:"Un pod Kubernetes avec 'privileged: true' représente quel niveau de risque pour le cluster ?",
+    options:["Risque faible — le mode privileged ne donne accès qu'aux ressources du namespace du pod, pas à ceux des autres équipes","Risque moyen — le pod peut accéder au réseau hôte mais reste isolé du système de fichiers de l'hôte","Risque critique — le pod a accès au kernel de l'hôte, ce qui permet un 'container escape' pour compromettre le nœud entier, puis potentiellement tout le cluster et les credentials AWS/cloud associés au nœud","Risque nul si le cluster est derrière un WAF et que les ports sont correctement filtrés"],
+    correct:2,explanation:"privileged: true donne au container un accès quasi-total au kernel Linux de l'hôte — comme si le processus tournait directement sur le nœud sans isolation. Depuis un container privileged, un attaquant peut : monter le filesystem de l'hôte, lire les secrets des autres pods, accéder au socket Docker pour lancer de nouveaux containers, appeler l'IMDS pour voler les credentials IAM du nœud EC2. C'est un container escape complet. En production, aucun pod ne devrait tourner en privileged. On utilise des SecurityContexts restrictifs et des Admission Controllers (OPA/Gatekeeper, Kyverno) pour bloquer ces configurations avant déploiement."},
+  6:{question:"Un développeur push accidentellement une AWS Access Key sur un dépôt GitHub public. Quelle est la durée moyenne avant que des bots automatisés détectent et utilisent cette clé ?",
+    options:["Moins de 60 secondes — des bots scrapent GitHub en temps réel et testent immédiatement les credentials trouvés","Entre 1 et 6 heures — le délai dépend de la popularité du dépôt et de son indexation par les moteurs de recherche","Entre 24 et 48 heures — GitHub dispose d'un système de scan automatique qui neutralise les secrets avant qu'ils soient exploités","Entre 7 et 30 jours — les clés AWS exposées sont détectées par les honeypots de sécurité, pas par des attaquants humains"],
+    correct:0,explanation:"Des études de GitHub, GitGuardian et de chercheurs indépendants montrent que les secrets exposés sont détectés et utilisés en moins de 60 secondes par des bots automatisés qui scrapent GitHub en continu. GitHub Secret Scanning peut détecter les secrets AWS et notifier automatiquement — mais la notification prend quelques minutes alors que les bots agissent en secondes. Pour se protéger : pre-commit hooks (detect-secrets, gitleaks), GitGuardian en CI/CD, et politique de rotation immédiate si une clé est exposée. AWS a aussi un partenariat avec GitHub pour détecter et désactiver automatiquement les clés exposées."},
+  7:{question:"Wiz se distingue des CSPM traditionnels par quelle fonctionnalité principale ?",
+    options:["Son prix très accessible qui le rend disponible pour toutes les startups, y compris les très petites équipes","Sa capacité à scanner les images Docker et les dépendances de code source directement depuis le pipeline CI/CD","Son déploiement on-premise qui permet de garder les données de sécurité dans l'infrastructure de l'entreprise","Son Security Graph qui corrèle IAM, réseau, vulnérabilités et données pour identifier les chemins d'attaque complets — pas juste des findings isolés"],
+    correct:3,explanation:"Wiz a révolutionné le CSPM avec son Security Graph. Contrairement aux CSPM traditionnels qui génèrent des milliers de findings isolés (bucket sans chiffrement, port ouvert, rôle permissif), Wiz corrèle tous ces éléments pour identifier les véritables chemins d'attaque : 'ce bucket contient des données PII, il est accessible par ce rôle Lambda, ce Lambda a une CVE critique exploitable depuis Internet, et ce rôle peut accéder à d'autres ressources sensibles'. Au lieu de 10 000 findings, vous voyez les 5 chemins qui représentent un vrai risque critique. C'est cette vision holistique qui en a fait la valorisation la plus rapide de l'histoire de la cybersécurité (10 Mds$ en 4 ans)."},
+  8:{question:"Dans un pipeline DevSecOps, à quelle étape le scan d'image Docker (via Trivy ou Grype) doit-il intervenir pour être le plus efficace ?",
+    options:["Uniquement en production, juste avant le déploiement final — pour scanner l'image exacte qui sera utilisée","Pendant la phase de build CI/CD, avant le push de l'image dans le registry — et bloquer le pipeline si des CVE CRITICAL ou HIGH sont détectées","Seulement lors des audits de sécurité trimestriels réalisés par l'équipe sécurité","Après le déploiement en production, pendant la nuit, pour ne pas ralentir les pipelines de déploiement"],
+    correct:1,explanation:"Shift Left signifie détecter les problèmes le plus tôt possible dans le cycle. Le scan d'image Docker doit intervenir pendant le build CI/CD — avant même de pousser l'image dans le registry. Si l'image contient une CVE CRITICAL, le pipeline est bloqué et le développeur en est immédiatement informé. Scanner uniquement en prod (réponse A) signifie que l'image vulnérable est déjà déployée. Les audits trimestriels (réponse C) sont bien trop tardifs dans un monde de déploiements continus. Un scan nocturne (réponse D) manque toutes les images déployées dans la journée. Coût d'une CVE détectée en build : ~150€ de correction. En prod : ~150 000€ d'incident."}
+};
+
+var COURSE_ID="cloud-security-complet",TOTAL=11,current=0,currentUser=null;
+var qcmAnswered={},qcmScores={},currentQcmSlide=null;
+
+function updateUI(){
+  document.getElementById("slide-counter").textContent=String(current+1).padStart(2,"0")+" / "+String(TOTAL).padStart(2,"0");
+  document.getElementById("prev-btn").disabled=current===0;
+  document.getElementById("next-btn").disabled=current===TOTAL-1;
+  document.getElementById("progress-fill").style.width=((current+1)/TOTAL*100)+"%";
+  var ind=document.getElementById("qcm-ind");
+  if(QCM[current])ind.textContent=qcmAnswered[current]?(qcmScores[current]===1?"✅ QCM répondu":"❌ QCM répondu"):"⚡ QCM requis";
+  else ind.textContent="";
+}
+function navigate(dir){
+  var next=current+dir;
+  if(next<0||next>=TOTAL)return;
+  if(dir>0&&QCM[current]&&!qcmAnswered[current]){showQcm(current);return;}
+  var curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index='"+next+"']");
+  curEl.classList.remove("active");curEl.classList.add("exit");
+  setTimeout(function(){curEl.classList.remove("exit");},400);
+  nextEl.classList.add("active");current=next;updateUI();
+}
+function showQcm(idx){
+  var qcm=QCM[idx];if(!qcm)return;
+  currentQcmSlide=idx;
+  document.getElementById("qcm-prog").textContent="QCM "+(Object.keys(qcmAnswered).length+1)+" / "+Object.keys(QCM).length;
+  document.getElementById("qcm-question").textContent=qcm.question;
+  document.getElementById("qcm-feedback").style.display="none";
+  document.getElementById("qcm-feedback").className="qcm-feedback";
+  document.getElementById("qcm-next-btn").classList.remove("show");
+  document.getElementById("qcm-saving").classList.remove("show");
+  var letters=["A","B","C","D"],html="";
+  qcm.options.forEach(function(opt,i){html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+"</span>"+opt+"</div>";});
+  document.getElementById("qcm-options").innerHTML=html;
+  if(qcmAnswered[idx]){restoreQcmState(idx);document.getElementById("qcm-next-btn").classList.add("show");}
+  document.getElementById("qcm-overlay").classList.add("show");
+}
+function selectOption(el,optIdx){
+  if(qcmAnswered[currentQcmSlide])return;
+  var qcm=QCM[currentQcmSlide],correct=optIdx===qcm.correct;
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  if(!correct)el.classList.add("wrong");
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(correct?"correct":"wrong");
+  fb.textContent=(correct?"✅ Correct ! ":"❌ Incorrect. ")+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true;qcmScores[currentQcmSlide]=correct?1:0;updateUI();
+  if(Object.keys(qcmAnswered).length===Object.keys(QCM).length){
+    var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+    setTimeout(function(){closeQcmAndAdvance();showCompletion((c/tot)*100);},1400);return;
+  }
+  document.getElementById("qcm-next-btn").classList.add("show");
+}
+function restoreQcmState(idx){
+  var qcm=QCM[idx],score=qcmScores[idx];
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(score===1?"correct":"wrong");
+  fb.textContent=(score===1?"✅ Déjà répondu correctement. ":"❌ Réponse incorrecte. ")+qcm.explanation;
+}
+function closeQcmAndAdvance(){
+  document.getElementById("qcm-overlay").classList.remove("show");
+  if(currentQcmSlide===current&&current<TOTAL-1){
+    var next=current+1,curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index='"+next+"']");
+    curEl.classList.remove("active");curEl.classList.add("exit");
+    setTimeout(function(){curEl.classList.remove("exit");},400);
+    nextEl.classList.add("active");current=next;updateUI();
+  }
+}
+function showCompletion(pct){
+  var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById("comp-score").textContent=Math.round(pct)+"%";
+  if(pct>=75){document.getElementById("comp-icon").textContent="🏆";document.getElementById("comp-title").textContent="Excellent !";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Cloud Security maîtrisé !";}
+  else if(pct>=50){document.getElementById("comp-icon").textContent="📚";document.getElementById("comp-title").textContent="Bien joué !";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Quelques notions à revoir.";}
+  else{document.getElementById("comp-icon").textContent="🔁";document.getElementById("comp-title").textContent="À revoir";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Recommence le cours !";}
+  document.getElementById("completion-modal").classList.add("show");
+}
+document.addEventListener("keydown",function(e){
+  if(document.getElementById("qcm-overlay").classList.contains("show"))return;
+  if(e.key==="ArrowRight"||e.key===" "){e.preventDefault();navigate(1);}
+  if(e.key==="ArrowLeft")navigate(-1);
+});
+var touchX=0;
+document.addEventListener("touchstart",function(e){touchX=e.touches[0].clientX;});
+document.addEventListener("touchend",function(e){var dx=e.changedTouches[0].clientX-touchX;if(Math.abs(dx)>50&&!document.getElementById("qcm-overlay").classList.contains("show"))navigate(dx<0?1:-1);});
+(function(){
+  var c=document.getElementById("matrix"),ctx=c.getContext("2d");
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}resize();window.addEventListener("resize",resize);
+  var chars="01CLOUDSECAWSAZUREGCPK8STERRAFORM",fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}initDrops();window.addEventListener("resize",initDrops);
+  setInterval(function(){
+    ctx.fillStyle="rgba(2,10,8,0.05)";ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle="#00ddff";ctx.font=fs+"px monospace";
+    drops.forEach(function(y,i){ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);if(y*fs>c.height&&Math.random()>.975)drops[i]=0;drops[i]++;});
+  },55);
+})();
+updateUI();
+</script>
+</body>
+</html>

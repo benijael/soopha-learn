@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consultant IAM · Cours Complet · SooPHA Learn</title>
+<style>
+/* ─── VARIABLES ─────────────────────────────────────────── */
+:root {
+  --green:#00ff88; --green-border:rgba(0,255,136,.13); --green-dim:rgba(0,255,136,.5);
+  --red:#ff4466; --yellow:#ffd700; --blue:#4488ff; --cyan:#00ddff;
+  --orange:#ff8800; --purple:#aa44ff;
+  --bg:#020a04; --bg2:rgba(2,12,6,.92);
+  --mono:'Courier New',Courier,monospace;
+  --display:'Georgia','Times New Roman',serif;
+  --body:'Arial',sans-serif;
+  --transition:.2s ease;
+}
+
+/* ─── RESET ─────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow:hidden;height:100%;background:var(--bg);color:#e0ffe8;font-family:var(--body);font-size:14px}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--green),transparent);z-index:999}
+
+/* ─── AMBIENT ────────────────────────────────────────────── */
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+
+/* ─── TOPBAR ─────────────────────────────────────────────── */
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,10,4,.97);border-bottom:1px solid var(--green-border);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(0,255,136,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-right{display:flex;gap:1.2rem;align-items:center}
+.tb-back{color:rgba(0,255,136,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}.tb-back:hover{color:#00ff88}
+.tb-dot{width:6px;height:6px;background:#00ff88;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.4)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ─── PROGRESS ────────────────────────────────────────────── */
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(0,255,136,.06)}
+#progress-fill{height:100%;background:#00ff88;box-shadow:0 0 8px #00ff88;transition:width .5s ease}
+
+/* ─── SLIDES ──────────────────────────────────────────────── */
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+
+/* ─── TYPOGRAPHY ──────────────────────────────────────────── */
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,255,136,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display);font-weight:900;font-size:clamp(1.8rem,3.5vw,2.8rem);color:#fff;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem;text-shadow:0 0 40px #00ff88,0 0 80px rgba(0,255,136,.2)}
+.slide h2{font-family:var(--display);font-weight:700;font-size:clamp(1.1rem,2vw,1.7rem);color:#00ff88;letter-spacing:.08em;margin-bottom:1rem}
+.slide h3{font-family:var(--display);font-weight:400;font-size:clamp(.8rem,1.2vw,1rem);color:rgba(0,255,136,.55);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px #00ff88,0 0 80px rgba(0,255,136,.2)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px #00ff88;transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+
+/* ─── CARDS ────────────────────────────────────────────────── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;max-width:880px;width:100%}
+.card{background:rgba(2,12,6,.88);border:1px solid rgba(0,255,136,.13);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid #00ff88;border-left:2px solid #00ff88}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid #00ff88;border-right:2px solid #00ff88}
+.card-red{border-color:rgba(255,68,102,.18)}.card-red::before,.card-red::after{border-color:var(--red)}
+.card-blue{border-color:rgba(68,136,255,.18)}.card-blue::before,.card-blue::after{border-color:var(--blue)}
+.card-yellow{border-color:rgba(255,215,0,.18)}.card-yellow::before,.card-yellow::after{border-color:var(--yellow)}
+.card-orange{border-color:rgba(255,136,0,.18)}.card-orange::before,.card-orange::after{border-color:var(--orange)}
+.card-purple{border-color:rgba(170,68,255,.18)}.card-purple::before,.card-purple::after{border-color:var(--purple)}
+.card-cyan{border-color:rgba(0,221,255,.18)}.card-cyan::before,.card-cyan::after{border-color:var(--cyan)}
+
+/* ─── COMPONENTS ───────────────────────────────────────────── */
+.blabel{font-family:var(--mono);font-size:.58rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(0,255,136,.3);margin-bottom:.6rem}
+.blabel::before{content:'// ';color:rgba(0,255,136,.15)}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.92rem);color:rgba(200,255,220,.8);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:#00ff88;font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}
+.bullets li.ok::before{content:'✅';font-size:.7rem}
+.bullets li.bad::before{content:'❌';font-size:.7rem}
+.bullets li.warn::before{content:'⚠';color:var(--yellow);font-size:.65rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+
+.quote{border-left:3px solid #00ff88;padding:.7rem 1rem;background:rgba(0,255,136,.04);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#e0ffe8;line-height:1.6}
+.quote-red{border-color:var(--red);background:rgba(255,68,102,.04);color:#ffd0d8}
+.quote-yellow{border-color:var(--yellow);background:rgba(255,215,0,.04);color:#fff8d0}
+.quote-blue{border-color:var(--blue);background:rgba(68,136,255,.04);color:#d0dcff}
+.quote-orange{border-color:var(--orange);background:rgba(255,136,0,.04);color:#ffe0c0}
+
+.terminal{background:rgba(0,4,2,.7);border:1px solid rgba(0,255,136,.12);border-left:3px solid #00ff88;padding:.8rem 1.1rem;font-family:var(--mono);font-size:.75rem;color:rgba(0,255,136,.75);line-height:1.8}
+.term-prompt{color:#00ff88}.term-out{color:rgba(200,255,220,.45)}.term-warn{color:var(--yellow)}.term-err{color:var(--red)}
+.terminal-blue{border-left-color:var(--blue);color:rgba(100,160,255,.8)}
+.terminal-red{border-left-color:var(--red);color:rgba(255,68,102,.75)}
+.terminal-yellow{border-left-color:var(--yellow);color:rgba(255,215,0,.75)}
+
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(0,255,136,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(0,255,136,.1)}
+.blabel{font-family:var(--mono);font-size:.58rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(0,255,136,.3);margin-bottom:.6rem}
+.blabel::before{content:'// ';color:rgba(0,255,136,.15)}
+.tag-list{display:flex;flex-wrap:wrap;gap:.35rem}
+.tag{font-family:var(--mono);font-size:.62rem;padding:.22rem .55rem;border:1px solid rgba(0,255,136,.14);background:rgba(0,255,136,.04);color:rgba(0,255,136,.65)}
+.tag-b{border-color:rgba(68,136,255,.2);background:rgba(68,136,255,.05);color:rgba(100,160,255,.75)}
+.tag-y{border-color:rgba(255,215,0,.2);background:rgba(255,215,0,.04);color:rgba(255,215,0,.7)}
+.tag-r{border-color:rgba(255,68,102,.2);background:rgba(255,68,102,.05);color:rgba(255,68,102,.75)}
+.tag-o{border-color:rgba(255,136,0,.2);background:rgba(255,136,0,.05);color:rgba(255,136,0,.8)}
+.tag-p{border-color:rgba(170,68,255,.2);background:rgba(170,68,255,.05);color:rgba(170,68,255,.8)}
+
+.sval{font-family:var(--display);font-size:1.4rem;font-weight:700;margin-bottom:.2rem}
+.ssub{font-family:var(--mono);font-size:.6rem;color:rgba(0,255,136,.3);line-height:1.6}
+.arow{display:flex;align-items:flex-start;gap:.6rem}
+.arow .em{font-size:1.1rem;flex-shrink:0;margin-top:.1rem}
+.arow p{font-family:var(--mono);font-size:.64rem;color:rgba(200,255,220,.5);line-height:1.6}
+
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;border-radius:2px;font-family:var(--mono)}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-blue{background:rgba(0,170,255,.08);border:1px solid rgba(0,170,255,.3);color:#00aaff}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.pill-cyan{background:rgba(0,221,255,.08);border:1px solid rgba(0,221,255,.3);color:#00ddff}
+
+.cas-badge{display:inline-flex;align-items:center;gap:.4rem;font-family:var(--mono);font-size:.58rem;letter-spacing:.15em;padding:.28rem .8rem;background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.22);color:var(--red);margin-bottom:.6rem}
+
+/* ─── STEP LIST ────────────────────────────────────────────── */
+.step-list{display:flex;flex-direction:column;gap:.5rem}
+.step{display:flex;align-items:flex-start;gap:.7rem}
+.step-num{font-family:var(--mono);font-size:.65rem;color:var(--green);min-width:1.4rem;padding-top:.05rem;flex-shrink:0}
+.step-txt{font-size:.83rem;color:rgba(200,255,220,.8);line-height:1.5}
+.step-txt strong{color:#fff}
+
+/* ─── TIMELINE ─────────────────────────────────────────────── */
+.timeline{display:flex;flex-direction:column;gap:.45rem}
+.tl-item{display:flex;gap:.8rem;align-items:flex-start}
+.tl-time{font-family:var(--mono);font-size:.6rem;color:var(--green);min-width:4.2rem;flex-shrink:0;padding-top:.1rem}
+.tl-content{font-size:.82rem;color:rgba(200,255,220,.8);line-height:1.45}
+.tl-content strong{color:#fff}
+
+/* ─── QCM OVERLAY ──────────────────────────────────────────── */
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(2,8,4,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(2,12,6,.97);border:1px solid rgba(0,255,136,.2);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(0,255,136,.08)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #00ff88;border-left:2px solid #00ff88}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #00ff88;border-right:2px solid #00ff88}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(0,255,136,.1)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,255,136,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(0,255,136,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.35);margin-bottom:.5rem;display:none}
+.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(0,8,4,.3);border:1px solid rgba(0,255,136,.08);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(200,255,220,.7);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);color:rgba(220,255,230,.95)}
+.qcm-option.correct{border-color:#00ff88!important;background:rgba(0,255,136,.1)!important;color:#00ff88!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.07)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-size:.68rem;font-weight:700;color:rgba(0,255,136,.4);min-width:18px;flex-shrink:0;margin-top:.1rem}
+.qcm-option.correct .option-letter,.qcm-option.wrong .option-letter{color:inherit}
+.qcm-feedback{padding:.8rem 1rem;border-radius:2px;font-family:var(--mono);font-size:.78rem;line-height:1.5;display:none;margin-bottom:1.2rem}
+.qcm-feedback.correct{background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.18);color:rgba(0,255,136,.85)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.05);border:1px solid rgba(255,68,102,.18);color:rgba(255,100,130,.85)}
+.qcm-btn{font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.8rem;background:#00ff88;color:#020c06;border:none;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all .2s;text-transform:uppercase;display:none}
+.qcm-btn.show{display:inline-block}
+.qcm-btn:hover{background:rgba(0,255,136,.85)}
+
+/* ─── COMPLETION ───────────────────────────────────────────── */
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;padding:2rem}
+#completion-modal.show{display:flex;animation:fadeInOv .3s ease}
+.completion-box{max-width:500px;width:100%;background:rgba(2,12,6,.98);border:1px solid rgba(0,255,136,.25);border-radius:2px;padding:3rem 2.5rem;text-align:center;box-shadow:0 0 60px rgba(0,255,136,.1);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #00ff88;border-left:2px solid #00ff88}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #00ff88;border-right:2px solid #00ff88}
+.completion-icon{font-size:4rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.5rem;font-weight:900;color:#fff;margin-bottom:.5rem}
+.completion-score{font-family:var(--display);font-size:3.5rem;font-weight:900;color:#00ff88;text-shadow:0 0 30px #00ff88;margin:1rem 0}
+.completion-sub{font-family:var(--mono);font-size:.78rem;color:rgba(0,255,136,.5);margin-bottom:.5rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.68rem;color:rgba(0,255,136,.3);margin-bottom:1.5rem}
+.completion-btn{font-family:var(--display);font-size:.78rem;font-weight:700;letter-spacing:.12em;padding:.8rem 1.8rem;text-decoration:none;display:inline-block;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);cursor:pointer;border:none;margin:.3rem;text-transform:uppercase;transition:all .2s}
+.completion-btn-primary{background:#00ff88;color:#020c06}
+.completion-btn-secondary{background:transparent;color:#00ff88;border:1px solid rgba(0,255,136,.25)!important;clip-path:none;border-radius:2px}
+
+/* ─── BOTTOMBAR ────────────────────────────────────────────── */
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,8,4,.97);border-top:1px solid rgba(0,255,136,.1);backdrop-filter:blur(12px)}
+.nav-btn{background:transparent;border:1px solid rgba(0,255,136,.18);color:rgba(0,255,136,.5);padding:.32rem .9rem;font-family:var(--mono);font-size:.65rem;cursor:pointer;transition:all .2s;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%)}
+.nav-btn:hover{border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,.05)}
+.nav-btn:disabled{opacity:.2;cursor:not-allowed}
+#slide-counter{font-family:var(--display);font-size:.72rem;color:#00ff88}
+.qcm-indicator{font-family:var(--mono);font-size:.62rem;color:rgba(255,215,0,.5);letter-spacing:.08em}
+
+/* ─── RESPONSIVE ───────────────────────────────────────────── */
+@media(max-width:768px){.slide{padding:1rem 1.2rem}.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>IAM — Identités &amp; Accès · Cours Complet</span>
+  </div>
+  <div class="tb-right">
+    <span class="tb-user" id="tb-username">@apprenant</span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+
+<!-- ══════════════════════════ SLIDES ══════════════════════════ -->
+<div id="slides">
+
+<!-- ■ SLIDE 0 · COVER ────────────────────────────────────────── -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// Cybersécurité · IAM · Cours Complet</div>
+  <h1 class="glitch">🪪 GESTION DES<br>IDENTITÉS &amp; ACCÈS</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Le métier qui garde les portes de l'entreprise</h3>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin:.8rem 0">
+    <span class="pill pill-green">🏗 Architecture</span>
+    <span class="pill pill-blue">🔐 Protocoles</span>
+    <span class="pill pill-yellow">📋 Gouvernance</span>
+    <span class="pill pill-orange">⚙️ Automatisation</span>
+    <span class="pill pill-red">🔴 Cas Concrets</span>
+  </div>
+  <div style="max-width:700px;width:100%;margin-top:.5rem" class="card">
+    <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;margin-bottom:.8rem">
+      <div style="text-align:center"><div class="sval" style="color:var(--red);font-size:2rem">80%</div><div class="ssub">des violations passent<br>par une identité<br>compromise · Verizon DBIR</div></div>
+      <div style="text-align:center"><div class="sval" style="color:var(--yellow);font-size:2rem">26Md$</div><div class="ssub">taille du marché IAM<br>mondial prévue<br>en 2031 · CAGR 13%</div></div>
+      <div style="text-align:center"><div class="sval" style="font-size:2rem">600€</div><div class="ssub">TJM moyen<br>consultant IAM senior<br>en mission Europe</div></div>
+    </div>
+    <div class="terminal">
+      <span class="term-prompt">iam@soopha:~$ </span>
+      <span class="term-out">// "Si tu contrôles les identités, tu contrôles tout. C'est aussi simple — et aussi critique — que ça."</span>
+    </div>
+  </div>
+  <div style="margin-top:1rem;font-size:.68rem;color:rgba(0,255,136,.2);letter-spacing:.15em">← → POUR NAVIGUER · ESPACE POUR AVANCER</div>
+</div>
+
+<!-- ■ SLIDE 1 · ÉCOSYSTÈME IAM ──────────────────────────────── -->
+<div class="slide" data-index="1" data-qcm="1">
+  <div class="slide-tag">// 01 · Cartographie</div>
+  <h2>L'écosystème complet : IAM, IGA, PAM, AM, IDaaS</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">IAM — Identity &amp; Access Management</div>
+        <p style="font-size:.83rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.5rem">Le <strong>cadre global</strong>. Qui sont les utilisateurs ? Comment sont-ils créés ? Quel cycle de vie les régit ? IAM est le terme générique qui couvre toutes les sous-disciplines ci-dessous.</p>
+        <div class="terminal" style="font-size:.65rem;padding:.5rem .8rem">
+          <span class="term-prompt">// </span><span class="term-out">IAM = IGA + AM + PAM. Le tout, pas une partie.</span>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.35)">IGA — Identity Governance &amp; Administration</div>
+        <p style="font-size:.83rem;color:rgba(200,255,220,.8);line-height:1.5">La <strong>gouvernance</strong> : qui a accès à quoi, est-ce légitime, qui a validé ? IGA ajoute les processus d'audit, de recertification des accès, de gestion des rôles métier et de demande d'accès via workflow. C'est le cœur du quotidien d'un consultant IGA/IAM.</p>
+        <div class="tag-list" style="margin-top:.5rem"><span class="tag tag-y">One Identity</span><span class="tag tag-y">SailPoint</span><span class="tag tag-y">Saviynt</span></div>
+      </div>
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.35)">PAM — Privileged Access Management</div>
+        <p style="font-size:.83rem;color:rgba(200,255,220,.8);line-height:1.5">Les <strong>comptes à hauts privilèges</strong> : admins, root, service accounts, comptes de service. Le PAM sécurise ces accès critiques via un coffre-fort de mots de passe (vaulting), une rotation automatique des secrets, un enregistrement de sessions et une approbation juste-à-temps (JIT).</p>
+        <div class="tag-list" style="margin-top:.5rem"><span class="tag tag-r">CyberArk</span><span class="tag tag-r">BeyondTrust</span><span class="tag tag-r">Delinea</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.35)">AM — Access Management (Authentification)</div>
+        <p style="font-size:.83rem;color:rgba(200,255,220,.8);line-height:1.5">Comment je <strong>prouve que je suis moi</strong> ? SSO (Single Sign-On), MFA, fédération d'identités via SAML 2.0, OAuth 2.0 / OIDC. L'AM est le pont entre l'utilisateur et les applications.</p>
+        <div class="tag-list" style="margin-top:.5rem"><span class="tag tag-b">Okta</span><span class="tag tag-b">Entra ID</span><span class="tag tag-b">Ping Identity</span><span class="tag tag-b">ForgeRock</span></div>
+      </div>
+      <div class="card card-cyan">
+        <div class="blabel" style="color:rgba(0,221,255,.35)">IDaaS — Identity as a Service</div>
+        <p style="font-size:.83rem;color:rgba(200,255,220,.8);line-height:1.5">L'IAM entier <strong>dans le cloud</strong>, en mode SaaS. Pas de serveurs à gérer. Okta, Entra ID, Ping Identity sont les leaders. Idéal pour les entreprises en migration cloud ou les startups.</p>
+      </div>
+      <div class="card" style="background:rgba(0,255,136,.03);border-color:rgba(0,255,136,.2)">
+        <div class="blabel">Comment ça s'articule sur un flux réel ?</div>
+        <div class="terminal" style="font-size:.66rem;line-height:2">
+          <span class="term-prompt">RH saisit un recrutement </span><span class="term-out">→ SIRH notifie</span><br>
+          <span class="term-prompt">IGA reçoit l'événement  </span><span class="term-out">→ crée l'identité</span><br>
+          <span class="term-prompt">IAM provisionne        </span><span class="term-out">→ AD + messagerie</span><br>
+          <span class="term-prompt">AM prend le relais     </span><span class="term-out">→ SSO + MFA activés</span><br>
+          <span class="term-prompt">PAM si compte sensible  </span><span class="term-out">→ vaulting + JIT</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 2 · FONDAMENTAUX ─────────────────────────────────── -->
+<div class="slide" data-index="2" data-qcm="2">
+  <div class="slide-tag">// 02 · Fondamentaux</div>
+  <h2>Les 4 piliers conceptuels de l'IAM</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">🔄 JML — Joiner · Mover · Leaver</div>
+        <p style="font-size:.82rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.5rem">Le cycle de vie complet d'une identité en entreprise :</p>
+        <ul class="bullets" style="gap:.4rem">
+          <li class="ok"><strong>Joiner</strong> — Nouvelle embauche : création du compte, attribution des droits selon le profil de poste, notification à l'utilisateur</li>
+          <li style="color:rgba(255,215,0,.8)"><strong style="color:var(--yellow)">Mover</strong> — Changement de poste/pays/département : modification des droits, révocation des anciens, pas d'accumulation</li>
+          <li class="bad"><strong>Leaver</strong> — Départ : désactivation <em>immédiate</em> de tous les accès, archivage du compte, transfert des données</li>
+        </ul>
+        <div class="terminal" style="margin-top:.6rem;font-size:.65rem"><span class="term-warn">// Le Leaver non géré = ghost account = faille majeure</span></div>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.35)">🏗 RBAC · ABAC · ReBAC</div>
+        <ul class="bullets" style="gap:.4rem">
+          <li><strong>RBAC</strong> — Role-Based Access Control. Les droits suivent le rôle métier. Simple, le plus répandu, limite : rigide.</li>
+          <li><strong>ABAC</strong> — Attribute-Based. Les droits dépendent d'attributs multiples (département, pays, heure, classification données). Flexible mais complexe à maintenir.</li>
+          <li><strong>ReBAC</strong> — Relation-Based (modèle Google Zanzibar). Droits basés sur les relations entre objets. Utilisé par Google Drive, Notion.</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-orange">
+        <div class="blabel" style="color:rgba(255,136,0,.35)">⚖️ Least Privilege &amp; Need-to-Know</div>
+        <ul class="bullets" style="gap:.4rem">
+          <li>Chaque identité a <strong>uniquement les droits nécessaires</strong> à sa fonction — ni plus, ni moins</li>
+          <li><strong>Need-to-Know</strong> : accès accordé seulement si la personne a besoin de cette information pour son travail</li>
+          <li>Réduit drastiquement la surface d'attaque en cas de compromission d'un compte</li>
+        </ul>
+        <div class="terminal" style="margin-top:.6rem;font-size:.65rem;border-left-color:var(--orange)"><span class="term-out">// RGPD Art. 5.1.c : minimisation des données. Least Privilege = conformité by design.</span></div>
+      </div>
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.35)">🚫 SoD — Séparation des tâches</div>
+        <p style="font-size:.82rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.5rem">Celui qui crée ne peut pas valider. Celui qui valide ne peut pas exécuter. Empêche la fraude interne et les erreurs humaines.</p>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>Exemple bancaire :</strong> le comptable saisit un virement → le responsable valide → la banque exécute. 3 entités distinctes.</li>
+          <li><strong>En IAM :</strong> l'administrateur qui crée un compte ne peut pas auto-approuver les droits sensibles</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 3 · JOURNÉE TYPE ──────────────────────────────────── -->
+<div class="slide" data-index="3" data-qcm="3">
+  <div class="slide-tag">// 03 · Terrain</div>
+  <h2>Journée type · Consultant IAM en mission longue</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="blabel">Planning quotidien</div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-time">08:30</div><div class="tl-content"><strong>Revue des tickets IAM</strong> — Demandes d'accès en attente (nouveaux arrivants, mutations), incidents (compte bloqué, accès refusé), escalades RH/manager</div></div>
+        <div class="tl-item"><div class="tl-time">09:00</div><div class="tl-content"><strong>Standup client</strong> — Point quotidien avec le responsable infra et le RSSI : blocages techniques, alertes sur des comptes suspects, priorités du jour</div></div>
+        <div class="tl-item"><div class="tl-time">09:30</div><div class="tl-content"><strong>Développement</strong> — Customisation de workflows en <span class="tag" style="padding:.1rem .3rem;font-size:.58rem">VB.NET</span>, écriture de règles métier en <span class="tag" style="padding:.1rem .3rem;font-size:.58rem">SQL</span>, intégration connecteur SCIM</div></div>
+        <div class="tl-item"><div class="tl-time">12:00</div><div class="tl-content"><strong>Déjeuner networking</strong> — Échanges informels essentiels pour comprendre les vrais besoins métier, souvent plus utiles qu'une réunion formelle</div></div>
+        <div class="tl-item"><div class="tl-time">14:00</div><div class="tl-content"><strong>Atelier avec les RH</strong> — Cartographie des rôles, définition des profils d'accès par poste, validation du référentiel des droits</div></div>
+        <div class="tl-item"><div class="tl-time">16:00</div><div class="tl-content"><strong>Tests en recette</strong> — Validation end-to-end des workflows sur l'env. de test, correction des anomalies de provisioning</div></div>
+        <div class="tl-item"><div class="tl-time">17:30</div><div class="tl-content"><strong>Documentation</strong> — Mise à jour des spécifications techniques, DAT (Dossier d'Architecture Technique), compte-rendu client</div></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.35)">Interlocuteurs quotidiens</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>DSI / RSSI</strong> — Arbitrage des choix d'architecture, validation des règles de sécurité</li>
+          <li><strong>RH (SIRH)</strong> — Source de vérité des identités : embauches, mutations, départs</li>
+          <li><strong>Métiers</strong> — Définissent les droits réellement nécessaires par poste</li>
+          <li><strong>Infra / AD</strong> — Intégration avec l'Active Directory, LDAP, annuaires</li>
+          <li><strong>Conformité / Audit</strong> — Preuve RGPD, SOX, ISO 27001, recertifications</li>
+          <li><strong>Développeurs</strong> — Intégration des applications via SCIM, SAML, API REST</li>
+        </ul>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.35)">Compétences mobilisées chaque jour</div>
+        <div class="tag-list">
+          <span class="tag tag-y">VB.NET</span><span class="tag tag-y">SQL optimisé</span><span class="tag tag-y">Active Directory</span>
+          <span class="tag tag-y">LDAP / SAML / SCIM</span><span class="tag tag-y">Gestion de projet</span>
+          <span class="tag tag-y">Communication client</span><span class="tag tag-y">Analyse des risques</span><span class="tag tag-y">Rédaction technique</span>
+        </div>
+      </div>
+      <div class="terminal">
+        <span class="term-prompt">// </span><span class="term-out">L'IAM, c'est 50% technique, 50% humain.<br>Un consultant qui ne comprend pas le métier<br>du client livre une solution inutile.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 4 · CAS CONCRET 1 · ONBOARDING ─────────────────── -->
+<div class="slide" data-index="4" data-qcm="4">
+  <div class="slide-tag">// 04 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #1</span>
+    <h2 style="margin-bottom:.1rem">Onboarding automatisé à grande échelle</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.3)">Scénario réel · Groupe industriel Afrique Francophone · 200 nouvelles recrues simultanées</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.35)">Le problème sans IAM automatisé</div>
+        <div class="terminal terminal-red" style="font-size:.67rem;margin-bottom:.6rem">
+          <span class="term-err">→ 200 mails/tickets manuels vers l'IT</span><br>
+          <span class="term-err">→ Création des comptes AD à la main</span><br>
+          <span class="term-err">→ Délai moyen : 3 à 5 jours ouvrés</span><br>
+          <span class="term-err">→ Droits accordés "au feeling", pas selon le poste</span><br>
+          <span class="term-err">→ Zéro traçabilité des attributions</span><br>
+          <span class="term-warn">→ Coût caché : ~3h IT par onboarding manuel</span>
+        </div>
+        <p style="font-family:var(--mono);font-size:.65rem;color:rgba(255,68,102,.6)">Sur 200 recrutements × 3h = 600h IT perdues. En freelance à 700€/j : 52 500€ de gaspillage.</p>
+      </div>
+      <div class="card">
+        <div class="blabel">La solution — Onboarding event-driven</div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">01</span><div class="step-txt"><strong>Connecteur SIRH</strong> — Sync automatique avec SAP HCM / Workday via API REST ou SCIM. Dès qu'une fiche employé est créée côté RH, l'IGA en est informé en quasi-temps réel.</div></div>
+          <div class="step"><span class="step-num">02</span><div class="step-txt"><strong>Role Mining</strong> — Le poste ("Acheteur Senior · Dakar") mappe automatiquement vers un bundle de droits prédéfini : groupes AD, messagerie, ERP, accès VPN, dossier réseau.</div></div>
+          <div class="step"><span class="step-num">03</span><div class="step-txt"><strong>Provisioning multi-cible</strong> — Création simultanée du compte AD, boîte mail, profil ERP, badge logique. Notification automatique à l'employé avec ses credentials provisoires.</div></div>
+          <div class="step"><span class="step-num">04</span><div class="step-txt"><strong>Workflow d'approbation</strong> — Pour les accès sensibles (données financières, RH) : le N+1 reçoit une demande d'approbation automatique. Pas de droits sans validation humaine.</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.35)">Résultat mesuré</div>
+        <div style="display:flex;gap:1.2rem;justify-content:space-around;padding:.5rem 0;flex-wrap:wrap">
+          <div style="text-align:center"><div class="sval" style="color:var(--blue);font-size:1.5rem">J+0</div><div class="ssub">employé opérationnel<br>dès son premier jour</div></div>
+          <div style="text-align:center"><div class="sval" style="color:var(--blue);font-size:1.5rem">0</div><div class="ssub">tickets IT manuels<br>pour un onboarding<br>standard</div></div>
+          <div style="text-align:center"><div class="sval" style="color:var(--blue);font-size:1.5rem">100%</div><div class="ssub">traçabilité<br>des attributions<br>avec timestamps</div></div>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.35)">Extrait code VB.NET — Règle de provisioning</div>
+        <div class="terminal terminal-yellow" style="font-size:.63rem">
+          <span class="term-prompt">' Mapping Pays → Bundle de droits</span><br>
+          <span class="term-out">Public Overrides Sub Provision(person As IPerson)</span><br>
+          <span class="term-out">&nbsp;&nbsp;Dim country As String = person.GetValue("CountryCode")</span><br>
+          <span class="term-out">&nbsp;&nbsp;Select Case country</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;Case "GA" : AssignRole(person, "BUNDLE_GABON_STD")</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;Case "SN" : AssignRole(person, "BUNDLE_SENEGAL_STD")</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;Case "CI" : AssignRole(person, "BUNDLE_COTEDIVOIRE_STD")</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;Case Else  : AssignRole(person, "BUNDLE_INTERNATIONAL")</span><br>
+          <span class="term-out">&nbsp;&nbsp;End Select</span><br>
+          <span class="term-out">&nbsp;&nbsp;SendWelcomeNotification(person)</span><br>
+          <span class="term-out">End Sub</span>
+        </div>
+      </div>
+      <div class="terminal">
+        <span class="term-prompt">// Leçon clé : </span><br>
+        <span class="term-out">Le SIRH est la SEULE source de vérité.<br>Garbage in = garbage out.<br>La qualité des données RH conditionne<br>la qualité de tous les accès.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 5 · CAS CONCRET 2 · GHOST ACCOUNT ──────────────── -->
+<div class="slide" data-index="5" data-qcm="5">
+  <div class="slide-tag">// 05 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #2</span>
+    <h2 style="margin-bottom:.1rem">Le Ghost Account — l'attaque qui vient de l'intérieur</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.3)">Scénario composite · Vrai vecteur d'attaque · Analyse technique complète</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.35)">Le scénario</div>
+        <div class="quote quote-red" style="margin-bottom:.6rem;font-size:.82rem">
+          Kofi, directeur financier, quitte l'entreprise le <strong>31 mars</strong>.<br>
+          Son compte AD reste <strong>actif le 1er juin</strong>.<br>
+          Un ancien prestataire, qui connaît ses credentials, s'y connecte.<br>
+          Il exporte 3 ans d'historique client depuis l'ERP.<br>
+          L'entreprise ne le détecte que 6 semaines plus tard, sur alerte SIEM.
+        </div>
+        <ul class="bullets" style="gap:.3rem">
+          <li class="bad"><strong>Cause #1 :</strong> le départ n'a pas été notifié à l'IT par les RH dans les délais</li>
+          <li class="bad"><strong>Cause #2 :</strong> aucun processus Leaver automatisé</li>
+          <li class="bad"><strong>Cause #3 :</strong> pas de revue périodique des comptes inactifs</li>
+          <li class="bad"><strong>Cause #4 :</strong> droits excessifs (accès complet ERP pour tout l'historique)</li>
+          <li class="warn"><strong>Impact :</strong> violation RGPD · risque pénal · perte client · coût incident 200K+€</li>
+        </ul>
+      </div>
+      <div class="card card-orange">
+        <div class="blabel" style="color:rgba(255,136,0,.35)">Réalité terrain en Afrique Francophone</div>
+        <div class="arow">
+          <span class="em">🌍</span>
+          <p>Dans de nombreuses structures, la DSI est informée du départ <strong>après coup</strong>, parfois jamais. Les comptes prestataires sont encore pires : leur contrat se termine mais leurs accès VPN restent ouverts des mois. Sans processus Leaver automatisé couplé au SIRH, ce scénario se reproduit à chaque départ non tracé.</p>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Processus Leaver automatisé — Étape par étape</div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">J-5</span><div class="step-txt"><strong>Alerte managériale</strong> — Le manager est notifié : transférer les fichiers, déléguer les responsabilités, transférer la boîte mail.</div></div>
+          <div class="step"><span class="step-num">J-1</span><div class="step-txt"><strong>Pré-désactivation</strong> — Révocation des accès non critiques. Génération d'un rapport de tous les accès actifs.</div></div>
+          <div class="step"><span class="step-num">J0 AM</span><div class="step-txt"><strong>Désactivation cascade</strong> — AD désactivé → SSO révoqué → tokens OAuth invalidés → VPN coupé → sessions actives tuées. Tout, simultanément, en automatique.</div></div>
+          <div class="step"><span class="step-num">J+1</span><div class="step-txt"><strong>Vérification</strong> — Rapport d'audit automatique confirmant que 100% des accès sont coupés. Envoi au RSSI.</div></div>
+          <div class="step"><span class="step-num">J+30</span><div class="step-txt"><strong>Archivage</strong> — Compte archivé (pas supprimé) pour 5 ans, conformité légale et investigations éventuelles.</div></div>
+        </div>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.35)">SQL — Détection des ghost accounts (audit hebdo)</div>
+        <div class="terminal terminal-blue" style="font-size:.62rem;line-height:1.85">
+          <span class="term-prompt">-- Comptes AD actifs sans connexion depuis 60 jours</span><br>
+          <span class="term-out">SELECT p.DisplayName, p.SamAccountName,</span><br>
+          <span class="term-out">&nbsp;&nbsp;p.LastLogonTimestamp, hr.ExitDate,</span><br>
+          <span class="term-out">&nbsp;&nbsp;DATEDIFF(day,p.LastLogonTimestamp,GETDATE()) AS DaysInactive</span><br>
+          <span class="term-out">FROM ADSAccount p</span><br>
+          <span class="term-out">LEFT JOIN HRPerson hr ON p.UID_Person = hr.UID_Person</span><br>
+          <span class="term-out">WHERE p.AccountDisabled = 0</span><br>
+          <span class="term-out">AND ( DATEDIFF(day,p.LastLogonTimestamp,GETDATE()) > 60</span><br>
+          <span class="term-out">&nbsp;&nbsp;OR hr.ExitDate &lt; GETDATE()</span><br>
+          <span class="term-out">&nbsp;&nbsp;OR hr.UID_Person IS NULL )</span><br>
+          <span class="term-out">ORDER BY DaysInactive DESC</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 6 · CAS CONCRET 3 · RECERTIFICATION ─────────────── -->
+<div class="slide" data-index="6" data-qcm="6">
+  <div class="slide-tag">// 06 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #3</span>
+    <h2 style="margin-bottom:.1rem">Campagne de Recertification des Accès</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.3)">Exigence ISO 27001 · SOX · RGPD Art. 5 · Exercice annuel redouté</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.35)">Le "Privilege Creep" — pourquoi c'est dangereux</div>
+        <div class="quote quote-yellow" style="margin-bottom:.6rem;font-size:.82rem">
+          Les droits s'accumulent comme de la dette technique.<br>
+          Marie entre comme Assistante RH en 2020 → promotion Responsable Formation → mutation en Finance.<br>
+          En 2024 : elle a encore accès à la <strong>paie, aux offres d'emploi et aux budgets</strong>.<br>
+          Violation du principe de moindre privilège. Violation SoD. Violation RGPD.
+        </div>
+        <p style="font-family:var(--mono);font-size:.65rem;color:rgba(255,215,0,.55)">Étude Gartner : en moyenne, les employés conservent 60% d'accès inutiles 12 mois après une mutation.</p>
+      </div>
+      <div class="card">
+        <div class="blabel">Sans IGA — Le processus manuel (réalité)</div>
+        <div class="terminal terminal-red" style="font-size:.66rem;line-height:1.9">
+          <span class="term-err">1. Export Excel 5000 lignes depuis AD</span><br>
+          <span class="term-err">2. Email à 80 managers avec pièce jointe</span><br>
+          <span class="term-err">3. Attente 3 semaines… 40% sans réponse</span><br>
+          <span class="term-err">4. Relances manuelles infinies par l'équipe IT</span><br>
+          <span class="term-err">5. Modifications manuelles des droits</span><br>
+          <span class="term-err">6. Rapport inexploitable par l'auditeur</span><br>
+          <span class="term-warn">→ 3 mois de travail · résultat non certifiable</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Avec IGA — Campagne pilotée en 3 jours</div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">01</span><div class="step-txt"><strong>Lancement en 1 clic</strong> — Périmètre, reviewers, délais, règles d'escalade configurés depuis l'interface IGA. Toutes les données AD sont déjà synchronisées.</div></div>
+          <div class="step"><span class="step-num">02</span><div class="step-txt"><strong>Portail manager self-service</strong> — Chaque manager voit ses collaborateurs et leurs accès actuels. Il approuve ou révoque en 1 clic, avec commentaire obligatoire pour les révocations.</div></div>
+          <div class="step"><span class="step-num">03</span><div class="step-txt"><strong>Escalade automatique</strong> — Pas de réponse sous 72h → alerte N+2. Pas de réponse sous 5j → alerte RSSI + escalade dirigeant.</div></div>
+          <div class="step"><span class="step-num">04</span><div class="step-txt"><strong>Application instantanée</strong> — Chaque révocation est exécutée immédiatement dans l'AD et les systèmes cibles. Pas de délai entre la décision et l'effet.</div></div>
+          <div class="step"><span class="step-num">05</span><div class="step-txt"><strong>Rapport d'audit certifiable</strong> — Export PDF/Excel avec toutes les décisions, timestamps, justifications, signatures électroniques. Prêt pour KPMG ou Deloitte le lendemain.</div></div>
+        </div>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.35)">Impact mesuré</div>
+        <div style="display:flex;gap:1rem;justify-content:space-around;padding:.3rem 0;flex-wrap:wrap">
+          <div style="text-align:center"><div class="sval" style="color:var(--blue);font-size:1.3rem">3 semaines</div><div class="ssub">→ <strong>3 jours</strong></div></div>
+          <div style="text-align:center"><div class="sval" style="color:var(--blue);font-size:1.3rem">40%</div><div class="ssub">→ <strong>97%</strong><br>taux de réponse</div></div>
+          <div style="text-align:center"><div class="sval" style="color:var(--blue);font-size:1.3rem">0</div><div class="ssub">contact<br>manuel requis</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 7 · PROTOCOLES TECHNIQUES ──────────────────────── -->
+<div class="slide" data-index="7" data-qcm="7">
+  <div class="slide-tag">// 07 · Protocoles</div>
+  <h2>Les protocoles techniques que tout consultant IAM doit maîtriser</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.35)">LDAP / Active Directory</div>
+        <p style="font-size:.82rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.5rem">Le <strong>protocole historique</strong> d'annuaire. Active Directory est l'implémentation Microsoft de LDAP. Structure hiérarchique : Forêt → Domaine → OU → Utilisateur/Groupe.</p>
+        <div class="terminal terminal-blue" style="font-size:.62rem;line-height:1.8">
+          <span class="term-prompt">// Requête LDAP — chercher un utilisateur</span><br>
+          <span class="term-out">(&(objectClass=user)</span><br>
+          <span class="term-out">&nbsp;&nbsp;(sAMAccountName=mbata.beni))</span><br>
+          <span class="term-prompt">// Attributs clés IAM</span><br>
+          <span class="term-out">distinguishedName · memberOf</span><br>
+          <span class="term-out">userAccountControl · pwdLastSet</span>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.35)">SAML 2.0 — Fédération d'identités Web</div>
+        <p style="font-size:.82rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.5rem">Protocole XML de <strong>fédération</strong> entre un IdP (Identity Provider) et un SP (Service Provider). Utilisé pour le SSO entre entreprises ou vers des apps cloud (Salesforce, Office 365).</p>
+        <div class="terminal terminal-yellow" style="font-size:.63rem;line-height:1.8">
+          <span class="term-out">Utilisateur → clique sur "Se connecter"</span><br>
+          <span class="term-out">SP → redirige vers l'IdP (Entra ID)</span><br>
+          <span class="term-out">IdP → authentifie + génère Assertion XML</span><br>
+          <span class="term-out">SP → valide l'assertion → accès accordé</span><br>
+          <span class="term-warn">// Aucun mot de passe ne transite côté SP</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-orange">
+        <div class="blabel" style="color:rgba(255,136,0,.35)">OAuth 2.0 + OIDC — Autorisation moderne</div>
+        <p style="font-size:.82rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.5rem"><strong>OAuth 2.0</strong> = délégation d'autorisation (une app accède à tes données en ton nom). <strong>OIDC</strong> (OpenID Connect) ajoute l'<em>authentification</em> au-dessus d'OAuth 2.0. Le duo standard des apps modernes et mobiles.</p>
+        <div class="terminal" style="border-left-color:var(--orange);font-size:.63rem;line-height:1.8">
+          <span class="term-out">App demande → Authorization Code</span><br>
+          <span class="term-out">User autorise → IdP retourne code</span><br>
+          <span class="term-out">App échange → Access Token + ID Token</span><br>
+          <span class="term-out">App utilise → Access Token pour API</span><br>
+          <span class="term-warn">// OIDC = OAuth 2.0 + ID Token (JWT)</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="blabel">SCIM 2.0 — Provisioning automatisé</div>
+        <p style="font-size:.82rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.5rem">Le <strong>protocole REST/JSON de provisioning</strong>. Standardise la création, modification et suppression d'identités entre un IGA et les applications cibles. Remplace les connecteurs custom.</p>
+        <div class="terminal" style="font-size:.63rem;line-height:1.8">
+          <span class="term-prompt">POST /Users </span><span class="term-out">→ Créer un utilisateur</span><br>
+          <span class="term-prompt">PATCH /Users/id </span><span class="term-out">→ Modifier des attributs</span><br>
+          <span class="term-prompt">DELETE /Users/id </span><span class="term-out">→ Désactiver le compte</span><br>
+          <span class="term-prompt">GET /Groups </span><span class="term-out">→ Lister les groupes</span><br>
+          <span class="term-warn">// Supporté nativement : Okta, Entra, Slack, Box</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 8 · SOLUTIONS ──────────────────────────────────── -->
+<div class="slide" data-index="8" data-qcm="8">
+  <div class="slide-tag">// 08 · Solutions marché</div>
+  <h2>Comparatif des solutions IAM du marché</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card" style="border-color:rgba(0,255,136,.25);background:rgba(0,255,136,.03)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;font-size:.95rem;color:#fff">⭐ One Identity Manager</div>
+          <span class="pill pill-red" style="font-size:.55rem">Expert</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,220,.55);line-height:1.5;margin-bottom:.5rem">Solution IGA/PAM complète de Quest. Très customisable (VB.NET, SQL, Designer). Fort en gouvernance, Role Mining, connecteurs AD/SAP. Référence grands comptes Europe &amp; Afrique.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">Complet, flexible, fort en IGA on-premise</li>
+          <li class="ok">Connecteurs prébuilt (SAP, Oracle, AD, LDAP)</li>
+          <li class="bad">Courbe d'apprentissage longue (6-12 mois)</li>
+          <li class="bad">UI historique moins moderne que les concurrents</li>
+        </ul>
+        <div class="tag-list" style="margin-top:.5rem"><span class="tag">IGA</span><span class="tag">PAM</span><span class="tag">AD</span><span class="tag">VB.NET</span><span class="tag">Workflows</span></div>
+      </div>
+      <div class="card card-blue">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--blue)">SailPoint IdentityNow</div>
+          <span class="pill pill-red" style="font-size:.55rem">Expert</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,220,.55);line-height:1.5;margin-bottom:.5rem">Leader Gartner Magic Quadrant IGA. Cloud-native, UI moderne, IA intégrée (détection d'anomalies d'accès, recommandations de rôles). Référence Fortune 500 et banques mondiales.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">UX soignée, IA pour Role Mining automatique</li>
+          <li class="ok">API-first, intégrations SaaS natives</li>
+          <li class="bad">Coût de licence élevé (hors portée PME)</li>
+        </ul>
+        <div class="tag-list" style="margin-top:.5rem"><span class="tag tag-b">Cloud IGA</span><span class="tag tag-b">AI-driven</span><span class="tag tag-b">SOX</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--red)">CyberArk PAM</div>
+          <span class="pill pill-red" style="font-size:.55rem">Expert</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,220,.55);line-height:1.5;margin-bottom:.5rem">Le standard mondial du PAM. Coffre-fort de mots de passe, rotation automatique des secrets, session recording, accès Just-In-Time. Indispensable en environnement critique (banque, défense, énergie).</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">Référence absolue en PAM · très demandé</li>
+          <li class="ok">Intégration DevSecOps (secrets dans CI/CD)</li>
+          <li class="bad">Déploiement complexe, nécessite expertise dédiée</li>
+        </ul>
+        <div class="tag-list" style="margin-top:.5rem"><span class="tag tag-r">PAM</span><span class="tag tag-r">Vault</span><span class="tag tag-r">Session Rec.</span><span class="tag tag-r">JIT</span></div>
+      </div>
+      <div class="card card-cyan">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--cyan)">Microsoft Entra ID</div>
+          <span class="pill pill-green" style="font-size:.55rem">Accessible</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,220,.55);line-height:1.5;margin-bottom:.5rem">Anciennement Azure AD. Incontournable si environnement Microsoft. SSO, MFA, Conditional Access, PIM (PAM léger), Identity Protection (détection de risque IA). Inclus dans Microsoft 365 Business Premium.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">Inclus avec Microsoft 365 — ROI immédiat</li>
+          <li class="ok">Meilleur point d'entrée pour démarrer en IAM</li>
+          <li class="ok">Certification SC-300 reconnue, passable en ligne</li>
+          <li class="bad">IGA limité (pas de workflows avancés natifs)</li>
+        </ul>
+        <div class="tag-list" style="margin-top:.5rem"><span class="tag tag-p">SSO</span><span class="tag tag-p">MFA</span><span class="tag tag-p">Conditional Access</span><span class="tag tag-p">PIM</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 9 · PARCOURS ─────────────────────────────────────── -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// 09 · Carrière</div>
+  <h2>Parcours de carrière · Consultant IAM</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Progression type</div>
+        <div class="step-list" style="gap:.7rem">
+          <div class="step">
+            <span class="step-num" style="background:rgba(0,255,136,.07);padding:.2rem .45rem;color:var(--green);min-width:3.5rem;text-align:center">AN 1-2</span>
+            <div class="step-txt"><strong>Technicien IAM / Administrateur AD</strong><br><span style="color:rgba(200,255,220,.5);font-size:.78rem">Tickets, gestion comptes AD, premiers workflows. Cible : <span class="tag tag-y" style="padding:.1rem .35rem">SC-300</span></span></div>
+          </div>
+          <div class="step">
+            <span class="step-num" style="background:rgba(255,215,0,.06);padding:.2rem .45rem;color:var(--yellow);min-width:3.5rem;text-align:center">AN 3-5</span>
+            <div class="step-txt"><strong>Consultant IAM Confirmé</strong><br><span style="color:rgba(200,255,220,.5);font-size:.78rem">Missions client, customisation avancée, intégrations. Cible : <span class="tag tag-y" style="padding:.1rem .35rem">CISSP / CISM</span></span></div>
+          </div>
+          <div class="step">
+            <span class="step-num" style="background:rgba(255,136,0,.07);padding:.2rem .45rem;color:var(--orange);min-width:3.5rem;text-align:center">AN 6-9</span>
+            <div class="step-txt"><strong>Expert / Architecte IAM Senior</strong><br><span style="color:rgba(200,255,220,.5);font-size:.78rem">Design de solutions, avant-vente, lead technique. Freelance : 700-1100€/j</span></div>
+          </div>
+          <div class="step">
+            <span class="step-num" style="background:rgba(255,68,102,.07);padding:.2rem .45rem;color:var(--red);min-width:3.5rem;text-align:center">AN 10+</span>
+            <div class="step-txt"><strong>RSSI · Practice Manager · Fondateur</strong><br><span style="color:rgba(200,255,220,.5);font-size:.78rem">Direction, stratégie IAM, fondation d'une structure conseil spécialisée</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.35)">Certifications par niveau</div>
+        <div class="tag-list">
+          <span class="tag tag-y">SC-300 · Junior</span><span class="tag tag-y">CISSP · Senior</span><span class="tag tag-y">CISM · Manager</span>
+          <span class="tag tag-y">SailPoint Cert.</span><span class="tag tag-y">CyberArk Defender</span><span class="tag tag-y">ISO 27001 LA</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Rémunérations</div>
+        <div class="hdiv">Europe · France</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.7rem">
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(0,255,136,.25);background:rgba(0,255,136,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,220,.55)">Junior (0–3 ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--green)">38–52K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,215,0,.25);background:rgba(255,215,0,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,220,.55)">Confirmé (3–6 ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--yellow)">55–80K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,136,0,.25);background:rgba(255,136,0,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,220,.55)">Expert (6–10 ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--orange)">85–130K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,68,102,.25);background:rgba(255,68,102,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,220,.55)">Freelance TJM</span><span style="font-family:var(--display);font-weight:700;color:var(--red)">600–1100€/j</span></div>
+        </div>
+        <div class="hdiv">Afrique Francophone</div>
+        <div class="arow">
+          <span class="em">🌍</span>
+          <p>Spécialité <strong>extrêmement rare</strong> sur le continent. Grandes banques (Ecobank, BGFI, UBA, Attijariwafa), télécoms (Orange, MTN, Moov), groupes industriels et institutionnels cherchent des experts locaux. Ratio rémunération/concurrence <strong>unique en Afrique</strong>. Consulting IAM remote depuis l'Afrique vers l'Europe : possible et très rentable.</p>
+        </div>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.35)">Démarrer depuis zéro — plan d'action</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>M1-3 :</strong> Maîtriser Active Directory sur lab VMware/VirtualBox (gratuit)</li>
+          <li><strong>M4-6 :</strong> Passer SC-300 (Microsoft Entra ID) — ~165€, en ligne</li>
+          <li><strong>M7-12 :</strong> Lab One Identity Community Edition — gratuit, docs complètes</li>
+          <li><strong>AN 2 :</strong> Première mission en ESN sur projet IAM/AD</li>
+          <li><strong>AN 4-5 :</strong> CISSP ou CISM après 3+ ans d'expérience</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 10 · RÉCAP ───────────────────────────────────────── -->
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Récap · IAM</div>
+  <h2>Ce qu'il faut retenir</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(0,255,136,.4);margin-bottom:.7rem">✅ LES 5 VÉRITÉS IAM</div>
+        <ul class="bullets">
+          <li class="ok"><strong>JML</strong> — Joiner, Mover, Leaver : le cycle de vie de toute identité</li>
+          <li class="ok"><strong>Source de vérité unique</strong> — Le SIRH pilote, l'IGA exécute, jamais l'inverse</li>
+          <li class="ok"><strong>Least Privilege</strong> — Jamais plus de droits que nécessaire, jamais "au cas où"</li>
+          <li class="ok"><strong>Automatisation</strong> — L'humain valide, la machine provisionne et désactivie</li>
+          <li class="ok"><strong>Recertification</strong> — Les accès sans revue régulière deviennent des risques certifiés</li>
+        </ul>
+      </div>
+      <div class="card card-red">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.7rem">⚠ LES 3 ERREURS QUI COÛTENT CHER</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li class="bad">Déployer une solution IGA <strong>sans cartographier les rôles métier</strong> d'abord</li>
+          <li class="bad">Traiter l'IAM comme un projet IT — c'est un <strong>projet d'entreprise</strong> (RH, Finance, Métiers)</li>
+          <li class="bad">Ne pas automatiser le Leaver — <strong>chaque départ manuel est un ghost account en sursis</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-yellow">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.7rem">📚 RESSOURCES POUR ALLER PLUS LOIN</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>Microsoft Learn</strong> — SC-300 gratuit en ligne · learn.microsoft.com</li>
+          <li><strong>One Identity Community</strong> — Lab + docs + forums · community.oneidentity.com</li>
+          <li><strong>NIST SP 800-63</strong> — Le standard américain des identités numériques</li>
+          <li><strong>KuppingerCole Leadership Compass</strong> — Comparatifs IAM/IGA indépendants</li>
+          <li><strong>SailPoint University</strong> — Gratuit · university.sailpoint.com</li>
+        </ul>
+      </div>
+      <div class="card" style="background:rgba(0,255,136,.03);border-color:rgba(0,255,136,.2)">
+        <div class="blabel">Les autres cours SooPHA Learn · Cyber</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.8rem">
+          <span class="pill pill-red">⚔️ Pentester</span>
+          <span class="pill pill-blue">🔍 Analyste SOC</span>
+          <span class="pill pill-yellow">⚖️ DPO</span>
+          <span class="pill pill-orange">🛡️ RSSI/CISO</span>
+          <span class="pill pill-purple">🔬 DFIR</span>
+          <span class="pill pill-cyan">🕵️ Threat Intel</span>
+        </div>
+        <div class="terminal" style="font-size:.66rem">
+          <span class="term-prompt">// </span><span class="term-out">L'IAM est la fondation de tout.<br>Pas d'identité sécurisée = pas de sécurité.<br>C'est le poste le plus stratégique de la cyber défensive.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:1rem;max-width:880px;width:100%;text-align:center">
+    <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+    <div style="font-family:var(--mono);font-size:.6rem;color:rgba(0,255,136,.2);margin-top:.6rem;letter-spacing:.1em">SooPHA Learn × IAM · Identités &amp; Accès × Afrique Francophone</div>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- ══════════════════════════ QCM OVERLAY ═════════════════════ -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════ COMPLETION ══════════════════════ -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Cours terminé !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ BOTTOMBAR ═══════════════════════ -->
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 11</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<!-- ══════════════════════════ SCRIPT ══════════════════════════ -->
+<script>
+/* ── QCM DATA — Réponses distribuées A/B/C/D ─── */
+var QCM = {
+  1:{
+    question:"Quelle affirmation décrit correctement la différence entre IGA et PAM ?",
+    options:[
+      "IGA et PAM sont des synonymes — les deux gèrent les mots de passe des administrateurs",
+      "IGA gère le cycle de vie et la gouvernance de toutes les identités ; PAM sécurise spécifiquement les comptes à hauts privilèges via vaulting et session recording",
+      "PAM est une ancienne technologie remplacée par IGA dans les architectures modernes",
+      "IGA s'applique uniquement aux utilisateurs internes, PAM s'applique uniquement aux prestataires externes"
+    ],
+    correct:1,
+    explanation:"IGA (Identity Governance & Administration) gouverne le cycle de vie complet de toutes les identités : création, droits, recertification, départ. PAM (Privileged Access Management) est une sous-discipline qui sécurise exclusivement les comptes à hauts privilèges (admins, root, service accounts) via un coffre-fort, la rotation des secrets et l'enregistrement de sessions. Les deux coexistent et se complètent."
+  },
+  2:{
+    question:"Dans le cycle JML, que se passe-t-il si l'étape 'Leaver' n'est pas automatisée ?",
+    options:[
+      "Le compte de l'ancien employé reste actif — c'est ce qu'on appelle un 'ghost account', une faille critique pouvant mener à un accès non autorisé aux systèmes de l'entreprise",
+      "L'utilisateur ne peut plus accéder à ses données personnelles, ce qui crée une obligation RGPD de notification",
+      "Les droits de l'employé sont automatiquement transférés à son manager jusqu'à ce qu'un remplaçant soit nommé",
+      "Le système IAM génère une alerte vers l'IT qui dispose de 30 jours pour désactiver manuellement le compte"
+    ],
+    correct:0,
+    explanation:"Sans automatisation du Leaver, le compte reste actif indéfiniment. C'est le 'ghost account' : un compte d'ex-employé (ou prestataire) toujours valide, que son propriétaire — ou un attaquant ayant volé ses credentials — peut utiliser pour accéder aux systèmes sans déclencher d'alerte. C'est l'une des failles les plus courantes découvertes lors des audits de sécurité."
+  },
+  3:{
+    question:"Un consultant IAM en mission chez un grand compte se voit confier la cartographie des rôles. Par quelle action doit-il commencer ?",
+    options:[
+      "Installer la solution IGA en production pour analyser les logs d'accès existants",
+      "Envoyer un questionnaire à tous les utilisateurs de l'entreprise sur leurs habitudes d'accès",
+      "Acheter les licences SailPoint ou One Identity avant d'entamer toute analyse métier",
+      "Organiser des ateliers avec les RH, les responsables métier et la DSI pour identifier les profils de poste et les droits réellement nécessaires par fonction"
+    ],
+    correct:3,
+    explanation:"Le Role Mining — cartographie des rôles — commence toujours par la compréhension du métier, pas par la technique. Sans ateliers avec les RH (qui définissent les postes) et les métiers (qui savent ce dont ils ont réellement besoin), on déploie une solution vide ou mal configurée. 'Garbage in = garbage out' : un mauvais référentiel de rôles produira de mauvais droits, même dans la meilleure solution IGA du marché."
+  },
+  4:{
+    question:"Dans un onboarding automatisé, quel système doit être la 'source de vérité' pilotant l'IAM ?",
+    options:[
+      "L'Active Directory de l'entreprise, qui contient déjà tous les comptes existants",
+      "Le SIRH (Système d'Information des Ressources Humaines), qui contient la fiche officielle de chaque employé",
+      "La messagerie d'entreprise, qui est créée dès signature du contrat",
+      "Le portail IAM lui-même, qui centralise et réconcilie toutes les sources de données"
+    ],
+    correct:1,
+    explanation:"Le SIRH est la source de vérité unique pour les identités en entreprise. Il contient le poste, le département, le pays, la date d'entrée, la date de départ. L'IAM doit se synchroniser avec le SIRH — et uniquement avec lui — pour déclencher les processus JML. Si une fiche est créée en SIRH, l'IAM crée le compte. Si elle est clôturée, l'IAM désactive. L'AD est une cible de provisioning, pas une source."
+  },
+  5:{
+    question:"Qu'est-ce que le 'Privilege Creep' et pourquoi est-il dangereux ?",
+    options:[
+      "Une technique d'escalade de privilèges utilisée par les attaquants via l'exploitation d'une faille kernel",
+      "Un accès root temporaire accordé pendant une maintenance qui n'est jamais révoqué après l'opération",
+      "L'accumulation progressive de droits d'accès au fil des mutations et promotions d'un employé, qui finit par avoir des droits excessifs sans lien avec sa fonction actuelle",
+      "Un type d'attaque PAM qui consiste à enregistrer les sessions d'administrateurs pour en extraire des credentials"
+    ],
+    correct:2,
+    explanation:"Le Privilege Creep désigne l'accumulation de droits au fil du temps. Un employé change de poste, obtient de nouveaux accès, mais conserve les anciens 'au cas où'. Après 3-5 ans, il peut avoir des droits sur des dizaines de systèmes sans rapport avec son rôle actuel. Selon Gartner, 60% des accès sont excessifs 12 mois après une mutation. C'est une violation du principe de moindre privilège, un risque RGPD, et une surface d'attaque inutile."
+  },
+  6:{
+    question:"SAML 2.0 est utilisé pour quel usage principal en IAM ?",
+    options:[
+      "La fédération d'identités et le Single Sign-On (SSO) entre un Identity Provider et des applications web tierces, en transportant une assertion XML signée",
+      "La rotation automatique des mots de passe des comptes à hauts privilèges dans un coffre-fort PAM",
+      "Le provisioning automatisé d'utilisateurs entre un IGA et des applications via une API REST standardisée",
+      "La gestion des groupes Active Directory et la synchronisation des attributs LDAP entre forêts"
+    ],
+    correct:0,
+    explanation:"SAML 2.0 (Security Assertion Markup Language) est le protocole de fédération d'identités Web. Il permet le SSO entre un IdP (ex: Entra ID, Okta) et un SP (ex: Salesforce, Office 365) via une Assertion XML signée numériquement. L'utilisateur s'authentifie une seule fois auprès de l'IdP ; le SP reçoit l'assertion et accorde l'accès sans jamais manipuler le mot de passe. C'est SCIM qui gère le provisioning (réponse C), et LDAP qui gère l'annuaire (réponse D)."
+  },
+  7:{
+    question:"Quel protocole permet le provisioning automatisé standardisé entre une solution IGA et des applications cibles (Slack, Box, Salesforce) ?",
+    options:[
+      "LDAP — le protocole d'annuaire qui synchronise les attributs utilisateur entre systèmes",
+      "OAuth 2.0 — le protocole d'autorisation qui délègue les accès entre applications",
+      "SAML 2.0 — le protocole de fédération qui transporte des assertions d'identité XML",
+      "SCIM 2.0 — le protocole REST/JSON qui standardise la création, modification et suppression d'identités entre systèmes"
+    ],
+    correct:3,
+    explanation:"SCIM 2.0 (System for Cross-domain Identity Management) est le protocole de provisioning moderne. Il définit une API REST/JSON standard avec des endpoints normalisés : POST /Users (créer), PATCH /Users/{id} (modifier), DELETE /Users/{id} (désactiver). Il remplace les connecteurs custom et permet à n'importe quelle solution IGA de provisionner n'importe quelle application compatible (Okta, Entra, Slack, Box, Salesforce). Okta, Entra ID, SailPoint et One Identity supportent tous SCIM nativement."
+  },
+  8:{
+    question:"Un consultant IAM junior avec la certification SC-300 postule à son premier poste en France. Quelle fourchette salariale est réaliste ?",
+    options:[
+      "18 000–25 000€/an — l'IAM est une spécialité rare mais peu valorisée financièrement en début de carrière",
+      "38 000–52 000€/an en CDI ou en ESN, avec une progression rapide vers 55–80K à 3–6 ans d'expérience",
+      "80 000–100 000€/an dès la première année grâce à la rareté de la compétence sur le marché",
+      "Le métier IAM junior est uniquement accessible en alternance — il n'existe pas de poste junior salarié en CDI"
+    ],
+    correct:1,
+    explanation:"Un junior IAM (0-3 ans) certifié SC-300 peut viser 38-52K€/an en CDI ou en ESN (Entreprise de Services du Numérique). La progression est rapide : 55-80K à 3-6 ans, 85-130K pour les experts seniors. Les freelances démarrent autour de 400-600€/j après 3-5 ans d'expérience, et les experts atteignent 700-1100€/j. C'est un marché en forte croissance avec peu de candidats formés — excellent ratio rémunération/concurrence, surtout en Afrique francophone où la spécialité est encore plus rare."
+  }
+};
+
+var COURSE_ID="iam-complet", TOTAL=11, current=0, currentUser=null;
+var qcmAnswered={}, qcmScores={}, currentQcmSlide=null;
+
+/* ── UI ── */
+function updateUI(){
+  document.getElementById("slide-counter").textContent=String(current+1).padStart(2,"0")+" / "+String(TOTAL).padStart(2,"0");
+  document.getElementById("prev-btn").disabled=current===0;
+  document.getElementById("next-btn").disabled=current===TOTAL-1;
+  document.getElementById("progress-fill").style.width=((current+1)/TOTAL*100)+"%";
+  var ind=document.getElementById("qcm-ind");
+  if(QCM[current])ind.textContent=qcmAnswered[current]?(qcmScores[current]===1?"✅ QCM répondu":"❌ QCM répondu"):"⚡ QCM requis";
+  else ind.textContent="";
+}
+
+/* ── NAVIGATION ── */
+function navigate(dir){
+  var next=current+dir;
+  if(next<0||next>=TOTAL)return;
+  if(dir>0&&QCM[current]&&!qcmAnswered[current]){showQcm(current);return;}
+  var curEl=document.querySelector(".slide.active");
+  var nextEl=document.querySelector(".slide[data-index='"+next+"']");
+  curEl.classList.remove("active");curEl.classList.add("exit");
+  setTimeout(function(){curEl.classList.remove("exit");},400);
+  nextEl.classList.add("active");
+  current=next;updateUI();
+}
+
+/* ── QCM ── */
+function showQcm(idx){
+  var qcm=QCM[idx];if(!qcm)return;
+  currentQcmSlide=idx;
+  var total=Object.keys(QCM).length;
+  var done=Object.keys(qcmAnswered).length;
+  document.getElementById("qcm-prog").textContent="QCM "+(done+1)+" / "+total;
+  document.getElementById("qcm-question").textContent=qcm.question;
+  document.getElementById("qcm-feedback").style.display="none";
+  document.getElementById("qcm-feedback").className="qcm-feedback";
+  document.getElementById("qcm-next-btn").classList.remove("show");
+  document.getElementById("qcm-saving").classList.remove("show");
+  var letters=["A","B","C","D"],html="";
+  qcm.options.forEach(function(opt,i){
+    html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+"</span>"+opt+"</div>";
+  });
+  document.getElementById("qcm-options").innerHTML=html;
+  if(qcmAnswered[idx]){restoreQcmState(idx);document.getElementById("qcm-next-btn").classList.add("show");}
+  document.getElementById("qcm-overlay").classList.add("show");
+}
+
+function selectOption(el,optIdx){
+  if(qcmAnswered[currentQcmSlide])return;
+  var qcm=QCM[currentQcmSlide],correct=optIdx===qcm.correct;
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){
+    o.classList.add("disabled");
+    if(i===qcm.correct)o.classList.add("correct");
+  });
+  if(!correct)el.classList.add("wrong");
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";
+  fb.className="qcm-feedback "+(correct?"correct":"wrong");
+  fb.textContent=(correct?"✅ Correct ! ":"❌ Incorrect. ")+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true;
+  qcmScores[currentQcmSlide]=correct?1:0;
+  updateUI();
+  var allDone=Object.keys(qcmAnswered).length===Object.keys(QCM).length;
+  if(allDone){
+    var tot=Object.keys(QCM).length;
+    var c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+    var pct=(c/tot)*100;
+    setTimeout(function(){closeQcmAndAdvance();showCompletion(pct);},1400);
+    return;
+  }
+  document.getElementById("qcm-next-btn").classList.add("show");
+}
+
+function restoreQcmState(idx){
+  var qcm=QCM[idx],score=qcmScores[idx];
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){
+    o.classList.add("disabled");
+    if(i===qcm.correct)o.classList.add("correct");
+  });
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";
+  fb.className="qcm-feedback "+(score===1?"correct":"wrong");
+  fb.textContent=(score===1?"✅ Déjà répondu correctement. ":"❌ Réponse incorrecte. ")+qcm.explanation;
+}
+
+function closeQcmAndAdvance(){
+  document.getElementById("qcm-overlay").classList.remove("show");
+  if(currentQcmSlide===current&&current<TOTAL-1){
+    var next=current+1;
+    var curEl=document.querySelector(".slide.active");
+    var nextEl=document.querySelector(".slide[data-index='"+next+"']");
+    curEl.classList.remove("active");curEl.classList.add("exit");
+    setTimeout(function(){curEl.classList.remove("exit");},400);
+    nextEl.classList.add("active");
+    current=next;updateUI();
+  }
+}
+
+function showCompletion(pct){
+  var tot=Object.keys(QCM).length;
+  var c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById("comp-score").textContent=Math.round(pct)+"%";
+  if(pct>=75){
+    document.getElementById("comp-icon").textContent="🏆";
+    document.getElementById("comp-title").textContent="Excellent travail !";
+    document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Cours IAM maîtrisé !";
+  } else if(pct>=50){
+    document.getElementById("comp-icon").textContent="📚";
+    document.getElementById("comp-title").textContent="Bien joué !";
+    document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Quelques notions à revoir.";
+  } else {
+    document.getElementById("comp-icon").textContent="🔁";
+    document.getElementById("comp-title").textContent="À revoir";
+    document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Recommence le cours !";
+  }
+  document.getElementById("completion-modal").classList.add("show");
+}
+
+/* ── KEYBOARD + TOUCH ── */
+document.addEventListener("keydown",function(e){
+  if(document.getElementById("qcm-overlay").classList.contains("show"))return;
+  if(e.key==="ArrowRight"||e.key===" "){e.preventDefault();navigate(1);}
+  if(e.key==="ArrowLeft")navigate(-1);
+});
+var touchX=0;
+document.addEventListener("touchstart",function(e){touchX=e.touches[0].clientX;});
+document.addEventListener("touchend",function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById("qcm-overlay").classList.contains("show"))navigate(dx<0?1:-1);
+});
+
+/* ── MATRIX CANVAS ── */
+(function(){
+  var c=document.getElementById("matrix"),ctx=c.getContext("2d");
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener("resize",resize);
+  var chars="01ABCDEF{}IAMSOCPENTESTCYBER",fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops();window.addEventListener("resize",initDrops);
+  setInterval(function(){
+    ctx.fillStyle="rgba(2,10,4,0.05)";ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle="#00ff88";ctx.font=fs+"px monospace";
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+
+updateUI();
+</script>
+</body>
+</html>

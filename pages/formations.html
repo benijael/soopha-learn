@@ -551,7 +551,7 @@
         <div class="theme-header" onclick="toggleSection('orientation')">
           <span class="theme-icon">🧭</span>
           <span class="theme-label">Orientation</span>
-          <span class="theme-desc">1 cours · Carrières & Métiers</span>
+          <span class="theme-desc">4 cours · Carrières & Métiers · Cours Détaillés</span>
           <span class="theme-chevron">▼</span>
         </div>
         <div class="catalogue-grid">
@@ -570,6 +570,48 @@
             <span class="course-help-link" onclick="openCoaching(event,'metiers-cyber','Métiers de la Cybersécurité')">💬 Besoin d'aide sur ce module ?</span>
           </a>
 
+          <a href="metiers-cyber-iam-cours.html" class="course-card" data-theme="orientation" data-status="disponible" id="card-iam-cours">
+            <div class="course-number" style="color:rgba(0,255,136,.06)">IAM</div>
+            <div class="course-day"><span>// Identités &amp; Accès · Cours Complet</span><span id="badge-iam-cours"></span></div>
+            <div class="course-title">🪪 Consultant IAM — Cours Complet</div>
+            <div class="course-desc">Écosystème IAM/IGA/PAM/IDaaS, JML lifecycle, RBAC, Least Privilege, SoD. 3 cas concrets : onboarding automatisé, ghost accounts, recertification. Protocoles LDAP/SAML/SCIM/OAuth. One Identity, SailPoint, CyberArk, Entra ID.</div>
+            <div class="course-tags"><span class="badge badge-green">🪪 IAM</span><span class="badge badge-blue">11 slides</span><span class="badge badge-yellow">8 QCM</span><span class="badge badge-gray">~55 min</span></div>
+            <div class="course-progress-wrap" id="prog-iam-cours" style="display:none">
+              <div class="course-progress-label"><span id="prog-iam-cours-label">En cours</span><span id="prog-iam-cours-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-iam-cours-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-iam-cours">Commencer →</span>
+            <span class="course-help-link" onclick="openCoaching(event,'iam-cours','Consultant IAM — Cours Complet')">💬 Besoin d'aide sur ce module ?</span>
+          </a>
+
+          <a href="metiers-cyber-soc-cours.html" class="course-card" data-theme="orientation" data-status="disponible" id="card-soc-cours">
+            <div class="course-number" style="color:rgba(68,136,255,.06)">SOC</div>
+            <div class="course-day"><span>// Security Operations · Cours Complet</span><span id="badge-soc-cours"></span></div>
+            <div class="course-title">🔍 Analyste SOC — Cours Complet</div>
+            <div class="course-desc">SIEM/SOAR/EDR/XDR, MITRE ATT&amp;CK, Kill Chain, IOC vs IOA, Pyramide de la douleur. 3 cas concrets : Impossible Travel, Ransomware LockBit, BEC. Splunk SPL, KQL Sentinel, Sigma, YARA, Threat Hunting, MTTD/MTTR.</div>
+            <div class="course-tags"><span class="badge badge-blue">🔍 SOC</span><span class="badge badge-blue">11 slides</span><span class="badge badge-yellow">8 QCM</span><span class="badge badge-gray">~60 min</span></div>
+            <div class="course-progress-wrap" id="prog-soc-cours" style="display:none">
+              <div class="course-progress-label"><span id="prog-soc-cours-label">En cours</span><span id="prog-soc-cours-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-soc-cours-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-soc-cours">Commencer →</span>
+            <span class="course-help-link" onclick="openCoaching(event,'soc-cours','Analyste SOC — Cours Complet')">💬 Besoin d'aide sur ce module ?</span>
+          </a>
+
+          <a href="metiers-cyber-cloud-security-cours.html" class="course-card" data-theme="orientation" data-status="disponible" id="card-cloud-security-cours">
+            <div class="course-number" style="color:rgba(0,221,255,.06)">CSE</div>
+            <div class="course-day"><span>// Cloud Security · Cours Complet</span><span id="badge-cloud-security-cours"></span></div>
+            <div class="course-title">☁️ Cloud Security Engineer — Cours Complet</div>
+            <div class="course-desc">Responsabilité partagée, Zero Trust, Defense in Depth. CSPM/CWPP/CIEM, IAM Cloud pièges. 3 cas concrets : Bucket S3 public, escalade de privilèges IAM, Container escape Kubernetes. DevSecOps pipeline CI/CD, Wiz, Terraform, Vault.</div>
+            <div class="course-tags"><span class="badge badge-blue" style="background:rgba(0,221,255,.1);border-color:rgba(0,221,255,.3);color:#00ddff">☁️ Cloud</span><span class="badge badge-blue">11 slides</span><span class="badge badge-yellow">8 QCM</span><span class="badge badge-gray">~60 min</span></div>
+            <div class="course-progress-wrap" id="prog-cloud-security-cours" style="display:none">
+              <div class="course-progress-label"><span id="prog-cloud-security-cours-label">En cours</span><span id="prog-cloud-security-cours-score"></span></div>
+              <div class="progress-bar"><div class="progress-fill" id="prog-cloud-security-cours-fill" style="width:0%"></div></div>
+            </div>
+            <span class="course-cta" id="cta-cloud-security-cours">Commencer →</span>
+            <span class="course-help-link" onclick="openCoaching(event,'cloud-security-cours','Cloud Security Engineer — Cours Complet')">💬 Besoin d'aide sur ce module ?</span>
+          </a>
+
         </div>
       </div>
 
@@ -579,7 +621,7 @@
 
 <script>
 var currentUser = null;
-var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2','net1','net2','net3','net4','net5','net6','re1','re2','re3','re4','re5','re6','re7'];
+var COURSES = ['j1','linux','j3','j2','attacks','web','osint','forensics','crypto','metiers-cyber','malware','malware2','pentest1','pentest2','net1','net2','net3','net4','net5','net6','re1','re2','re3','re4','re5','re6','re7','iam-cours','soc-cours','cloud-security-cours'];
 
 function openCoaching(e, moduleId, moduleName) {
   e.preventDefault();

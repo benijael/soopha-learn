@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyste SOC · Cours Complet · SooPHA Learn</title>
+<style>
+/* ─── VARIABLES ─────────────────────────────────────────── */
+:root {
+  --green:#00ff88; --green-border:rgba(0,255,136,.13); --green-dim:rgba(0,255,136,.5);
+  --red:#ff4466; --yellow:#ffd700; --blue:#4488ff; --cyan:#00ddff;
+  --orange:#ff8800; --purple:#aa44ff;
+  --bg:#020a04; --bg2:rgba(2,12,6,.92);
+  --mono:'Courier New',Courier,monospace;
+  --display:'Georgia','Times New Roman',serif;
+  --body:'Arial',sans-serif;
+  --transition:.2s ease;
+}
+
+/* ─── RESET ─────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow:hidden;height:100%;background:var(--bg);color:#e0ffe8;font-family:var(--body);font-size:14px}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--blue),transparent);z-index:999}
+
+/* ─── AMBIENT ────────────────────────────────────────────── */
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+
+/* ─── TOPBAR ─────────────────────────────────────────────── */
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,10,4,.97);border-bottom:1px solid var(--green-border);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(0,255,136,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-right{display:flex;gap:1.2rem;align-items:center}
+.tb-back{color:rgba(0,255,136,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}.tb-back:hover{color:#00ff88}
+.tb-dot{width:6px;height:6px;background:#4488ff;border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+.tb-user{font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.4)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ─── PROGRESS ────────────────────────────────────────────── */
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(68,136,255,.06)}
+#progress-fill{height:100%;background:var(--blue);box-shadow:0 0 8px var(--blue);transition:width .5s ease}
+
+/* ─── SLIDES ──────────────────────────────────────────────── */
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+
+/* ─── TYPOGRAPHY ──────────────────────────────────────────── */
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(68,136,255,.4);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display);font-weight:900;font-size:clamp(1.8rem,3.5vw,2.8rem);color:#fff;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem;text-shadow:0 0 40px var(--blue),0 0 80px rgba(68,136,255,.3)}
+.slide h2{font-family:var(--display);font-weight:700;font-size:clamp(1.1rem,2vw,1.7rem);color:var(--blue);letter-spacing:.08em;margin-bottom:1rem}
+.slide h3{font-family:var(--display);font-weight:400;font-size:clamp(.8rem,1.2vw,1rem);color:rgba(68,136,255,.55);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px var(--blue),0 0 80px rgba(68,136,255,.3)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px var(--blue);transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+
+/* ─── CARDS ────────────────────────────────────────────────── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;max-width:880px;width:100%}
+.card{background:rgba(2,12,6,.88);border:1px solid var(--green-border);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid var(--blue);border-left:2px solid var(--blue)}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid var(--blue);border-right:2px solid var(--blue)}
+.card-green{border-color:rgba(0,255,136,.18)}.card-green::before,.card-green::after{border-color:var(--green)}
+.card-red{border-color:rgba(255,68,102,.18)}.card-red::before,.card-red::after{border-color:var(--red)}
+.card-blue{border-color:rgba(68,136,255,.18)}.card-blue::before,.card-blue::after{border-color:var(--blue)}
+.card-yellow{border-color:rgba(255,215,0,.18)}.card-yellow::before,.card-yellow::after{border-color:var(--yellow)}
+.card-orange{border-color:rgba(255,136,0,.18)}.card-orange::before,.card-orange::after{border-color:var(--orange)}
+.card-purple{border-color:rgba(170,68,255,.18)}.card-purple::before,.card-purple::after{border-color:var(--purple)}
+.card-cyan{border-color:rgba(0,221,255,.18)}.card-cyan::before,.card-cyan::after{border-color:var(--cyan)}
+
+/* ─── COMPONENTS ───────────────────────────────────────────── */
+.blabel{font-family:var(--mono);font-size:.58rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(68,136,255,.4);margin-bottom:.6rem}
+.blabel::before{content:'// ';color:rgba(68,136,255,.2)}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.92rem);color:rgba(200,255,220,.8);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:var(--blue);font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}
+.bullets li.ok::before{content:'✅';font-size:.7rem}
+.bullets li.bad::before{content:'❌';font-size:.7rem}
+.bullets li.warn::before{content:'⚠';color:var(--yellow);font-size:.65rem}
+.bullets li.alert::before{content:'🚨';font-size:.7rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+
+.quote{border-left:3px solid var(--blue);padding:.7rem 1rem;background:rgba(68,136,255,.04);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#e0ffe8;line-height:1.6}
+.quote-red{border-color:var(--red);background:rgba(255,68,102,.04);color:#ffd0d8}
+.quote-yellow{border-color:var(--yellow);background:rgba(255,215,0,.04);color:#fff8d0}
+.quote-orange{border-color:var(--orange);background:rgba(255,136,0,.04);color:#ffe0c0}
+.quote-green{border-color:var(--green);background:rgba(0,255,136,.04);color:#e0ffe8}
+
+.terminal{background:rgba(0,4,2,.7);border:1px solid rgba(68,136,255,.12);border-left:3px solid var(--blue);padding:.8rem 1.1rem;font-family:var(--mono);font-size:.75rem;color:rgba(100,160,255,.8);line-height:1.8}
+.term-prompt{color:var(--blue)}.term-out{color:rgba(200,255,220,.45)}.term-warn{color:var(--yellow)}.term-err{color:var(--red)}.term-ok{color:var(--green)}
+.terminal-red{border-left-color:var(--red);color:rgba(255,68,102,.75)}
+.terminal-green{border-left-color:var(--green);color:rgba(0,255,136,.75)}
+.terminal-yellow{border-left-color:var(--yellow);color:rgba(255,215,0,.75)}
+.terminal-purple{border-left-color:var(--purple);color:rgba(170,68,255,.75)}
+
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(68,136,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0;font-family:var(--mono)}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(68,136,255,.1)}
+
+.tag-list{display:flex;flex-wrap:wrap;gap:.35rem}
+.tag{font-family:var(--mono);font-size:.62rem;padding:.22rem .55rem;border:1px solid rgba(68,136,255,.2);background:rgba(68,136,255,.05);color:rgba(100,160,255,.75)}
+.tag-g{border-color:rgba(0,255,136,.14);background:rgba(0,255,136,.04);color:rgba(0,255,136,.65)}
+.tag-r{border-color:rgba(255,68,102,.2);background:rgba(255,68,102,.05);color:rgba(255,68,102,.75)}
+.tag-y{border-color:rgba(255,215,0,.2);background:rgba(255,215,0,.04);color:rgba(255,215,0,.7)}
+.tag-o{border-color:rgba(255,136,0,.2);background:rgba(255,136,0,.05);color:rgba(255,136,0,.8)}
+.tag-p{border-color:rgba(170,68,255,.2);background:rgba(170,68,255,.05);color:rgba(170,68,255,.8)}
+.tag-c{border-color:rgba(0,221,255,.2);background:rgba(0,221,255,.05);color:rgba(0,221,255,.8)}
+
+.sval{font-family:var(--display);font-size:1.4rem;font-weight:700;margin-bottom:.2rem}
+.ssub{font-family:var(--mono);font-size:.6rem;color:rgba(68,136,255,.4);line-height:1.6}
+.arow{display:flex;align-items:flex-start;gap:.6rem}
+.arow .em{font-size:1.1rem;flex-shrink:0;margin-top:.1rem}
+.arow p{font-family:var(--mono);font-size:.64rem;color:rgba(200,255,220,.5);line-height:1.6}
+
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;border-radius:2px;font-family:var(--mono)}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-blue{background:rgba(68,136,255,.1);border:1px solid rgba(68,136,255,.3);color:#4488ff}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:#aa44ff}
+.pill-cyan{background:rgba(0,221,255,.08);border:1px solid rgba(0,221,255,.3);color:#00ddff}
+
+.cas-badge{display:inline-flex;align-items:center;gap:.4rem;font-family:var(--mono);font-size:.58rem;letter-spacing:.15em;padding:.28rem .8rem;background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.22);color:var(--red);margin-bottom:.6rem}
+
+/* ─── SEVERITY BADGE ────────────────────────────────────────── */
+.sev{display:inline-block;padding:.15rem .6rem;font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;border-radius:2px;font-weight:700}
+.sev-crit{background:rgba(255,68,102,.15);border:1px solid rgba(255,68,102,.4);color:var(--red)}
+.sev-high{background:rgba(255,136,0,.12);border:1px solid rgba(255,136,0,.35);color:var(--orange)}
+.sev-med{background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);color:var(--yellow)}
+.sev-low{background:rgba(68,136,255,.1);border:1px solid rgba(68,136,255,.3);color:var(--blue)}
+.sev-info{background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);color:var(--green)}
+
+/* ─── STEP LIST ────────────────────────────────────────────── */
+.step-list{display:flex;flex-direction:column;gap:.5rem}
+.step{display:flex;align-items:flex-start;gap:.7rem}
+.step-num{font-family:var(--mono);font-size:.65rem;color:var(--blue);min-width:1.4rem;padding-top:.05rem;flex-shrink:0}
+.step-txt{font-size:.83rem;color:rgba(200,255,220,.8);line-height:1.5}
+.step-txt strong{color:#fff}
+
+/* ─── TIMELINE ─────────────────────────────────────────────── */
+.timeline{display:flex;flex-direction:column;gap:.45rem}
+.tl-item{display:flex;gap:.8rem;align-items:flex-start}
+.tl-time{font-family:var(--mono);font-size:.6rem;color:var(--blue);min-width:4.2rem;flex-shrink:0;padding-top:.1rem}
+.tl-content{font-size:.82rem;color:rgba(200,255,220,.8);line-height:1.45}
+.tl-content strong{color:#fff}
+
+/* ─── ALERT FEED ────────────────────────────────────────────── */
+.alert-feed{display:flex;flex-direction:column;gap:.3rem}
+.alert-row{display:flex;align-items:center;gap:.7rem;padding:.45rem .7rem;font-family:var(--mono);font-size:.62rem;border:1px solid rgba(68,136,255,.1);background:rgba(0,4,2,.4)}
+.alert-time{color:rgba(68,136,255,.5);min-width:5rem;flex-shrink:0}
+.alert-sev{min-width:3.5rem}
+.alert-msg{color:rgba(200,255,220,.65);flex:1}
+.alert-row.crit{border-left:2px solid var(--red);background:rgba(255,68,102,.05)}
+.alert-row.high{border-left:2px solid var(--orange);background:rgba(255,136,0,.04)}
+.alert-row.med{border-left:2px solid var(--yellow)}
+
+/* ─── QCM OVERLAY ──────────────────────────────────────────── */
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(2,8,4,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(2,12,6,.97);border:1px solid rgba(0,255,136,.2);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(0,255,136,.08)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #00ff88;border-left:2px solid #00ff88}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #00ff88;border-right:2px solid #00ff88}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(0,255,136,.1)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,255,136,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(0,255,136,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.35);margin-bottom:.5rem;display:none}
+.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(0,8,4,.3);border:1px solid rgba(0,255,136,.08);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(200,255,220,.7);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);color:rgba(220,255,230,.95)}
+.qcm-option.correct{border-color:#00ff88!important;background:rgba(0,255,136,.1)!important;color:#00ff88!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.07)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-size:.68rem;font-weight:700;color:rgba(0,255,136,.4);min-width:18px;flex-shrink:0;margin-top:.1rem}
+.qcm-option.correct .option-letter,.qcm-option.wrong .option-letter{color:inherit}
+.qcm-feedback{padding:.8rem 1rem;border-radius:2px;font-family:var(--mono);font-size:.78rem;line-height:1.5;display:none;margin-bottom:1.2rem}
+.qcm-feedback.correct{background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.18);color:rgba(0,255,136,.85)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.05);border:1px solid rgba(255,68,102,.18);color:rgba(255,100,130,.85)}
+.qcm-btn{font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.8rem;background:#00ff88;color:#020c06;border:none;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all .2s;text-transform:uppercase;display:none}
+.qcm-btn.show{display:inline-block}
+.qcm-btn:hover{background:rgba(0,255,136,.85)}
+
+/* ─── COMPLETION ───────────────────────────────────────────── */
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;padding:2rem}
+#completion-modal.show{display:flex;animation:fadeInOv .3s ease}
+.completion-box{max-width:500px;width:100%;background:rgba(2,12,6,.98);border:1px solid rgba(0,255,136,.25);border-radius:2px;padding:3rem 2.5rem;text-align:center;box-shadow:0 0 60px rgba(0,255,136,.1);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #00ff88;border-left:2px solid #00ff88}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #00ff88;border-right:2px solid #00ff88}
+.completion-icon{font-size:4rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.5rem;font-weight:900;color:#fff;margin-bottom:.5rem}
+.completion-score{font-family:var(--display);font-size:3.5rem;font-weight:900;color:#00ff88;text-shadow:0 0 30px #00ff88;margin:1rem 0}
+.completion-sub{font-family:var(--mono);font-size:.78rem;color:rgba(0,255,136,.5);margin-bottom:.5rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.68rem;color:rgba(0,255,136,.3);margin-bottom:1.5rem}
+.completion-btn{font-family:var(--display);font-size:.78rem;font-weight:700;letter-spacing:.12em;padding:.8rem 1.8rem;text-decoration:none;display:inline-block;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);cursor:pointer;border:none;margin:.3rem;text-transform:uppercase;transition:all .2s}
+.completion-btn-primary{background:#00ff88;color:#020c06}
+.completion-btn-secondary{background:transparent;color:#00ff88;border:1px solid rgba(0,255,136,.25)!important;clip-path:none;border-radius:2px}
+
+/* ─── BOTTOMBAR ────────────────────────────────────────────── */
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(2,8,4,.97);border-top:1px solid rgba(0,255,136,.1);backdrop-filter:blur(12px)}
+.nav-btn{background:transparent;border:1px solid rgba(0,255,136,.18);color:rgba(0,255,136,.5);padding:.32rem .9rem;font-family:var(--mono);font-size:.65rem;cursor:pointer;transition:all .2s;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%)}
+.nav-btn:hover{border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,.05)}
+.nav-btn:disabled{opacity:.2;cursor:not-allowed}
+#slide-counter{font-family:var(--display);font-size:.72rem;color:#00ff88}
+.qcm-indicator{font-family:var(--mono);font-size:.62rem;color:rgba(255,215,0,.5);letter-spacing:.08em}
+
+@media(max-width:768px){.slide{padding:1rem 1.2rem}.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>SOC — Security Operations Center · Cours Complet</span>
+  </div>
+  <div class="tb-right">
+    <span class="tb-user" id="tb-username">@apprenant</span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+
+<!-- ══════════════════════════ SLIDES ══════════════════════════ -->
+<div id="slides">
+
+<!-- ■ SLIDE 0 · COVER ────────────────────────────────────────── -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// Cybersécurité · SOC · Cours Complet</div>
+  <h1 class="glitch">🔍 ANALYSTE SOC</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>La sentinelle numérique qui ne dort jamais</h3>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin:.8rem 0">
+    <span class="pill pill-blue">📡 Détection</span>
+    <span class="pill pill-red">🚨 Réponse aux incidents</span>
+    <span class="pill pill-yellow">🧠 Threat Hunting</span>
+    <span class="pill pill-purple">🔬 Investigation</span>
+    <span class="pill pill-orange">📊 SIEM / SOAR</span>
+  </div>
+  <div style="max-width:700px;width:100%;margin-top:.5rem" class="card card-blue">
+    <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;margin-bottom:.8rem">
+      <div style="text-align:center"><div class="sval" style="color:var(--red);font-size:2rem">277j</div><div class="ssub">délai moyen pour détecter<br>une intrusion sans SOC<br>· IBM Cost of Data Breach</div></div>
+      <div style="text-align:center"><div class="sval" style="color:var(--blue);font-size:2rem">3,5M</div><div class="ssub">postes cybersécurité<br>non pourvus dans le monde<br>· ISC² 2024</div></div>
+      <div style="text-align:center"><div class="sval" style="color:var(--green);font-size:2rem">35K€</div><div class="ssub">salaire de départ<br>analyste SOC N1<br>France · + évolution rapide</div></div>
+    </div>
+    <div class="terminal">
+      <span class="term-prompt">soc@soopha:~$ </span>
+      <span class="term-out">// "Un attaquant a besoin d'avoir raison une seule fois. L'analyste SOC doit avoir raison à chaque alerte."</span>
+    </div>
+  </div>
+  <div style="margin-top:1rem;font-size:.68rem;color:rgba(68,136,255,.3);letter-spacing:.15em">← → POUR NAVIGUER · ESPACE POUR AVANCER</div>
+</div>
+
+<!-- ■ SLIDE 1 · ÉCOSYSTÈME SOC ──────────────────────────────── -->
+<div class="slide" data-index="1" data-qcm="1">
+  <div class="slide-tag">// 01 · Cartographie</div>
+  <h2>L'écosystème du SOC : outils, niveaux, fonctions</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel">Les 3 niveaux d'un SOC</div>
+        <div class="terminal" style="font-size:.67rem;line-height:2.1">
+          <span class="term-prompt">N1 </span><span class="term-out">Triage · Monitoring · Escalade</span><br>
+          <span style="font-size:.58rem;color:rgba(68,136,255,.35)">      Qualification des alertes SIEM — 35–45K€</span><br>
+          <span class="term-prompt">N2 </span><span class="term-out">Investigation · Analyse approfondie</span><br>
+          <span style="font-size:.58rem;color:rgba(68,136,255,.35)">      Corrélation logs, reverse malware léger — 50–65K€</span><br>
+          <span class="term-prompt">N3 </span><span class="term-out">Threat Hunting · Architecture · Lead</span><br>
+          <span style="font-size:.58rem;color:rgba(68,136,255,.35)">      Chasse proactive, règles de détection — 70–90K€</span>
+        </div>
+        <div class="hdiv">Centres spécialisés</div>
+        <div class="tag-list">
+          <span class="tag">CERT · Gestion des incidents critiques</span>
+          <span class="tag">CSIRT · Réponse + coordination</span>
+          <span class="tag">CIRT · Interne entreprise</span>
+        </div>
+      </div>
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">SIEM — Security Information &amp; Event Management</div>
+        <p style="font-size:.83rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.5rem">Le <strong>cerveau du SOC</strong>. Collecte, normalise, corrèle et analyse les logs de tous les équipements (AD, firewall, EDR, proxy, VPN…). Génère des alertes quand un comportement anormal est détecté.</p>
+        <div class="tag-list"><span class="tag tag-r">Splunk</span><span class="tag tag-r">Microsoft Sentinel</span><span class="tag tag-r">Elastic SIEM</span><span class="tag tag-r">IBM QRadar</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-purple">
+        <div class="blabel" style="color:rgba(170,68,255,.4)">SOAR — Security Orchestration, Automation &amp; Response</div>
+        <p style="font-size:.83rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.5rem">L'<strong>automatisation de la réponse</strong>. Quand le SIEM détecte une alerte, le SOAR exécute automatiquement un playbook : bloquer une IP, isoler un poste, notifier le manager, ouvrir un ticket. Multiplie par 10 la capacité de réponse d'une équipe.</p>
+        <div class="tag-list"><span class="tag tag-p">Palo Alto XSOAR</span><span class="tag tag-p">Splunk SOAR</span><span class="tag tag-p">TheHive + Cortex</span></div>
+      </div>
+      <div class="card card-orange">
+        <div class="blabel" style="color:rgba(255,136,0,.4)">EDR / XDR — Endpoint &amp; Extended Detection</div>
+        <p style="font-size:.83rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.5rem"><strong>EDR</strong> : agent sur chaque poste/serveur qui capture comportements, processus, connexions réseau, fichiers. Détecte le malware sans signature. <strong>XDR</strong> étend la visibilité au réseau, cloud, identités — vision unifiée de toute l'infrastructure.</p>
+        <div class="tag-list"><span class="tag tag-o">CrowdStrike</span><span class="tag tag-o">SentinelOne</span><span class="tag tag-o">Microsoft Defender XDR</span></div>
+      </div>
+      <div class="card card-green">
+        <div class="blabel" style="color:rgba(0,255,136,.35)">Flux complet d'une alerte SOC</div>
+        <div class="terminal terminal-green" style="font-size:.64rem;line-height:1.9">
+          <span class="term-ok">Événement </span><span class="term-out">→ Log envoyé au SIEM</span><br>
+          <span class="term-ok">SIEM      </span><span class="term-out">→ Corrélation → Alerte générée</span><br>
+          <span class="term-ok">N1        </span><span class="term-out">→ Triage : Faux positif ou réel ?</span><br>
+          <span class="term-ok">N2        </span><span class="term-out">→ Investigation + qualification</span><br>
+          <span class="term-ok">SOAR      </span><span class="term-out">→ Playbook auto (blocage, isolation)</span><br>
+          <span class="term-ok">N3/RSSI   </span><span class="term-out">→ Escalade si incident confirmé</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 2 · FONDAMENTAUX ─────────────────────────────────── -->
+<div class="slide" data-index="2" data-qcm="2">
+  <div class="slide-tag">// 02 · Fondamentaux</div>
+  <h2>Les frameworks que tout analyste SOC doit maîtriser</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">MITRE ATT&amp;CK — La carte des attaquants</div>
+        <p style="font-size:.82rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.6rem">Base de connaissances mondiale des <strong>Tactiques, Techniques et Procédures (TTP)</strong> utilisées par les groupes APT. Organisée en matrice : 14 tactiques, 200+ techniques documentées avec exemples réels.</p>
+        <div class="terminal terminal-red" style="font-size:.65rem;line-height:1.85">
+          <span class="term-err">Tactique      </span><span class="term-out">→ L'OBJECTIF de l'attaquant</span><br>
+          <span style="color:var(--orange)">Technique     </span><span class="term-out">→ Comment il atteint cet objectif</span><br>
+          <span class="term-warn">Procédure     </span><span class="term-out">→ Implémentation spécifique d'un groupe</span><br>
+          <span class="term-out">─────────────────────────────────</span><br>
+          <span class="term-err">T1566.001     </span><span class="term-out">Spearphishing Attachment</span><br>
+          <span class="term-err">T1055         </span><span class="term-out">Process Injection</span><br>
+          <span class="term-err">T1003.001     </span><span class="term-out">LSASS Memory Dump</span>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Cyber Kill Chain — Les 7 étapes d'une attaque</div>
+        <div class="terminal terminal-yellow" style="font-size:.63rem;line-height:1.95">
+          <span class="term-warn">01 Reconnaissance    </span><span class="term-out">OSINT, Shodan, LinkedIn</span><br>
+          <span class="term-warn">02 Weaponization     </span><span class="term-out">Préparation du payload</span><br>
+          <span class="term-warn">03 Delivery          </span><span class="term-out">Phishing, exploit web</span><br>
+          <span class="term-warn">04 Exploitation      </span><span class="term-out">Exécution de la faille</span><br>
+          <span class="term-warn">05 Installation      </span><span class="term-out">Backdoor, RAT, persistence</span><br>
+          <span class="term-warn">06 C2                </span><span class="term-out">Command &amp; Control</span><br>
+          <span class="term-warn">07 Actions on Obj.   </span><span class="term-out">Exfiltration, chiffrement</span>
+        </div>
+        <p style="font-family:var(--mono);font-size:.62rem;color:rgba(255,215,0,.5);margin-top:.5rem">// Plus on détecte tôt dans la chaîne, moins l'impact est grave.</p>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel">IOC vs IOA — Deux types d'indicateurs</div>
+        <div style="display:flex;gap:.7rem;margin-bottom:.6rem">
+          <div style="flex:1;background:rgba(255,68,102,.05);border:1px solid rgba(255,68,102,.15);padding:.7rem;border-radius:2px">
+            <div style="font-family:var(--mono);font-size:.6rem;color:var(--red);margin-bottom:.4rem">IOC — Indicator of Compromise</div>
+            <p style="font-size:.78rem;color:rgba(200,255,220,.7);line-height:1.4">Preuve <strong>après coup</strong> qu'une compromission a eu lieu. Hash de fichier malveillant, IP C2, domaine malveillant, clé de registre. Réactif.</p>
+          </div>
+          <div style="flex:1;background:rgba(255,136,0,.05);border:1px solid rgba(255,136,0,.15);padding:.7rem;border-radius:2px">
+            <div style="font-family:var(--mono);font-size:.6rem;color:var(--orange);margin-bottom:.4rem">IOA — Indicator of Attack</div>
+            <p style="font-size:.78rem;color:rgba(200,255,220,.7);line-height:1.4">Comportement <strong>en cours d'attaque</strong> : PowerShell encodé, création de service inhabituel, LSASS access. Proactif, détecte avant l'IOC.</p>
+          </div>
+        </div>
+        <div class="terminal" style="font-size:.64rem">
+          <span class="term-prompt">// IOC </span><span class="term-out">= chercher la trace du crime</span><br>
+          <span class="term-prompt">// IOA </span><span class="term-out">= attraper le criminel en flagrant délit</span>
+        </div>
+      </div>
+      <div class="card card-purple">
+        <div class="blabel" style="color:rgba(170,68,255,.4)">Pyramide de la douleur · David Bianco</div>
+        <p style="font-size:.82rem;color:rgba(200,255,220,.8);line-height:1.5;margin-bottom:.5rem">Plus on bloque haut dans la pyramide, plus on <strong>coûte cher à l'attaquant</strong> :</p>
+        <div class="terminal terminal-purple" style="font-size:.63rem;line-height:2">
+          <span style="color:var(--red)">TTPs          </span><span class="term-out">← Douleur max. Oblige à rechanger de méthode</span><br>
+          <span style="color:var(--orange)">Outils        </span><span class="term-out">← Doit recompiler, changer d'outil</span><br>
+          <span style="color:var(--yellow)">Réseau/Host   </span><span class="term-out">← Changer d'infra, coûteux</span><br>
+          <span style="color:var(--blue)">Domaines      </span><span class="term-out">← Changer de domaine, facile</span><br>
+          <span style="color:var(--green)">Hash / IP     </span><span class="term-out">← Trivial à changer, douleur min.</span>
+        </div>
+      </div>
+      <div class="card card-green">
+        <div class="blabel" style="color:rgba(0,255,136,.35)">Processus de triage — OODA Loop adaptée</div>
+        <div class="terminal terminal-green" style="font-size:.64rem;line-height:1.9">
+          <span class="term-ok">Observe  </span><span class="term-out">Lire l'alerte SIEM sans préjugé</span><br>
+          <span class="term-ok">Orient   </span><span class="term-out">Contextualiser (qui, quoi, quand, où)</span><br>
+          <span class="term-ok">Decide   </span><span class="term-out">Faux positif / Vrai incident / Escalade</span><br>
+          <span class="term-ok">Act      </span><span class="term-out">Containment → Eradication → Recovery</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 3 · JOURNÉE TYPE ──────────────────────────────────── -->
+<div class="slide" data-index="3" data-qcm="3">
+  <div class="slide-tag">// 03 · Terrain</div>
+  <h2>Journée type · Analyste SOC N2</h2>
+  <div class="grid2">
+    <div class="card card-blue">
+      <div class="blabel">Planning d'une vacation jour (8h–20h)</div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-time">08:00</div><div class="tl-content"><strong>Passation de consignes</strong> — Briefing avec l'équipe nuit : incidents en cours, alertes ouvertes, IoCs chauds à surveiller. Lecture du war room log.</div></div>
+        <div class="tl-item"><div class="tl-time">08:30</div><div class="tl-content"><strong>Revue du SIEM</strong> — Tri des alertes de la nuit. Classification : <span class="sev sev-crit">CRIT</span> <span class="sev sev-high">HIGH</span> <span class="sev sev-med">MED</span>. Fermeture des faux positifs documentés.</div></div>
+        <div class="tl-item"><div class="tl-time">09:30</div><div class="tl-content"><strong>Investigation N2</strong> — Analyse approfondie d'une alerte escaladée par le N1 : corrélation logs AD + firewall + EDR, timeline reconstruction, recherche d'IOC dans VirusTotal / MISP.</div></div>
+        <div class="tl-item"><div class="tl-time">11:00</div><div class="tl-content"><strong>Threat Hunting proactif</strong> — Chasse basée sur une nouvelle TTP publiée (rapport Mandiant, alerte ANSSI). Requêtes KQL/SPL dans le SIEM pour détecter des traces éventuelles.</div></div>
+        <div class="tl-item"><div class="tl-time">14:00</div><div class="tl-content"><strong>Amélioration des règles</strong> — Tuning des règles SIEM (réduire les faux positifs), écriture d'une règle Sigma sur une nouvelle technique, mise à jour des playbooks SOAR.</div></div>
+        <div class="tl-item"><div class="tl-time">16:00</div><div class="tl-content"><strong>Rédaction rapport d'incident</strong> — Documentation complète d'un incident clôturé : timeline, TTPs MITRE, impact, recommandations, leçons apprises.</div></div>
+        <div class="tl-item"><div class="tl-time">19:30</div><div class="tl-content"><strong>Passation vacation soir</strong> — Brief avec N1 nuit : points chauds, alertes à surveiller, IoCs actifs. Mise à jour du war room.</div></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Feed d'alertes SIEM — extrait type</div>
+        <div class="alert-feed">
+          <div class="alert-row crit"><span class="alert-time">02:47:13</span><span class="alert-sev"><span class="sev sev-crit">CRIT</span></span><span class="alert-msg">Mimikatz detected — LSASS memory access — SRV-DC01</span></div>
+          <div class="alert-row crit"><span class="alert-time">03:12:08</span><span class="alert-sev"><span class="sev sev-crit">CRIT</span></span><span class="alert-msg">Lateral movement — SMB pass-the-hash — 3 hosts</span></div>
+          <div class="alert-row high"><span class="alert-time">07:33:41</span><span class="alert-sev"><span class="sev sev-high">HIGH</span></span><span class="alert-msg">Impossible travel — admin@corp.com — FR → CN (12min)</span></div>
+          <div class="alert-row med"><span class="alert-time">08:11:52</span><span class="alert-sev"><span class="sev sev-med">MED</span></span><span class="alert-msg">PowerShell encoded command — WS-FINANCE-04</span></div>
+          <div class="alert-row med"><span class="alert-time">08:45:03</span><span class="alert-sev"><span class="sev sev-med">MED</span></span><span class="alert-msg">New admin account created outside business hours</span></div>
+        </div>
+        <p style="font-family:var(--mono);font-size:.6rem;color:rgba(255,68,102,.45);margin-top:.5rem">// Un SOC mature reçoit 1000–10 000 alertes/jour. Le N1 en qualifie ~5%.</p>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Stack technique maîtrisée au quotidien</div>
+        <div class="tag-list">
+          <span class="tag tag-y">Splunk SPL</span><span class="tag tag-y">KQL (Sentinel)</span>
+          <span class="tag tag-y">Wireshark</span><span class="tag tag-y">MISP</span>
+          <span class="tag tag-y">TheHive</span><span class="tag tag-y">VirusTotal</span>
+          <span class="tag tag-y">MITRE ATT&CK Nav.</span><span class="tag tag-y">Sigma rules</span>
+          <span class="tag tag-y">Yara</span><span class="tag tag-y">CrowdStrike EDR</span>
+        </div>
+      </div>
+      <div class="terminal">
+        <span class="term-prompt">// </span><span class="term-out">Un bon analyste SOC ne cherche pas les alertes.<br>Il cherche l'attaquant qui sait se taire.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 4 · CAS CONCRET 1 · CONNEXION SUSPECTE ─────────── -->
+<div class="slide" data-index="4" data-qcm="4">
+  <div class="slide-tag">// 04 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #1</span>
+    <h2 style="margin-bottom:.1rem">Connexion suspecte compte admin à 3h du matin</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(68,136,255,.3)">Alerte SIEM · Impossible Travel · Credential Compromise</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">L'alerte qui arrive</div>
+        <div class="terminal terminal-red" style="font-size:.67rem;line-height:1.85;margin-bottom:.6rem">
+          <span class="term-err">[03:17:42] ALERT HIGH — Impossible Travel</span><br>
+          <span class="term-out">User     : admin.sys@corp.net</span><br>
+          <span class="term-out">Login 1  : 22:45 UTC — Paris, FR (VPN corp)</span><br>
+          <span class="term-out">Login 2  : 03:17 UTC — Lagos, NG (IP résidentielle)</span><br>
+          <span class="term-out">Delta    : 4h32 — impossible physiquement</span><br>
+          <span class="term-out">Cible    : Accès réussi · portail Azure AD</span><br>
+          <span class="term-warn">MFA      : Contourné via Adversary-in-the-Middle</span>
+        </div>
+        <div class="quote quote-red" style="font-size:.82rem">
+          L'attaquant a utilisé un kit de phishing <strong>Evilginx2</strong> qui proxifie la vraie page de login Microsoft et vole le cookie de session post-MFA. Le MFA ne protège plus.
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Investigation N2 — Questions à résoudre</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>Le Login 1 était-il légitime ?</strong> → Vérifier les logs AD de la soirée, valider avec l'utilisateur</li>
+          <li><strong>Que s'est-il passé entre 22h45 et 03h17 ?</strong> → Analyser les actions sur Azure AD pendant cette fenêtre</li>
+          <li><strong>Quelles ressources ont été accédées ?</strong> → Logs Azure Audit, Graph API, SharePoint, Exchange</li>
+          <li><strong>Y a-t-il eu exfiltration ?</strong> → DLP logs, volume de téléchargements, emails sortants</li>
+          <li><strong>Y a-t-il persistence ?</strong> → Nouveaux comptes créés, règles de transport Exchange, MFA modifiée</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Réponse SOC — Procédure d'urgence</div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">01</span><div class="step-txt"><strong>Containment immédiat</strong> — Révoquer toutes les sessions actives du compte (Azure AD : Revoke Sign-In Sessions). Réinitialiser le mot de passe. Désactiver le compte temporairement.</div></div>
+          <div class="step"><span class="step-num">02</span><div class="step-txt"><strong>Notification</strong> — Alerter le RSSI et le manager de l'utilisateur. Ouvrir un ticket P1 dans TheHive. Déclencher le playbook SOAR "Compte compromis admin".</div></div>
+          <div class="step"><span class="step-num">03</span><div class="step-txt"><strong>Investigation Forensique</strong> — Extraire les logs Sign-In Azure (30j), analyser les actions via Microsoft Graph API, chercher règles Exchange créées, applications OAuth autorisées.</div></div>
+          <div class="step"><span class="step-num">04</span><div class="step-txt"><strong>Scope de la compromission</strong> — L'attaquant avait-il accès à d'autres comptes ? Mouvement latéral vers d'autres services ? Données exfiltrées ?</div></div>
+          <div class="step"><span class="step-num">05</span><div class="step-txt"><strong>Remédiation</strong> — Réinitialisation du compte, renforcement MFA (FIDO2/clé physique), déploiement Conditional Access bloquant les pays non autorisés.</div></div>
+        </div>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel">Requête KQL — Microsoft Sentinel</div>
+        <div class="terminal" style="font-size:.62rem;line-height:1.85">
+          <span class="term-prompt">// Détecter les Impossible Travels sur comptes admin</span><br>
+          <span class="term-out">SigninLogs</span><br>
+          <span class="term-out">| where UserPrincipalName contains "admin"</span><br>
+          <span class="term-out">| where TimeGenerated > ago(24h)</span><br>
+          <span class="term-out">| summarize Locations=make_set(Location),</span><br>
+          <span class="term-out">&nbsp;&nbsp;IPs=make_set(IPAddress) by UserPrincipalName</span><br>
+          <span class="term-out">| where array_length(Locations) > 1</span><br>
+          <span class="term-out">| extend Risk = "IMPOSSIBLE_TRAVEL"</span><br>
+          <span class="term-out">| order by UserPrincipalName asc</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 5 · CAS CONCRET 2 · RANSOMWARE ──────────────────── -->
+<div class="slide" data-index="5" data-qcm="5">
+  <div class="slide-tag">// 05 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #2</span>
+    <h2 style="margin-bottom:.1rem">Ransomware détecté en cours de propagation</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(68,136,255,.3)">Incident P0 · Réponse temps réel · Toutes mains sur le pont</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Timeline de l'attaque reconstruite</div>
+        <div class="timeline" style="font-size:.8rem">
+          <div class="tl-item"><div class="tl-time" style="color:var(--red)">J-21</div><div class="tl-content"><strong>Initial access</strong> — Phishing ciblé RH. Pièce jointe Excel macro. Exécution Qakbot loader.</div></div>
+          <div class="tl-item"><div class="tl-time" style="color:var(--red)">J-18</div><div class="tl-content"><strong>Persistence</strong> — Création tâche planifiée, clé Run registre. Beacon Cobalt Strike installé.</div></div>
+          <div class="tl-item"><div class="tl-time" style="color:var(--red)">J-7</div><div class="tl-content"><strong>Discovery &amp; Lateral movement</strong> — BloodHound AD recon, Pass-the-Hash, accès DC.</div></div>
+          <div class="tl-item"><div class="tl-time" style="color:var(--red)">J-3</div><div class="tl-content"><strong>Exfiltration</strong> — 2TB de données copiées vers Mega.nz via rclone en HTTPS.</div></div>
+          <div class="tl-item"><div class="tl-time" style="color:var(--yellow)">J0 03h</div><div class="tl-content"><strong>Chiffrement</strong> — LockBit 3.0 déployé via GPO. Fichiers chiffrés sur 40 serveurs en 47 minutes.</div></div>
+          <div class="tl-item"><div class="tl-time" style="color:var(--blue)">J0 07h</div><div class="tl-content"><strong>Détection SOC</strong> — Alertes EDR massives. L'équipe de nuit est déjà sur le bridge.</div></div>
+        </div>
+      </div>
+      <div class="card card-orange">
+        <div class="blabel" style="color:rgba(255,136,0,.4)">Pourquoi le SOC n'a pas détecté plus tôt ?</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li class="bad"><strong>L'attaquant a "lived off the land"</strong> : utilisation de outils Windows légitimes (PsExec, WMI, PowerShell) pour éviter les signatures</li>
+          <li class="bad"><strong>Pas de règles Sigma sur Cobalt Strike</strong> en environnement sans EDR à l'époque</li>
+          <li class="bad"><strong>Exfiltration HTTPS vers Mega.nz</strong> non bloqué par le proxy — trafic chiffré non inspecté</li>
+          <li class="bad"><strong>Pas de monitoring C2 beacon</strong> : connexions régulières toutes les 60s vers IP externe non repérées</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Plan de réponse à l'incident (IRP)</div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">P0</span><div class="step-txt"><strong>Isolation réseau immédiate</strong> — Firewall : couper toutes les connexions sortantes des segments impactés. Ne pas éteindre les machines (préserver la RAM pour forensics).</div></div>
+          <div class="step"><span class="step-num">P1</span><div class="step-txt"><strong>War room activé</strong> — RSSI, DSI, DG, CERT, juriste, communication. Bridge permanent 24/7. Ouverture d'un canal Slack dédié.</div></div>
+          <div class="step"><span class="step-num">P2</span><div class="step-txt"><strong>Périmètre de contamination</strong> — Lister les machines chiffrées vs saines. Identifier le patient zéro. Cartographier les mouvements latéraux via les logs AD et l'EDR.</div></div>
+          <div class="step"><span class="step-num">P3</span><div class="step-txt"><strong>Forensics</strong> — Dump RAM des machines clés avant isolement. Image disque des serveurs critiques. Analyse avec Volatility + Autopsy.</div></div>
+          <div class="step"><span class="step-num">P4</span><div class="step-txt"><strong>Restoration</strong> — Reconstruction depuis les derniers backups sains (hors ligne). Patch de la CVE exploitée. Rebuild AD si compromis.</div></div>
+          <div class="step"><span class="step-num">P5</span><div class="step-txt"><strong>Notification légale</strong> — RGPD : notification CNIL sous 72h si données personnelles exfiltrées. Dépôt de plainte.</div></div>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Leçons apprises — améliorations SOC</div>
+        <ul class="bullets" style="gap:.3rem;font-size:.8rem">
+          <li class="ok">Déployer EDR sur 100% des assets (endpoint + serveurs)</li>
+          <li class="ok">Ajouter règle SIEM : beacon régulier vers IP externe inconnue</li>
+          <li class="ok">Inspection SSL/TLS sur le proxy pour Mega.nz / DropBox</li>
+          <li class="ok">Sauvegardes immuables hors ligne testées chaque trimestre</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 6 · CAS CONCRET 3 · BEC PHISHING ────────────────── -->
+<div class="slide" data-index="6" data-qcm="6">
+  <div class="slide-tag">// 06 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #3</span>
+    <h2 style="margin-bottom:.1rem">BEC — Business Email Compromise</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(68,136,255,.3)">La fraude la plus coûteuse · 2,9 Mds$ de pertes mondiales en 2023 · FBI IC3</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Le scénario</div>
+        <div class="quote quote-red" style="margin-bottom:.6rem;font-size:.82rem">
+          La comptable reçoit un mail du <strong>"CEO"</strong> depuis <em>ceo.nom@corp-entreprise.com</em><br>
+          (domaine typosquat enregistré 48h plus tôt).<br>
+          Objet : <em>"Virement urgent confidentiel — ne pas en parler"</em><br>
+          Elle effectue un virement de <strong>187 000€</strong> vers un compte lituanien.<br>
+          La banque alerte 3h plus tard. Argent introuvable.
+        </div>
+        <ul class="bullets" style="gap:.3rem">
+          <li class="bad">Domaine usurpé non détecté (pas de surveillance DMARC)</li>
+          <li class="bad">Aucun processus de validation des virements &gt;50K€</li>
+          <li class="bad">Absence de sensibilisation des équipes finance</li>
+          <li class="bad">Pas de règle SIEM sur les emails de domaines similaires</li>
+        </ul>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel">Investigation SOC — Comment détecter le BEC</div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">01</span><div class="step-txt"><strong>Analyse de l'en-tête email</strong> — Vérifier SPF, DKIM, DMARC. Comparer le domaine d'envoi vs le domaine de l'entreprise. Détecter les typosquats.</div></div>
+          <div class="step"><span class="step-num">02</span><div class="step-txt"><strong>Recherche du typosquat</strong> — corp-entreprise.com enregistré 2j avant. Whois : Registrar Namecheap + Privacy guard + IP hébergement Russie.</div></div>
+          <div class="step"><span class="step-num">03</span><div class="step-txt"><strong>Vérifier si d'autres employés visés</strong> — Chercher dans les logs Exchange/M365 tous les emails reçus depuis ce domaine ces 30 derniers jours.</div></div>
+          <div class="step"><span class="step-num">04</span><div class="step-txt"><strong>Vérifier la compromission réelle du CEO</strong> — Est-ce que le vrai compte CEO est compromis ou juste usurpé ? Vérifier ses logs Azure AD, Exchange, sessions actives.</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-green">
+        <div class="blabel" style="color:rgba(0,255,136,.35)">Règle SIEM — Détection typosquatting</div>
+        <div class="terminal terminal-green" style="font-size:.62rem;line-height:1.85">
+          <span class="term-prompt">// Splunk SPL — Emails domaines similaires</span><br>
+          <span class="term-out">index=email sourcetype=exchange_mail</span><br>
+          <span class="term-out">| eval sender_domain=split(sender,"@")[-1]</span><br>
+          <span class="term-out">| where sender_domain != "corp.net"</span><br>
+          <span class="term-out">&nbsp;&nbsp;AND (like(sender_domain,"%corp%")</span><br>
+          <span class="term-out">&nbsp;&nbsp;OR like(sender_domain,"%c0rp%")</span><br>
+          <span class="term-out">&nbsp;&nbsp;OR like(sender_domain,"%corp-%"))</span><br>
+          <span class="term-out">| stats count by sender, sender_domain, recipient</span><br>
+          <span class="term-out">| where count > 0</span><br>
+          <span class="term-ok">| sort -count</span>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Remédiation et prévention</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li class="ok"><strong>DMARC p=reject</strong> sur tous les domaines de l'entreprise — bloque l'usurpation</li>
+          <li class="ok"><strong>DMARC monitoring</strong> — Alertes si un domaine similaire envoie en votre nom</li>
+          <li class="ok"><strong>Bannière mail externe</strong> — Tag visible sur tout email provenant de l'extérieur</li>
+          <li class="ok"><strong>Process financier</strong> — Double validation téléphonique obligatoire pour tout virement &gt;10K€</li>
+          <li class="ok"><strong>Sensibilisation</strong> — Simulation de phishing mensuelle pour les équipes finance/RH</li>
+        </ul>
+        <div class="terminal terminal-yellow" style="font-size:.64rem;margin-top:.6rem">
+          <span class="term-warn">// DMARC record — Protection anti-usurpation</span><br>
+          <span class="term-out">v=DMARC1; p=reject; rua=mailto:dmarc@corp.net</span>
+        </div>
+      </div>
+      <div class="terminal">
+        <span class="term-prompt">// Leçon clé : </span><br>
+        <span class="term-out">Le BEC est un problème humain autant que technique.<br>La meilleure règle SIEM ne remplace pas<br>un processus de validation des virements.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 7 · OUTILS EN PROFONDEUR ────────────────────────── -->
+<div class="slide" data-index="7" data-qcm="7">
+  <div class="slide-tag">// 07 · Stack technique</div>
+  <h2>Les outils SOC en profondeur</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:#fff">⭐ Splunk Enterprise Security</div>
+          <span class="pill pill-red" style="font-size:.55rem">Expert</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,220,.55);line-height:1.5;margin-bottom:.5rem">Le SIEM de référence mondial. Puissance de recherche via SPL (Splunk Processing Language), dashboards avancés, corrélation temps réel. Standard dans les grandes entreprises et les SOC managés.</p>
+        <div class="terminal terminal-red" style="font-size:.62rem;line-height:1.8">
+          <span class="term-err">// SPL — Authentifications échouées en rafale</span><br>
+          <span class="term-out">index=wineventlog EventCode=4625</span><br>
+          <span class="term-out">| stats count by src_ip, user</span><br>
+          <span class="term-out">| where count > 10</span><br>
+          <span class="term-out">| sort -count</span>
+        </div>
+        <ul class="bullets" style="gap:.25rem;font-size:.75rem;margin-top:.5rem">
+          <li class="ok">Requêtes SPL très puissantes et flexibles</li>
+          <li class="bad">Licences très coûteuses (volume de données)</li>
+        </ul>
+      </div>
+      <div class="card card-blue">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:var(--blue)">Microsoft Sentinel</div>
+          <span class="pill pill-blue" style="font-size:.55rem">Confirmé</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,220,.55);line-height:1.5;margin-bottom:.5rem">SIEM cloud-native Azure. KQL (Kusto Query Language) puissant, intégration native Microsoft 365 Defender / Entra ID, pricing à la donnée ingérée. Croissance très rapide en enterprise.</p>
+        <div class="terminal" style="font-size:.62rem;line-height:1.8">
+          <span class="term-prompt">// KQL — Exécution PowerShell encodé</span><br>
+          <span class="term-out">SecurityEvent</span><br>
+          <span class="term-out">| where EventID == 4688</span><br>
+          <span class="term-out">| where CommandLine contains "-enc"</span><br>
+          <span class="term-out">  or CommandLine contains "-EncodedCommand"</span><br>
+          <span class="term-out">| project TimeGenerated, Computer, Account, CommandLine</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-orange">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:var(--orange)">CrowdStrike Falcon</div>
+          <span class="pill pill-orange" style="font-size:.55rem">Expert</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,220,.55);line-height:1.5;margin-bottom:.5rem">EDR/XDR cloud-native de référence. Détection comportementale (IA), threat graph, investigation rapide. Utilisé par les MDR et grandes entreprises. Standard pour les incidents majeurs.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.75rem">
+          <li class="ok">Détection comportementale excellente, peu de faux positifs</li>
+          <li class="ok">Threat Graph : visualisation des chaînes d'attaque</li>
+          <li class="bad">Coûteux, formation longue pour le plein potentiel</li>
+        </ul>
+      </div>
+      <div class="card card-purple">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:var(--purple)">TheHive + Cortex</div>
+          <span class="pill pill-green" style="font-size:.55rem">Accessible</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,220,.55);line-height:1.5;margin-bottom:.5rem">Plateforme open source de gestion d'incidents + orchestration. TheHive = cas d'incidents, timeline, tâches. Cortex = analyse automatisée des observables (IP, hash, URL) via 100+ analyzers.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.75rem">
+          <li class="ok">100% open source et gratuit — parfait pour débuter</li>
+          <li class="ok">Intégration MISP, Sigma, VirusTotal native</li>
+          <li class="bad">Nécessite une infra à maintenir</li>
+        </ul>
+      </div>
+      <div class="card card-cyan">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:var(--cyan)">MISP — Threat Intelligence</div>
+          <span class="pill pill-green" style="font-size:.55rem">Open Source</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(200,255,220,.55);line-height:1.5">Plateforme de partage d'IOC. Reçoit des feeds de menaces (ANSSI, CIRCL, communautés) et les injecte dans le SIEM pour enrichir les alertes. Standard des SOC gouvernementaux africains et européens.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 8 · THREAT HUNTING &amp; RÈGLES ────────────────────── -->
+<div class="slide" data-index="8" data-qcm="8">
+  <div class="slide-tag">// 08 · Threat Hunting</div>
+  <h2>Threat Hunting &amp; Règles de détection</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Le Threat Hunting — définition</div>
+        <div class="quote quote-yellow" style="margin-bottom:.6rem;font-size:.82rem">
+          Le Threat Hunting ne attend pas les alertes.<br>
+          Il <strong>part d'une hypothèse</strong> (un attaquant utilisant T1055 est présent)<br>
+          et cherche <strong>activement les preuves</strong> dans les données — avant tout déclenchement d'alerte.
+        </div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">01</span><div class="step-txt"><strong>Hypothèse</strong> — "Un groupe APT utilisant BloodHound pour AD recon est peut-être dans notre réseau"</div></div>
+          <div class="step"><span class="step-num">02</span><div class="step-txt"><strong>Recherche data</strong> — Requêtes SIEM ciblées sur les comportements connus de BloodHound (LDAP queries massives, enumération SPN)</div></div>
+          <div class="step"><span class="step-num">03</span><div class="step-txt"><strong>Analyse</strong> — Identifier les anomalies, corrélation avec d'autres sources (EDR, réseau)</div></div>
+          <div class="step"><span class="step-num">04</span><div class="step-txt"><strong>Output</strong> — Soit un incident confirmé, soit une nouvelle règle de détection pour le SIEM</div></div>
+        </div>
+      </div>
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Format Sigma — Règle de détection universelle</div>
+        <p style="font-size:.78rem;color:rgba(200,255,220,.7);line-height:1.4;margin-bottom:.5rem">Sigma = langage YAML universel pour écrire des règles de détection convertibles vers tout SIEM (Splunk, Sentinel, QRadar, Elastic). Le standard de facto de la communauté.</p>
+        <div class="terminal terminal-red" style="font-size:.6rem;line-height:1.85">
+          <span class="term-err">title: LSASS Memory Access via ProcDump</span><br>
+          <span class="term-out">status: stable</span><br>
+          <span class="term-out">description: Détecte l'accès à LSASS pour dump credentials</span><br>
+          <span class="term-out">tags: [attack.credential_access, T1003.001]</span><br>
+          <span class="term-out">logsource:</span><br>
+          <span class="term-out">&nbsp;&nbsp;category: process_access</span><br>
+          <span class="term-out">detection:</span><br>
+          <span class="term-out">&nbsp;&nbsp;selection:</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;TargetImage|endswith: '\lsass.exe'</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;GrantedAccess|contains: '0x1010'</span><br>
+          <span class="term-out">&nbsp;&nbsp;condition: selection</span><br>
+          <span class="term-err">falsepositives: [AV scanners, some EDR agents]</span><br>
+          <span class="term-out">level: high</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-purple">
+        <div class="blabel" style="color:rgba(170,68,255,.4)">Format YARA — Détection de malware</div>
+        <p style="font-size:.78rem;color:rgba(200,255,220,.7);line-height:1.4;margin-bottom:.5rem">YARA = règles de description de patterns pour identifier des fichiers malveillants. Basé sur des chaînes, des patterns binaires ou des conditions logiques. Intégré dans la plupart des EDR et sandbox.</p>
+        <div class="terminal terminal-purple" style="font-size:.6rem;line-height:1.85">
+          <span style="color:var(--purple)">rule</span><span class="term-out"> Detect_Mimikatz_Strings</span><br>
+          <span class="term-out">{</span><br>
+          <span class="term-out">&nbsp;&nbsp;meta:</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;description = "Détecte les strings Mimikatz"</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;author = "SOC SooPHA"</span><br>
+          <span class="term-out">&nbsp;&nbsp;strings:</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;$s1 = "sekurlsa::logonpasswords"</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;$s2 = "privilege::debug"</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;$s3 = "lsadump::dcsync"</span><br>
+          <span class="term-out">&nbsp;&nbsp;condition:</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;2 of ($s*)</span><br>
+          <span class="term-out">}</span>
+        </div>
+      </div>
+      <div class="card card-green">
+        <div class="blabel" style="color:rgba(0,255,136,.35)">Métriques d'un SOC mature</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem">
+          <div style="display:flex;justify-content:space-between;padding:.35rem .6rem;border-left:2px solid rgba(0,255,136,.25);background:rgba(0,255,136,.03)"><span style="font-family:var(--mono);font-size:.68rem;color:rgba(200,255,220,.5)">MTTD · Mean Time To Detect</span><span style="font-family:var(--display);font-weight:700;color:var(--green);font-size:.9rem">&lt; 1h</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.35rem .6rem;border-left:2px solid rgba(255,215,0,.25);background:rgba(255,215,0,.03)"><span style="font-family:var(--mono);font-size:.68rem;color:rgba(200,255,220,.5)">MTTR · Mean Time To Respond</span><span style="font-family:var(--display);font-weight:700;color:var(--yellow);font-size:.9rem">&lt; 4h</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.35rem .6rem;border-left:2px solid rgba(255,68,102,.25);background:rgba(255,68,102,.03)"><span style="font-family:var(--mono);font-size:.68rem;color:rgba(200,255,220,.5)">Taux faux positifs cible</span><span style="font-family:var(--display);font-weight:700;color:var(--red);font-size:.9rem">&lt; 5%</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.35rem .6rem;border-left:2px solid rgba(68,136,255,.25);background:rgba(68,136,255,.03)"><span style="font-family:var(--mono);font-size:.68rem;color:rgba(200,255,220,.5)">Couverture MITRE ATT&CK</span><span style="font-family:var(--display);font-weight:700;color:var(--blue);font-size:.9rem">&gt; 70%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 9 · CARRIÈRE ─────────────────────────────────────── -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// 09 · Carrière</div>
+  <h2>Parcours de carrière · Analyste SOC</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel">Progression type</div>
+        <div class="step-list" style="gap:.75rem">
+          <div class="step">
+            <span class="step-num" style="background:rgba(68,136,255,.08);padding:.2rem .45rem;color:var(--blue);min-width:3.5rem;text-align:center">AN 1-2</span>
+            <div class="step-txt"><strong>Analyste SOC N1</strong><br><span style="color:rgba(200,255,220,.5);font-size:.78rem">Triage, monitoring, escalade. Cible : <span class="tag tag-y" style="padding:.1rem .35rem">Security+</span> <span class="tag tag-y" style="padding:.1rem .35rem">BTL1</span></span></div>
+          </div>
+          <div class="step">
+            <span class="step-num" style="background:rgba(255,215,0,.06);padding:.2rem .45rem;color:var(--yellow);min-width:3.5rem;text-align:center">AN 2-4</span>
+            <div class="step-txt"><strong>Analyste SOC N2</strong><br><span style="color:rgba(200,255,220,.5);font-size:.78rem">Investigation, forensics, réponse. Cible : <span class="tag tag-y" style="padding:.1rem .35rem">CySA+</span> <span class="tag tag-y" style="padding:.1rem .35rem">SC-200</span> <span class="tag tag-y" style="padding:.1rem .35rem">GCIH</span></span></div>
+          </div>
+          <div class="step">
+            <span class="step-num" style="background:rgba(255,136,0,.07);padding:.2rem .45rem;color:var(--orange);min-width:3.5rem;text-align:center">AN 4-7</span>
+            <div class="step-txt"><strong>Analyste SOC N3 / Threat Hunter</strong><br><span style="color:rgba(200,255,220,.5);font-size:.78rem">Chasse proactive, règles de détection, architecture. Cible : <span class="tag tag-y" style="padding:.1rem .35rem">GCFA</span> <span class="tag tag-y" style="padding:.1rem .35rem">GCFE</span></span></div>
+          </div>
+          <div class="step">
+            <span class="step-num" style="background:rgba(170,68,255,.07);padding:.2rem .45rem;color:var(--purple);min-width:3.5rem;text-align:center">AN 7+</span>
+            <div class="step-txt"><strong>SOC Manager / RSSI / Consultant DFIR</strong><br><span style="color:rgba(200,255,220,.5);font-size:.78rem">Direction SOC, stratégie détection, missions forensics senior. Freelance : 700-1000€/j</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Certifications par niveau</div>
+        <div class="tag-list">
+          <span class="tag tag-g">Security+ · Entrée</span>
+          <span class="tag tag-y">BTL1 · Pratique N1</span>
+          <span class="tag tag-y">CySA+ · N2</span>
+          <span class="tag tag-y">SC-200 (Sentinel)</span>
+          <span class="tag tag-y">GCIH · Incident Handler</span>
+          <span class="tag tag-o">GCFA · Forensics</span>
+          <span class="tag tag-r">GCFE · Expert</span>
+          <span class="tag tag-p">CISSP · Management</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Rémunérations</div>
+        <div class="hdiv">Europe · France</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.7rem">
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(68,136,255,.25);background:rgba(68,136,255,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,220,.55)">N1 (0–2 ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--blue)">35–48K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,215,0,.25);background:rgba(255,215,0,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,220,.55)">N2 (2–5 ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--yellow)">50–65K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,136,0,.25);background:rgba(255,136,0,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,220,.55)">N3 / Hunter (5–8 ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--orange)">70–90K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,68,102,.25);background:rgba(255,68,102,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(200,255,220,.55)">Freelance TJM</span><span style="font-family:var(--display);font-weight:700;color:var(--red)">550–950€/j</span></div>
+        </div>
+        <div class="hdiv">Afrique Francophone</div>
+        <div class="arow">
+          <span class="em">🌍</span>
+          <p>Les SOC africains émergent rapidement dans les banques (Ecobank, Attijariwafa, BGFI), les télécoms (MTN, Orange) et les institutions nationales (ANSSI locales, CSIRT gouvernementaux). Le Maroc, le Sénégal et la Côte d'Ivoire sont les pôles les plus actifs. <strong>Security+ + BTL1 + TryHackMe = combo gagnant pour décrocher un premier poste</strong> depuis l'Afrique.</p>
+        </div>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel">Plan d'action pour débuter</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>Semaine 1–4 :</strong> TryHackMe — parcours "SOC Level 1" (gratuit) — bases concrètes</li>
+          <li><strong>Mois 2–3 :</strong> Déployer un lab Elastic SIEM + Wazuh chez soi (gratuit)</li>
+          <li><strong>Mois 4–6 :</strong> Passer CompTIA Security+ (~350€, passable en ligne)</li>
+          <li><strong>Mois 6–9 :</strong> BTL1 (Security Blue Team, ~250€) — très pratique, parfait N1</li>
+          <li><strong>AN 2 :</strong> Pratiquer les CTF Blue Team (Splunk Boss of the SOC, CyberDefenders)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 10 · RÉCAP ───────────────────────────────────────── -->
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Récap · SOC</div>
+  <h2>Ce qu'il faut retenir</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(68,136,255,.4);margin-bottom:.7rem">✅ LES 5 RÉFLEXES DE L'ANALYSTE SOC</div>
+        <ul class="bullets">
+          <li class="ok"><strong>Qualifier avant d'agir</strong> — Faux positif ou vrai incident ? Ne jamais paniquer sur une alerte brute</li>
+          <li class="ok"><strong>Contextualiser</strong> — Qui ? Sur quelle machine ? À quelle heure ? Depuis où ? C'est normal pour ce user ?</li>
+          <li class="ok"><strong>Documenter tout</strong> — Chaque action, chaque décision, chaque log analysé trace l'investigation</li>
+          <li class="ok"><strong>Contenir d'abord</strong> — Isoler avant d'analyser. Stopper l'hémorragie, puis comprendre</li>
+          <li class="ok"><strong>Tirer les leçons</strong> — Chaque incident produit une nouvelle règle de détection ou un playbook amélioré</li>
+        </ul>
+      </div>
+      <div class="card card-red">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.7rem">⚠ LES 3 ERREURS LES PLUS FRÉQUENTES</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li class="bad"><strong>Alert fatigue</strong> — Trop d'alertes → l'analyste se désensibilise → un vrai incident passe inaperçu</li>
+          <li class="bad"><strong>Éteindre la machine infectée</strong> — On perd la RAM, les processus actifs, les connexions C2. Toujours isoler sans éteindre.</li>
+          <li class="bad"><strong>Pas documenter en temps réel</strong> — La mémoire est faillible sous pression. Le journal d'incident en temps réel est indispensable.</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-yellow">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.7rem">📚 RESSOURCES POUR PROGRESSER</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>TryHackMe</strong> — SOC Level 1 &amp; 2 · tryhackme.com</li>
+          <li><strong>CyberDefenders</strong> — Labs Blue Team réalistes · cyberdefenders.org</li>
+          <li><strong>Splunk Boss of the SOC</strong> — CTF SIEM officiel Splunk</li>
+          <li><strong>Sigma Rules Github</strong> — github.com/SigmaHQ/sigma</li>
+          <li><strong>MITRE ATT&CK</strong> — attack.mitre.org — la bible</li>
+          <li><strong>Awesome Incident Response</strong> — Github, liste de ressources IR</li>
+        </ul>
+      </div>
+      <div class="card" style="background:rgba(68,136,255,.03);border-color:rgba(68,136,255,.2)">
+        <div class="blabel">Les autres cours SooPHA Learn · Cyber</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.8rem">
+          <span class="pill pill-green">🪪 IAM</span>
+          <span class="pill pill-red">⚔️ Pentester</span>
+          <span class="pill pill-yellow">⚖️ DPO</span>
+          <span class="pill pill-orange">🛡️ RSSI/CISO</span>
+          <span class="pill pill-purple">🔬 DFIR</span>
+          <span class="pill pill-cyan">🕵️ Threat Intel</span>
+        </div>
+        <div class="terminal" style="font-size:.66rem">
+          <span class="term-prompt">// </span><span class="term-out">L'analyste SOC est le gardien silencieux.<br>Personne ne le remarque quand tout va bien.<br>Tout le monde l'appelle quand rien ne va plus.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:1rem;max-width:880px;width:100%;text-align:center">
+    <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+    <div style="font-family:var(--mono);font-size:.6rem;color:rgba(68,136,255,.2);margin-top:.6rem;letter-spacing:.1em">SooPHA Learn × SOC · Security Operations × Afrique Francophone</div>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- ══════════════════════════ QCM OVERLAY ═════════════════════ -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════ COMPLETION ══════════════════════ -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Cours terminé !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ BOTTOMBAR ═══════════════════════ -->
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 11</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<!-- ══════════════════════════ SCRIPT ══════════════════════════ -->
+<script>
+/* ── QCM — Réponses distribuées A·B·C·D ──────────────────────── */
+var QCM = {
+  1:{
+    question:"Quelle est la différence fondamentale entre un SIEM et un SOAR ?",
+    options:[
+      "Le SIEM et le SOAR sont des synonymes — les deux collectent et corrèlent les logs de sécurité",
+      "Le SIEM détecte les menaces sur les endpoints uniquement ; le SOAR les détecte sur le réseau",
+      "Le SIEM collecte, corrèle et génère des alertes ; le SOAR orchestre et automatise la réponse à ces alertes via des playbooks préprogrammés",
+      "Le SOAR est la version cloud du SIEM — il n'y a pas de différence architecturale majeure"
+    ],
+    correct:2,
+    explanation:"Le SIEM (Security Information & Event Management) est l'outil de détection : il ingère les logs de tout l'environnement, les corrèle et génère des alertes quand un comportement anormal est détecté. Le SOAR (Security Orchestration, Automation & Response) prend le relais sur la réponse : quand le SIEM génère une alerte, le SOAR exécute automatiquement un playbook (isoler un poste, bloquer une IP, ouvrir un ticket, notifier le manager). SIEM = cerveau de détection. SOAR = bras armé de la réponse."
+  },
+  2:{
+    question:"Dans le framework MITRE ATT&CK, que représente la technique T1003.001 'LSASS Memory' ?",
+    options:[
+      "Une technique de vol de credentials en accédant à la mémoire du processus LSASS (Local Security Authority Subsystem Service) pour en extraire des hashes de mots de passe — tactique : Credential Access",
+      "Une technique de persistance qui modifie le processus LSASS pour maintenir un accès après redémarrage du système",
+      "Une technique de reconnaissance permettant d'énumérer tous les utilisateurs du domaine Active Directory via LSASS",
+      "Un mouvement latéral exploitant le protocole LSASS pour se propager d'un hôte à l'autre dans le domaine"
+    ],
+    correct:0,
+    explanation:"T1003.001 est l'une des techniques de Credential Access les plus utilisées par les attaquants. LSASS (Local Security Authority Subsystem Service) est le processus Windows qui gère l'authentification. En accédant à sa mémoire (via Mimikatz, ProcDump ou ntdsutil), un attaquant peut extraire des hashes NTLM, des tickets Kerberos et des mots de passe en clair. C'est pourquoi l'accès à LSASS déclenche des alertes dans tous les EDR et doit être une règle Sigma/YARA prioritaire dans tout SIEM."
+  },
+  3:{
+    question:"Un analyste SOC reçoit une alerte : authentification réussie depuis Paris à 22h45, puis depuis Lagos à 03h17 sur le même compte admin. Quelle est la PREMIÈRE action ?",
+    options:[
+      "Supprimer immédiatement le compte utilisateur pour éliminer la menace rapidement",
+      "Envoyer un email à l'utilisateur pour lui demander si c'était bien lui qui se connectait",
+      "Redémarrer les serveurs concernés pour couper d'éventuelles sessions actives malveillantes",
+      "Révoquer toutes les sessions actives du compte, réinitialiser le mot de passe et analyser les actions effectuées pendant la session suspecte avant de décider de la suite"
+    ],
+    correct:3,
+    explanation:"La réponse correcte combine containment et investigation. Supprimer le compte (A) est irréversible et prématuré — et on perd la traçabilité. Envoyer un email (B) est trop lent pour un compte admin compromis et l'attaquant pourrait lire l'email s'il contrôle la boîte. Redémarrer (C) ne révoque pas les tokens OAuth/cookies et on perd la RAM. La bonne procédure : révoquer les sessions (Azure AD : Revoke Sign-In Sessions), réinitialiser le mot de passe, puis investiguer ce qui s'est passé pendant la session suspecte avant toute décision définitive."
+  },
+  4:{
+    question:"Dans un incident ransomware, quelle action est INTERDITE par les premières équipes de réponse ?",
+    options:[
+      "Isoler les machines infectées du réseau en les déconnectant logiquement (VLAN, règles firewall)",
+      "Éteindre les machines infectées pour stopper immédiatement le chiffrement en cours",
+      "Capturer une image de la mémoire RAM des machines infectées avant toute action",
+      "Notifier le RSSI et ouvrir un ticket de priorité maximale dans l'outil de gestion d'incidents"
+    ],
+    correct:1,
+    explanation:"Éteindre les machines infectées est une erreur critique en forensics. En éteignant, on perd définitivement la RAM — qui contient les processus actifs, les connexions C2 en cours, les clés de chiffrement potentiellement récupérables, et toutes les preuves volatiles de l'attaquant. La bonne pratique est d'ISOLER sans éteindre : couper le réseau (déconnecter le câble ou désactiver la carte réseau via l'EDR), puis capturer la RAM, puis analyser. L'isolation stoppe la propagation sans détruire les preuves."
+  },
+  5:{
+    question:"Le Business Email Compromise (BEC) repose principalement sur quelle technique ?",
+    options:[
+      "L'exploitation d'une vulnérabilité CVE dans les serveurs Exchange pour intercepter les emails internes",
+      "L'injection de code malveillant dans les pièces jointes PDF pour compromettre le poste de la victime",
+      "L'usurpation de l'identité d'un dirigeant via un domaine typosquat ou un compte email compromis, pour manipuler un employé en position de réaliser des virements ou divulguer des informations sensibles",
+      "Le détournement des flux DNS de l'entreprise pour rediriger les emails légitimes vers un serveur contrôlé par l'attaquant"
+    ],
+    correct:2,
+    explanation:"Le BEC est une attaque d'ingénierie sociale avancée. L'attaquant imite un dirigeant (PDG, CFO, DAF) via un domaine très proche du vrai (corp-entreprise.com au lieu de corp.net) ou via un compte réellement compromis. L'objectif est de manipuler un employé (finance, RH) pour effectuer un virement frauduleux ou divulguer des données sensibles. Selon le FBI IC3 2023, le BEC représente 2,9 milliards de dollars de pertes — la fraude cybernétique la plus coûteuse. La protection passe par DMARC p=reject, la sensibilisation et un processus de double validation des virements."
+  },
+  6:{
+    question:"La 'Pyramide de la douleur' de David Bianco indique que bloquer les TTPs d'un attaquant est plus efficace que bloquer ses adresses IP. Pourquoi ?",
+    options:[
+      "Parce que changer ses TTPs oblige l'attaquant à complètement repenser sa méthode d'attaque, ce qui est coûteux en temps et en ressources — alors qu'une IP se change en quelques secondes",
+      "Parce que les adresses IP sont protégées par le RGPD et ne peuvent pas être bloquées sans décision judiciaire préalable",
+      "Parce que les TTPs sont visibles dans les logs réseau alors que les adresses IP sont souvent masquées par des VPN",
+      "Parce que les TTPs correspondent aux règles YARA qui sont plus performantes que les règles de firewall basées sur les IP"
+    ],
+    correct:0,
+    explanation:"La Pyramide de la douleur illustre le coût pour l'attaquant de changer d'indicateur. Une IP se change en quelques secondes (VPN, proxy, nouveau VPS). Un domaine, en quelques minutes. Mais les TTPs — les façons d'opérer — sont au cœur de la méthodologie d'un groupe : changer de TTP signifie retravailler ses outils, reformer ses équipes, réécrire ses scripts. En détectant et bloquant les TTPs plutôt que les IOC bas niveau (IP, hash), un SOC force l'attaquant à changer de méthode — c'est l'objectif maximal de la défense."
+  },
+  7:{
+    question:"Sigma est au SOC ce que le HTML est au web. Quelle affirmation décrit correctement ce format ?",
+    options:[
+      "Sigma est un format binaire propriétaire de Splunk pour écrire des règles de détection optimisées pour son moteur SPL",
+      "Sigma est un standard de partage d'IOC (Indicateurs de Compromission) entre SIEM différents, utilisant XML pour encoder les hashes et IP malveillants",
+      "Sigma est un outil de simulation d'attaque qui reproduit les TTPs MITRE ATT&CK sur un environnement de test pour valider les détections",
+      "Sigma est un langage YAML universel pour écrire des règles de détection indépendantes du SIEM, convertibles automatiquement vers Splunk SPL, KQL, ElasticSearch, QRadar, etc."
+    ],
+    correct:3,
+    explanation:"Sigma est le langage universel de détection pour les analystes SOC. Une règle Sigma écrite une seule fois peut être convertie automatiquement vers le langage natif de n'importe quel SIEM : Splunk SPL, Microsoft Sentinel KQL, Elastic DSL, IBM QRadar, etc. — grâce à des convertisseurs open source (sigmac, pySigma). Cela permet de partager les règles de détection entre équipes et communautés sans se soucier du SIEM utilisé. Le dépôt GitHub SigmaHQ contient des milliers de règles prêtes à l'emploi mappées sur MITRE ATT&CK."
+  },
+  8:{
+    question:"Un SOC mature mesure ses performances via des KPIs. Lequel de ces KPIs mesure la rapidité à stopper un incident après sa détection ?",
+    options:[
+      "MTTD (Mean Time To Detect) — temps moyen entre le début de l'attaque et la première alerte dans le SIEM",
+      "MTTR (Mean Time To Respond) — temps moyen entre la détection confirmée d'un incident et sa résolution complète (containment + eradication)",
+      "FPR (False Positive Rate) — pourcentage d'alertes SIEM qui ne correspondent pas à une vraie menace",
+      "CVE Coverage Rate — pourcentage des vulnérabilités connues couvertes par les règles de détection du SIEM"
+    ],
+    correct:1,
+    explanation:"Le MTTR (Mean Time To Respond) mesure le délai entre la détection d'un incident confirmé et sa résolution (isolation, éradication, remédiation). Un SOC mature vise un MTTR < 4 heures pour les incidents critiques. Le MTTD (réponse A) mesure la détection, pas la réponse. Le FPR (réponse C) mesure la qualité des alertes (un FPR < 5% est l'objectif). Ces KPIs permettent de démontrer la valeur du SOC au RSSI et à la direction, et d'identifier les axes d'amélioration prioritaires des playbooks et des automatisations SOAR."
+  }
+};
+
+var COURSE_ID="soc-complet", TOTAL=11, current=0, currentUser=null;
+var qcmAnswered={}, qcmScores={}, currentQcmSlide=null;
+
+function updateUI(){
+  document.getElementById("slide-counter").textContent=String(current+1).padStart(2,"0")+" / "+String(TOTAL).padStart(2,"0");
+  document.getElementById("prev-btn").disabled=current===0;
+  document.getElementById("next-btn").disabled=current===TOTAL-1;
+  document.getElementById("progress-fill").style.width=((current+1)/TOTAL*100)+"%";
+  var ind=document.getElementById("qcm-ind");
+  if(QCM[current])ind.textContent=qcmAnswered[current]?(qcmScores[current]===1?"✅ QCM répondu":"❌ QCM répondu"):"⚡ QCM requis";
+  else ind.textContent="";
+}
+
+function navigate(dir){
+  var next=current+dir;
+  if(next<0||next>=TOTAL)return;
+  if(dir>0&&QCM[current]&&!qcmAnswered[current]){showQcm(current);return;}
+  var curEl=document.querySelector(".slide.active");
+  var nextEl=document.querySelector(".slide[data-index='"+next+"']");
+  curEl.classList.remove("active");curEl.classList.add("exit");
+  setTimeout(function(){curEl.classList.remove("exit");},400);
+  nextEl.classList.add("active");
+  current=next;updateUI();
+}
+
+function showQcm(idx){
+  var qcm=QCM[idx];if(!qcm)return;
+  currentQcmSlide=idx;
+  var done=Object.keys(qcmAnswered).length;
+  var total=Object.keys(QCM).length;
+  document.getElementById("qcm-prog").textContent="QCM "+(done+1)+" / "+total;
+  document.getElementById("qcm-question").textContent=qcm.question;
+  document.getElementById("qcm-feedback").style.display="none";
+  document.getElementById("qcm-feedback").className="qcm-feedback";
+  document.getElementById("qcm-next-btn").classList.remove("show");
+  document.getElementById("qcm-saving").classList.remove("show");
+  var letters=["A","B","C","D"],html="";
+  qcm.options.forEach(function(opt,i){
+    html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+"</span>"+opt+"</div>";
+  });
+  document.getElementById("qcm-options").innerHTML=html;
+  if(qcmAnswered[idx]){restoreQcmState(idx);document.getElementById("qcm-next-btn").classList.add("show");}
+  document.getElementById("qcm-overlay").classList.add("show");
+}
+
+function selectOption(el,optIdx){
+  if(qcmAnswered[currentQcmSlide])return;
+  var qcm=QCM[currentQcmSlide],correct=optIdx===qcm.correct;
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){
+    o.classList.add("disabled");
+    if(i===qcm.correct)o.classList.add("correct");
+  });
+  if(!correct)el.classList.add("wrong");
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";
+  fb.className="qcm-feedback "+(correct?"correct":"wrong");
+  fb.textContent=(correct?"✅ Correct ! ":"❌ Incorrect. ")+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true;
+  qcmScores[currentQcmSlide]=correct?1:0;
+  updateUI();
+  var allDone=Object.keys(qcmAnswered).length===Object.keys(QCM).length;
+  if(allDone){
+    var tot=Object.keys(QCM).length;
+    var c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+    setTimeout(function(){closeQcmAndAdvance();showCompletion((c/tot)*100);},1400);
+    return;
+  }
+  document.getElementById("qcm-next-btn").classList.add("show");
+}
+
+function restoreQcmState(idx){
+  var qcm=QCM[idx],score=qcmScores[idx];
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){
+    o.classList.add("disabled");
+    if(i===qcm.correct)o.classList.add("correct");
+  });
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";
+  fb.className="qcm-feedback "+(score===1?"correct":"wrong");
+  fb.textContent=(score===1?"✅ Déjà répondu correctement. ":"❌ Réponse incorrecte. ")+qcm.explanation;
+}
+
+function closeQcmAndAdvance(){
+  document.getElementById("qcm-overlay").classList.remove("show");
+  if(currentQcmSlide===current&&current<TOTAL-1){
+    var next=current+1;
+    var curEl=document.querySelector(".slide.active");
+    var nextEl=document.querySelector(".slide[data-index='"+next+"']");
+    curEl.classList.remove("active");curEl.classList.add("exit");
+    setTimeout(function(){curEl.classList.remove("exit");},400);
+    nextEl.classList.add("active");
+    current=next;updateUI();
+  }
+}
+
+function showCompletion(pct){
+  var tot=Object.keys(QCM).length;
+  var c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById("comp-score").textContent=Math.round(pct)+"%";
+  if(pct>=75){document.getElementById("comp-icon").textContent="🏆";document.getElementById("comp-title").textContent="Excellent travail !";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Cours SOC maîtrisé !";}
+  else if(pct>=50){document.getElementById("comp-icon").textContent="📚";document.getElementById("comp-title").textContent="Bien joué !";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Quelques notions à revoir.";}
+  else{document.getElementById("comp-icon").textContent="🔁";document.getElementById("comp-title").textContent="À revoir";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Recommence le cours !";}
+  document.getElementById("completion-modal").classList.add("show");
+}
+
+document.addEventListener("keydown",function(e){
+  if(document.getElementById("qcm-overlay").classList.contains("show"))return;
+  if(e.key==="ArrowRight"||e.key===" "){e.preventDefault();navigate(1);}
+  if(e.key==="ArrowLeft")navigate(-1);
+});
+var touchX=0;
+document.addEventListener("touchstart",function(e){touchX=e.touches[0].clientX;});
+document.addEventListener("touchend",function(e){
+  var dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50&&!document.getElementById("qcm-overlay").classList.contains("show"))navigate(dx<0?1:-1);
+});
+
+(function(){
+  var c=document.getElementById("matrix"),ctx=c.getContext("2d");
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener("resize",resize);
+  var chars="01SOCALERTSIGMAYARASIEMSOCDEFEND",fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}
+  initDrops();window.addEventListener("resize",initDrops);
+  setInterval(function(){
+    ctx.fillStyle="rgba(2,8,10,0.05)";ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle="#4488ff";ctx.font=fs+"px monospace";
+    drops.forEach(function(y,i){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);
+      if(y*fs>c.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    });
+  },55);
+})();
+
+updateUI();
+</script>
+</body>
+</html>
