@@ -3,160 +3,462 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="SooPHA Learn — La plateforme de formation en cybersécurité pour la jeunesse africaine francophone. 30+ cours, CTF, certifications.">
-
-<!-- Favicon -->
+<meta name="description" content="SooPHA Learn — Organisme de formation en cybersécurité. Formations certifiantes, parcours entreprise, experts en activité. France & Afrique francophone.">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-
-<!-- Open Graph -->
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://soopha-learn.com/" />
-<meta property="og:title" content="SooPHA Learn — Cybersécurité pour l'Afrique" />
-<meta property="og:description" content="La plateforme de formation en cybersécurité pour la jeunesse africaine francophone. 30+ cours, CTF, certifications." />
+<meta property="og:title" content="SooPHA Learn — Formation Cybersécurité Certifiante" />
+<meta property="og:description" content="Formations cybersécurité animées par des experts en activité. Parcours certifiants, formations entreprise, France & Afrique." />
 <meta property="og:image" content="https://soopha-learn.com/img/og-preview.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
 <meta property="og:locale" content="fr_FR" />
 <meta property="og:site_name" content="SooPHA Learn" />
-
-<!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="SooPHA Learn — Cybersécurité pour l'Afrique" />
-<meta name="twitter:description" content="La plateforme de formation en cybersécurité pour la jeunesse africaine francophone." />
+<meta name="twitter:title" content="SooPHA Learn — Formation Cybersécurité Certifiante" />
+<meta name="twitter:description" content="Formations cybersécurité certifiantes. Experts en activité. France & Afrique francophone." />
 <meta name="twitter:image" content="https://soopha-learn.com/img/og-preview.png" />
-
-<title>SooPHA Learn — Cybersécurité pour l'Afrique</title>
+<title>SooPHA Learn — Formation Cybersécurité Certifiante</title>
 <link rel="stylesheet" href="../css/global.css">
 <link rel="stylesheet" href="../css/mobile.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
 <style>
+:root {
+  --green: #00ff88;
+  --green-border: rgba(0,255,136,0.15);
+  --green-dim: rgba(0,255,136,0.06);
+  --gold: #f5a623;
+  --red-soft: rgba(255,68,102,0.8);
+}
+
 /* ── HERO ── */
 .hero {
   min-height: calc(100vh - 60px);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  text-align: center; padding: 4rem 2rem;
+  text-align: center; padding: 5rem 2rem 4rem;
   position: relative; overflow: hidden;
 }
 .hero-bg {
   position: absolute; inset: 0; z-index: 0;
-  background: radial-gradient(ellipse at 50% 30%, rgba(0,80,40,0.2) 0%, transparent 70%);
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(0,60,30,0.25) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(0,40,20,0.2) 0%, transparent 50%);
 }
 canvas#matrix-hero {
   position: absolute; inset: 0; z-index: 0;
-  opacity: 0.05; pointer-events: none;
+  opacity: 0.04; pointer-events: none;
 }
-.hero-content { position: relative; z-index: 1; max-width: 800px; }
-.hero-tag {
-  font-family: var(--mono); font-size: 0.68rem;
-  letter-spacing: 0.5em; color: rgba(0,255,136,0.35);
-  text-transform: uppercase; margin-bottom: 1.5rem;
-  animation: fadeUp 0.6s ease both;
+.hero-content { position: relative; z-index: 1; max-width: 860px; }
+
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  border: 1px solid rgba(0,255,136,0.2);
+  background: rgba(0,255,136,0.04);
+  padding: 0.4rem 1rem;
+  font-family: var(--mono); font-size: 0.62rem;
+  letter-spacing: 0.2em; color: rgba(0,255,136,0.5);
+  text-transform: uppercase; margin-bottom: 2rem;
+  animation: fadeUp 0.5s ease both;
 }
+.hero-badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
 .hero-title {
-  font-family: var(--display); font-size: clamp(2.4rem,6vw,4rem);
-  font-weight: 900; line-height: 1.05;
-  letter-spacing: 0.08em; margin-bottom: 0.5rem;
-  animation: fadeUp 0.6s 0.1s ease both;
+  font-family: var(--display); font-weight: 900;
+  font-size: clamp(2.6rem,6.5vw,4.4rem);
+  line-height: 1.0; letter-spacing: 0.06em;
+  margin-bottom: 1rem;
+  animation: fadeUp 0.5s 0.1s ease both;
 }
-.hero-title-main   { color: #fff; text-shadow: 0 0 40px rgba(0,255,136,0.2); }
-.hero-title-accent { color: var(--green); text-shadow: 0 0 30px var(--green); }
-.hero-subtitle {
-  font-family: var(--mono); font-size: 0.85rem;
-  color: rgba(0,255,136,0.4); letter-spacing: 0.2em;
-  margin-bottom: 2rem;
-  animation: fadeUp 0.6s 0.2s ease both;
+.hero-title-main   { color: #fff; display: block; }
+.hero-title-accent { color: var(--green); display: block; text-shadow: 0 0 40px rgba(0,255,136,0.3); }
+
+.hero-divider {
+  display: flex; align-items: center; gap: 1rem;
+  justify-content: center; margin: 1.2rem 0;
+  animation: fadeUp 0.5s 0.15s ease both;
 }
-.hero-desc {
-  font-family: var(--body); font-size: clamp(0.95rem,2vw,1.1rem);
-  color: rgba(200,255,220,0.6); line-height: 1.7;
-  max-width: 580px; margin: 0 auto 2.5rem;
-  animation: fadeUp 0.6s 0.3s ease both;
-}
-.hero-cta {
-  display: flex; gap: 1rem; justify-content: center;
-  flex-wrap: wrap;
-  animation: fadeUp 0.6s 0.4s ease both;
-}
-.hero-stats {
-  display: flex; gap: 2rem; justify-content: center;
-  flex-wrap: wrap; margin-top: 3rem;
-  animation: fadeUp 0.6s 0.5s ease both;
-}
-.hero-stat {
-  padding: 0.8rem 1.5rem;
-  border: 1px solid var(--green-border);
-  background: rgba(0,255,136,0.03);
-}
+.hero-divider-line { flex: 1; max-width: 80px; height: 1px; background: var(--green-border); }
 .gabon-bar {
-  display: flex; height: 3px; width: 80px;
+  display: flex; height: 3px; width: 60px;
   border-radius: 2px; overflow: hidden;
-  margin: 1rem auto;
-  animation: fadeUp 0.6s 0.15s ease both;
 }
 .gabon-bar span:nth-child(1){flex:1;background:#009e60}
 .gabon-bar span:nth-child(2){flex:1;background:#fcd116}
 .gabon-bar span:nth-child(3){flex:1;background:#003189}
 
-/* ── FEATURES ── */
-.features { padding: 5rem 0; }
-.features-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
-  gap: 1.2rem; margin-top: 2.5rem;
+.hero-sub {
+  font-family: var(--mono); font-size: 0.72rem;
+  color: rgba(0,255,136,0.35); letter-spacing: 0.25em;
+  margin-bottom: 1.8rem;
+  animation: fadeUp 0.5s 0.2s ease both;
 }
-.feature-card { padding: 2rem 1.5rem; }
-.feature-icon  { font-size: 2rem; margin-bottom: 1rem; }
-.feature-title {
-  font-family: var(--display); font-size: 0.9rem;
-  font-weight: 700; color: #fff; letter-spacing: 0.05em;
-  margin-bottom: 0.6rem;
+.hero-desc {
+  font-size: clamp(0.9rem,1.8vw,1.05rem);
+  color: rgba(200,255,220,0.55); line-height: 1.8;
+  max-width: 600px; margin: 0 auto 2.5rem;
+  animation: fadeUp 0.5s 0.25s ease both;
 }
-.feature-desc { font-size: 0.82rem; color: rgba(200,255,220,0.55); line-height: 1.6; }
+.hero-desc strong { color: rgba(200,255,220,0.9); }
 
-/* ── TOPICS ── */
-.topics { padding: 4rem 0; border-top: 1px solid var(--green-border); }
+.hero-cta {
+  display: flex; gap: 1rem; justify-content: center;
+  flex-wrap: wrap; margin-bottom: 3.5rem;
+  animation: fadeUp 0.5s 0.3s ease both;
+}
+
+.hero-stats {
+  display: flex; gap: 0; justify-content: center;
+  border: 1px solid var(--green-border);
+  animation: fadeUp 0.5s 0.4s ease both;
+}
+.hero-stat {
+  padding: 1rem 2rem; text-align: center;
+  border-right: 1px solid var(--green-border);
+  flex: 1;
+}
+.hero-stat:last-child { border-right: none; }
+.hero-stat-val {
+  font-family: var(--display); font-size: 1.5rem;
+  font-weight: 900; color: var(--green);
+  text-shadow: 0 0 12px rgba(0,255,136,0.3);
+}
+.hero-stat-lbl {
+  font-family: var(--mono); font-size: 0.58rem;
+  color: rgba(0,255,136,0.3); letter-spacing: 0.1em;
+  margin-top: 0.2rem; text-transform: uppercase;
+}
+
+/* ── SECTION GENERIC ── */
+.section { padding: 5rem 0; }
+.section-border { border-top: 1px solid var(--green-border); }
+.section-pre {
+  font-family: var(--mono); font-size: 0.6rem;
+  letter-spacing: 0.3em; color: rgba(0,255,136,0.3);
+  text-transform: uppercase; margin-bottom: 0.5rem;
+}
+.section-h2 {
+  font-family: var(--display); font-size: clamp(1.4rem,3vw,2.2rem);
+  font-weight: 900; color: #fff; letter-spacing: 0.05em;
+  margin-bottom: 1rem; line-height: 1.2;
+}
+.section-h2 span { color: var(--green); }
+.section-lead {
+  font-size: 0.9rem; color: rgba(200,255,220,0.5);
+  line-height: 1.7; max-width: 560px;
+}
+
+/* ── CHIFFRES CLÉS ── */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 0; border: 1px solid var(--green-border);
+  margin-top: 2.5rem;
+}
+.kpi-item {
+  padding: 1.5rem 1rem; text-align: center;
+  border-right: 1px solid var(--green-border);
+  position: relative;
+}
+.kpi-item::before {
+  content: ''; position: absolute;
+  top: -1px; left: -1px; width: 10px; height: 10px;
+  border-top: 2px solid var(--green); border-left: 2px solid var(--green);
+}
+.kpi-item:last-child { border-right: none; }
+.kpi-val {
+  font-family: var(--display); font-size: 2rem;
+  font-weight: 900; color: var(--green);
+  text-shadow: 0 0 16px rgba(0,255,136,0.25);
+}
+.kpi-lbl {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: rgba(0,255,136,0.3); letter-spacing: 0.1em;
+  margin-top: 0.3rem; text-transform: uppercase;
+}
+
+/* ── FEATURES ── */
+.features-grid {
+  display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+  gap: 1rem; margin-top: 2.5rem;
+}
+.feature-card {
+  padding: 1.8rem 1.5rem;
+  border: 1px solid var(--green-border);
+  background: var(--green-dim);
+  position: relative;
+  transition: all 0.2s;
+}
+.feature-card::before {
+  content: ''; position: absolute;
+  top: -1px; left: -1px; width: 12px; height: 12px;
+  border-top: 2px solid var(--green); border-left: 2px solid var(--green);
+}
+.feature-card:hover {
+  border-color: rgba(0,255,136,0.35);
+  box-shadow: 0 0 24px rgba(0,255,136,0.06);
+  transform: translateY(-2px);
+}
+.feature-icon { font-size: 1.8rem; margin-bottom: 0.8rem; }
+.feature-title {
+  font-family: var(--display); font-size: 0.88rem;
+  font-weight: 700; color: #fff; letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+.feature-desc {
+  font-size: 0.78rem; color: rgba(200,255,220,0.5); line-height: 1.6;
+}
+
+/* ── PARCOURS / TOPICS ── */
 .topics-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
-  gap: 0.8rem; margin-top: 2rem;
+  display: grid; grid-template-columns: repeat(auto-fill,minmax(150px,1fr));
+  gap: 0.6rem; margin-top: 2rem;
 }
 .topic-pill {
-  padding: 0.8rem 1rem; text-align: center;
+  padding: 0.8rem 0.8rem; text-align: center;
   border: 1px solid var(--green-border);
-  background: rgba(0,255,136,0.03);
-  font-family: var(--mono); font-size: 0.72rem;
-  color: rgba(0,255,136,0.6); letter-spacing: 0.08em;
-  transition: all var(--transition);
+  background: var(--green-dim);
+  font-family: var(--mono); font-size: 0.68rem;
+  color: rgba(0,255,136,0.55); letter-spacing: 0.06em;
+  transition: all 0.2s; cursor: default;
 }
 .topic-pill:hover {
-  border-color: rgba(0,255,136,0.4);
-  color: var(--green); background: rgba(0,255,136,0.06);
+  border-color: rgba(0,255,136,0.35);
+  color: var(--green); background: rgba(0,255,136,0.08);
 }
-.topic-icon { font-size: 1.3rem; margin-bottom: 0.4rem; display: block; }
+.topic-icon { font-size: 1.2rem; margin-bottom: 0.35rem; display: block; }
 
-/* ── AFRICA SECTION ── */
-.africa { padding: 5rem 0; border-top: 1px solid var(--green-border); }
-.africa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; }
-.africa-text h2 { margin-bottom: 1rem; }
-.africa-text p  { margin-bottom: 1.5rem; }
-.africa-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.africa-stat-card {
-  padding: 1.2rem;
+/* ── PRICING ── */
+.pricing-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1rem; margin-top: 2.5rem; align-items: start;
+}
+.pricing-card {
   border: 1px solid var(--green-border);
-  background: rgba(0,255,136,0.03);
-  text-align: center;
+  background: var(--green-dim);
+  padding: 2rem 1.5rem;
+  position: relative;
+}
+.pricing-card::before {
+  content: ''; position: absolute;
+  top: -1px; left: -1px; width: 14px; height: 14px;
+  border-top: 2px solid rgba(0,255,136,0.3);
+  border-left: 2px solid rgba(0,255,136,0.3);
+}
+.pricing-card.featured {
+  border-color: rgba(0,255,136,0.5);
+  background: rgba(0,255,136,0.06);
+}
+.pricing-card.featured::before { border-color: var(--green); }
+.pricing-badge {
+  position: absolute; top: -10px; right: 16px;
+  background: var(--gold); color: #000;
+  font-family: var(--mono); font-size: 0.58rem;
+  font-weight: 700; padding: 2px 10px; letter-spacing: 0.08em;
+}
+.pricing-label {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: rgba(0,255,136,0.35); letter-spacing: 0.2em;
+  text-transform: uppercase; margin-bottom: 0.8rem;
+}
+.pricing-name {
+  font-family: var(--display); font-size: 1.1rem;
+  font-weight: 900; color: #fff; letter-spacing: 0.05em;
+  margin-bottom: 1.2rem;
+}
+.pricing-price {
+  font-family: var(--display); font-size: 2.4rem;
+  font-weight: 900; color: var(--green);
+  text-shadow: 0 0 16px rgba(0,255,136,0.2);
+  line-height: 1;
+}
+.pricing-price-unit {
+  font-family: var(--mono); font-size: 0.65rem;
+  color: rgba(0,255,136,0.35); letter-spacing: 0.1em;
+  margin: 0.3rem 0 1.5rem;
+}
+.pricing-divider {
+  height: 1px; background: var(--green-border); margin: 1.2rem 0;
+}
+.pricing-features { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.5rem; }
+.pricing-features li {
+  font-size: 0.78rem; color: rgba(200,255,220,0.6);
+  display: flex; align-items: flex-start; gap: 0.6rem; line-height: 1.4;
+}
+.pricing-features li::before {
+  content: '▶'; color: var(--green); font-size: 0.5rem;
+  margin-top: 0.3rem; flex-shrink: 0;
+}
+
+/* ── CERTIFICATION ── */
+.cert-wrap {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 3rem; align-items: center;
+}
+.cert-card {
+  border: 1px solid rgba(0,255,136,0.3);
+  background: rgba(0,255,136,0.04);
+  padding: 2.5rem;
+  position: relative;
+}
+.cert-card::before {
+  content: ''; position: absolute;
+  top: -1px; left: -1px; width: 20px; height: 20px;
+  border-top: 2px solid var(--green); border-left: 2px solid var(--green);
+}
+.cert-card::after {
+  content: ''; position: absolute;
+  bottom: -1px; right: -1px; width: 20px; height: 20px;
+  border-bottom: 2px solid var(--green); border-right: 2px solid var(--green);
+}
+.cert-logo {
+  font-family: var(--display); font-size: 0.7rem;
+  font-weight: 700; color: var(--green); letter-spacing: 0.3em;
+  margin-bottom: 0.4rem;
+}
+.cert-title {
+  font-family: var(--display); font-size: 1.1rem;
+  font-weight: 900; color: #fff; letter-spacing: 0.06em;
+  margin-bottom: 0.4rem;
+}
+.cert-subtitle {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: rgba(0,255,136,0.35); letter-spacing: 0.15em;
+  margin-bottom: 1.5rem;
+}
+.cert-name-placeholder {
+  font-family: var(--display); font-size: 1.4rem;
+  font-weight: 900; color: rgba(0,255,136,0.2);
+  letter-spacing: 0.1em; margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0,255,136,0.15);
+  padding-bottom: 0.8rem;
+}
+.cert-module {
+  font-family: var(--mono); font-size: 0.65rem;
+  color: rgba(0,255,136,0.35); letter-spacing: 0.12em;
+  margin-bottom: 1.5rem;
+}
+.cert-score {
+  display: flex; gap: 0.8rem; align-items: center; margin-bottom: 1.5rem;
+}
+.cert-score-val {
+  font-family: var(--display); font-size: 2rem;
+  font-weight: 900; color: var(--green);
+}
+.cert-score-lbl {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: rgba(0,255,136,0.3); letter-spacing: 0.1em;
+}
+.cert-sig {
+  display: flex; align-items: center; gap: 1rem;
+  padding-top: 1rem; border-top: 1px solid var(--green-border);
+}
+.cert-sig-line {
+  font-family: var(--display); font-size: 0.75rem;
+  color: rgba(0,255,136,0.4); letter-spacing: 0.08em;
+}
+
+/* ── FORMATEUR ── */
+.formateur-wrap {
+  display: grid; grid-template-columns: auto 1fr;
+  gap: 2rem; align-items: start;
+  border: 1px solid var(--green-border);
+  background: var(--green-dim); padding: 2rem;
+  position: relative;
+}
+.formateur-wrap::before {
+  content: ''; position: absolute;
+  top: -1px; left: -1px; width: 14px; height: 14px;
+  border-top: 2px solid var(--green); border-left: 2px solid var(--green);
+}
+.formateur-avatar {
+  width: 80px; height: 80px; border-radius: 50%;
+  border: 2px solid rgba(0,255,136,0.3);
+  background: rgba(0,255,136,0.08);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; flex-shrink: 0;
+}
+.formateur-name {
+  font-family: var(--display); font-size: 1.1rem;
+  font-weight: 700; color: #fff; letter-spacing: 0.04em;
+}
+.formateur-role {
+  font-family: var(--mono); font-size: 0.62rem;
+  color: var(--green); letter-spacing: 0.1em; margin-top: 0.2rem;
+}
+.formateur-bio {
+  font-size: 0.82rem; color: rgba(200,255,220,0.5);
+  line-height: 1.7; margin: 0.8rem 0;
+}
+.formateur-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+/* ── B2B SECTION ── */
+.b2b-wrap {
+  background: rgba(0,255,136,0.04);
+  border: 1px solid rgba(0,255,136,0.2);
+  border-left: 4px solid var(--green);
+  padding: 3rem;
+  position: relative;
+}
+.b2b-wrap::before {
+  content: ''; position: absolute;
+  top: -1px; right: -1px; width: 16px; height: 16px;
+  border-top: 2px solid var(--green); border-right: 2px solid var(--green);
+}
+.b2b-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 2rem; margin-top: 2rem;
+}
+.b2b-offer {
+  border: 1px solid var(--green-border);
+  background: rgba(0,0,0,0.3); padding: 1.5rem;
+  position: relative;
+}
+.b2b-offer::before {
+  content: ''; position: absolute;
+  top: -1px; left: -1px; width: 10px; height: 10px;
+  border-top: 1.5px solid rgba(0,255,136,0.4);
+  border-left: 1.5px solid rgba(0,255,136,0.4);
+}
+.b2b-offer-label {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: rgba(0,255,136,0.35); letter-spacing: 0.15em;
+  text-transform: uppercase; margin-bottom: 0.4rem;
+}
+.b2b-offer-name {
+  font-family: var(--display); font-size: 0.9rem;
+  font-weight: 700; color: #fff; margin-bottom: 0.4rem;
+}
+.b2b-offer-price {
+  font-family: var(--display); font-size: 1.3rem;
+  font-weight: 900; color: var(--green); margin-bottom: 0.8rem;
+}
+.b2b-offer-desc {
+  font-size: 0.75rem; color: rgba(200,255,220,0.45); line-height: 1.6;
+}
+
+/* ── CTA ENTREPRISE ── */
+.cta-entreprise {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 1rem; text-align: center; margin-top: 2.5rem;
+}
+.cta-entreprise-text {
+  font-family: var(--mono); font-size: 0.65rem;
+  color: rgba(0,255,136,0.3); letter-spacing: 0.12em;
 }
 
 /* ── CTA BOTTOM ── */
 .cta-bottom {
-  padding: 5rem 0; text-align: center;
+  text-align: center; padding: 5rem 2rem;
   border-top: 1px solid var(--green-border);
 }
-.cta-bottom h2 { margin-bottom: 1rem; }
-.cta-bottom p  { margin-bottom: 2rem; max-width: 500px; margin-left: auto; margin-right: auto; }
 
 /* ── FOOTER ── */
 .footer {
@@ -164,19 +466,30 @@ canvas#matrix-hero {
   padding: 2rem;
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 1rem;
-  font-family: var(--mono); font-size: 0.65rem;
-  color: rgba(0,255,136,0.25); letter-spacing: 0.1em;
+  font-family: var(--mono); font-size: 0.62rem;
+  color: rgba(0,255,136,0.2); letter-spacing: 0.08em;
 }
-.footer a { color: rgba(0,255,136,0.4); }
+.footer a { color: rgba(0,255,136,0.35); text-decoration: none; transition: color 0.2s; }
 .footer a:hover { color: var(--green); }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-@media (max-width: 768px) {
-  .africa-grid { grid-template-columns: 1fr; gap: 2rem; }
-  .hero-stats { gap: 1rem; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(2,1fr); }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .cert-wrap { grid-template-columns: 1fr; }
+  .b2b-grid { grid-template-columns: 1fr; }
+  .formateur-wrap { grid-template-columns: 1fr; }
+  .hero-stats { flex-direction: column; border: none; gap: 0.5rem; }
+  .hero-stat { border: 1px solid var(--green-border); border-right: 1px solid var(--green-border) !important; }
+}
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .hero-title { font-size: 2.2rem; }
 }
 </style>
 </head>
@@ -184,102 +497,150 @@ canvas#matrix-hero {
 
 <!-- NAVBAR -->
 <nav class="navbar">
-  <a href="/" class="navbar-brand"><img src="/img/logo.png" alt="SooPHA Learn" style="height:36px;width:auto;display:block;"></a>
+  <a href="/" class="navbar-brand">
+    <img src="/img/logo.png" alt="SooPHA Learn" style="height:36px;width:auto;display:block;">
+  </a>
   <div class="navbar-links">
     <a href="#formations" class="navbar-link hide-mobile">Formations</a>
-    <a href="#about" class="navbar-link hide-mobile">À propos</a>
-    <a href="pages/login.html" class="btn btn-secondary btn-sm">Se connecter</a>
-    <a href="pages/register.html" class="btn btn-primary btn-sm">S'inscrire</a>
+    <a href="#tarifs" class="navbar-link hide-mobile">Tarifs</a>
+    <a href="#entreprises" class="navbar-link hide-mobile">Entreprises</a>
+    <a href="pages/login.html" class="btn btn-secondary btn-sm">Connexion</a>
+    <a href="pages/register.html" class="btn btn-primary btn-sm">Commencer</a>
   </div>
 </nav>
 
-<!-- HERO -->
+<!-- ══════════════════ HERO ══════════════════ -->
 <section class="hero">
   <div class="hero-bg"></div>
   <canvas id="matrix-hero"></canvas>
   <div class="hero-content">
-    <div class="hero-tag">// Cybersécurité · Afrique Francophone · 2026</div>
-    <h1 class="hero-title">
-      <span class="hero-title-main">FORME-TOI.</span><br>
-      <span class="hero-title-accent">PROUVE-LE.</span>
-    </h1>
-    <div class="gabon-bar"><span></span><span></span><span></span></div>
-    <div class="hero-subtitle">// SooPHA Learn — La cybersécurité accessible à tous</div>
-    <p class="hero-desc">
-      Des formations structurées, des QCM pour valider ta compréhension, des défis CTF pour affûter tes compétences.
-      Conçu pour la jeunesse africaine francophone. <strong style="color:rgba(200,255,220,0.9)">100% gratuit.</strong>
-    </p>
-    <div class="hero-cta">
-      <a href="pages/register.html" class="btn btn-primary">Commencer gratuitement →</a>
-      <a href="#formations" class="btn btn-secondary">Voir les formations</a>
+
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Organisme de Formation · Cybersécurité · France & Afrique
     </div>
+
+    <h1 class="hero-title">
+      <span class="hero-title-main">DEVENEZ EXPERT.</span>
+      <span class="hero-title-accent">CERTIFIÉ.</span>
+    </h1>
+
+    <div class="hero-divider">
+      <div class="hero-divider-line"></div>
+      <div class="gabon-bar"><span></span><span></span><span></span></div>
+      <div class="hero-divider-line"></div>
+    </div>
+
+    <div class="hero-sub">// Formation · Certification · Expertise Terrain</div>
+
+    <p class="hero-desc">
+      Des formations en cybersécurité <strong>animées par des experts en activité</strong>,
+      conçues pour les professionnels et les entreprises.
+      Parcours structurés, certifications reconnues, contenu ancré dans la réalité du terrain.
+    </p>
+
+    <div class="hero-cta">
+      <a href="#tarifs" class="btn btn-primary">Voir les formations →</a>
+      <a href="#entreprises" class="btn btn-secondary">Offre Entreprise</a>
+    </div>
+
     <div class="hero-stats">
       <div class="hero-stat">
-        <div class="stat-val" style="font-size:1.4rem">30+</div>
-        <div class="stat-label">Cours</div>
+        <div class="hero-stat-val">27+</div>
+        <div class="hero-stat-lbl">Modules</div>
       </div>
       <div class="hero-stat">
-        <div class="stat-val" style="font-size:1.4rem">400+</div>
-        <div class="stat-label">Slides</div>
+        <div class="hero-stat-val">400+</div>
+        <div class="hero-stat-lbl">Slides</div>
       </div>
       <div class="hero-stat">
-        <div class="stat-val" style="font-size:1.4rem">100%</div>
-        <div class="stat-label">Gratuit</div>
+        <div class="hero-stat-val">5</div>
+        <div class="hero-stat-lbl">Domaines</div>
       </div>
       <div class="hero-stat">
-        <div class="stat-val" style="font-size:1.4rem">🌍</div>
-        <div class="stat-label">Toute l'Afrique</div>
+        <div class="hero-stat-val">🌍</div>
+        <div class="hero-stat-lbl">FR & Afrique</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════ CHIFFRES CLÉS ══════════════════ -->
+<section class="section section-border">
+  <div class="container">
+    <div class="section-pre">// Pourquoi SooPHA Learn</div>
+    <h2 class="section-h2">Une formation <span>ancrée dans la réalité</span></h2>
+    <div class="kpi-grid">
+      <div class="kpi-item">
+        <div class="kpi-val">5+</div>
+        <div class="kpi-lbl">Ans d'expertise terrain</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-val">27</div>
+        <div class="kpi-lbl">Modules disponibles</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-val">300+</div>
+        <div class="kpi-lbl">QCM de validation</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-val">100%</div>
+        <div class="kpi-lbl">Experts en activité</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- FEATURES -->
-<section class="features" id="about">
+<!-- ══════════════════ FEATURES ══════════════════ -->
+<section class="section section-border">
   <div class="container">
-    <div class="section-title">POURQUOI SOOPHA LEARN</div>
+    <div class="section-pre">// Ce qui nous différencie</div>
+    <h2 class="section-h2">Une pédagogie <span>orientée résultats</span></h2>
     <div class="features-grid">
-      <div class="card feature-card">
+      <div class="feature-card">
         <div class="feature-icon">🎯</div>
-        <div class="feature-title">Formations structurées</div>
-        <div class="feature-desc">Du contenu pensé pour les débutants africains. Exemples locaux, contexte Gabon, Sénégal, Côte d'Ivoire, Cameroun.</div>
+        <div class="feature-title">Contenu Expert & Terrain</div>
+        <div class="feature-desc">Chaque module est conçu et animé par un consultant en activité. Des exemples réels, des cas pratiques, pas de théorie creuse.</div>
       </div>
-      <div class="card feature-card">
+      <div class="feature-card">
         <div class="feature-icon">🧠</div>
-        <div class="feature-title">QCM de validation</div>
-        <div class="feature-desc">Un QCM après chaque slide pour valider la compréhension en temps réel. Explication détaillée pour chaque réponse.</div>
+        <div class="feature-title">Validation Continue</div>
+        <div class="feature-desc">QCM après chaque slide, explications détaillées, progression sauvegardée. L'apprenant valide sa compréhension en temps réel.</div>
       </div>
-      <div class="card feature-card">
+      <div class="feature-card">
         <div class="feature-icon">📊</div>
-        <div class="feature-title">Suivi de progression</div>
-        <div class="feature-desc">Ton tableau de bord personnel. Scores, cours complétés, classement. Ta progression sauvegardée sur tous tes appareils.</div>
+        <div class="feature-title">Suivi & Reporting</div>
+        <div class="feature-desc">Dashboard individuel, scores détaillés, classement. Pour les entreprises : rapport de progression de vos équipes à la demande.</div>
       </div>
-      <div class="card feature-card">
-        <div class="feature-icon">🏆</div>
-        <div class="feature-title">Certifications</div>
-        <div class="feature-desc">Un certificat à ton nom pour chaque cours complété avec succès. Partage sur LinkedIn et valorise tes compétences.</div>
+      <div class="feature-card">
+        <div class="feature-icon">📄</div>
+        <div class="feature-title">Certification Officielle</div>
+        <div class="feature-desc">Attestation SooPHA Learn nominative pour chaque parcours complété. Téléchargeable, partageable sur LinkedIn, valeur professionnelle réelle.</div>
       </div>
-      <div class="card feature-card">
+      <div class="feature-card">
         <div class="feature-icon">⚔️</div>
-        <div class="feature-title">Défis CTF</div>
-        <div class="feature-desc">Des challenges pratiques en continu. Web, Cryptographie, OSINT, Forensics. Mets ta théorie en pratique.</div>
+        <div class="feature-title">Labs & CTF Pratiques</div>
+        <div class="feature-desc">Des challenges techniques en continu pour mettre la théorie en pratique : Web, Forensics, Cryptographie, OSINT, Pentest.</div>
       </div>
-      <div class="card feature-card">
-        <div class="feature-icon">🌍</div>
-        <div class="feature-title">Communauté africaine</div>
-        <div class="feature-desc">Rejoins une communauté de jeunes passionnés de cybersécurité à travers l'Afrique francophone. Classement continental.</div>
+      <div class="feature-card">
+        <div class="feature-icon">🤝</div>
+        <div class="feature-title">Coaching 1-to-1</div>
+        <div class="feature-desc">Sessions privées avec le formateur pour débloquer un module complexe. Réservation directe depuis la plateforme.</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- TOPICS -->
-<section class="topics" id="formations">
+<!-- ══════════════════ DOMAINES ══════════════════ -->
+<section class="section section-border" id="formations">
   <div class="container">
-    <div class="section-title">DOMAINES DE FORMATION</div>
-    <div class="topics-grid">
+    <div class="section-pre">// Catalogue de formations</div>
+    <h2 class="section-h2">5 domaines, <span>27 modules</span></h2>
+    <p class="section-lead">Du niveau fondamental au niveau expert. Chaque parcours est autonome et certifiant.</p>
+    <div class="topics-grid" style="margin-top:2rem">
       <div class="topic-pill"><span class="topic-icon">🛡️</span>Intro Cybersécurité</div>
-      <div class="topic-pill"><span class="topic-icon">🐧</span>Linux</div>
+      <div class="topic-pill"><span class="topic-icon">🐧</span>Linux Sécurité</div>
       <div class="topic-pill"><span class="topic-icon">🌐</span>Réseaux & Sécurité</div>
       <div class="topic-pill"><span class="topic-icon">⚠️</span>Ingénierie Sociale</div>
       <div class="topic-pill"><span class="topic-icon">💀</span>Cyberattaques</div>
@@ -293,62 +654,244 @@ canvas#matrix-hero {
       <div class="topic-pill"><span class="topic-icon">🪪</span>IAM · Identités</div>
       <div class="topic-pill"><span class="topic-icon">🔍</span>Analyste SOC</div>
       <div class="topic-pill"><span class="topic-icon">☁️</span>Cloud Security</div>
-      <div class="topic-pill"><span class="topic-icon">🧭</span>Métiers &amp; Carrières</div>
+      <div class="topic-pill"><span class="topic-icon">🧭</span>Métiers & Carrières</div>
     </div>
     <div style="text-align:center;margin-top:2.5rem">
-      <a href="pages/register.html" class="btn btn-primary">Accéder aux formations →</a>
+      <a href="pages/register.html" class="btn btn-primary">Accéder au catalogue complet →</a>
     </div>
   </div>
 </section>
 
-<!-- AFRICA SECTION -->
-<section class="africa">
+<!-- ══════════════════ TARIFS ══════════════════ -->
+<section class="section section-border" id="tarifs">
   <div class="container">
-    <div class="africa-grid">
-      <div class="africa-text">
-        <div class="section-title">CONÇU POUR L'AFRIQUE</div>
-        <h2 style="margin-bottom:1rem">La cybersécurité,<br><span style="color:var(--green)">un enjeu continental</span></h2>
-        <p>L'Afrique subsaharienne fait face à une hausse de +60% des cyberattaques. Les fraudes Mobile Money, le SIM Swapping et le phishing touchent des millions de personnes chaque année.</p>
-        <p>Les experts cyber locaux sont rares. <strong style="color:rgba(200,255,220,0.9)">Tu peux faire partie de la solution.</strong></p>
-        <a href="pages/register.html" class="btn btn-primary" style="margin-top:0.5rem">Je rejoins la communauté</a>
+    <div class="section-pre">// Offres & Tarifs</div>
+    <h2 class="section-h2">Choisissez votre <span>niveau d'engagement</span></h2>
+    <p class="section-lead">Des offres adaptées aux apprenants individuels comme aux équipes d'entreprise.</p>
+
+    <div class="pricing-grid">
+
+      <!-- INDIVIDUEL -->
+      <div class="pricing-card">
+        <div class="pricing-label">// Accès Individuel</div>
+        <div class="pricing-name">Abonnement Plateforme</div>
+        <div class="pricing-price">19€</div>
+        <div class="pricing-price-unit">/ mois · accès complet</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>Accès aux 27 modules</li>
+          <li>QCM & validation continue</li>
+          <li>Dashboard de progression</li>
+          <li>CTF Lab intégré</li>
+          <li>Attestation de suivi</li>
+        </ul>
+        <a href="pages/register.html" class="btn btn-secondary" style="width:100%;text-align:center;display:block">Commencer →</a>
+        <div style="font-family:var(--mono);font-size:0.58rem;color:rgba(0,255,136,0.25);text-align:center;margin-top:0.8rem;letter-spacing:0.06em">
+          Ou 149€/an — 3 modules offerts en accès libre
+        </div>
       </div>
-      <div class="africa-stats">
-        <div class="card africa-stat-card">
-          <div class="stat-val" style="color:var(--red)">+60%</div>
-          <div class="stat-label">Cyberattaques en hausse en Afrique</div>
+
+      <!-- CERTIFIANT -->
+      <div class="pricing-card featured">
+        <div class="pricing-badge">RECOMMANDÉ</div>
+        <div class="pricing-label">// Parcours Certifiant</div>
+        <div class="pricing-name">Formation Complète</div>
+        <div class="pricing-price">490€</div>
+        <div class="pricing-price-unit">/ parcours thématique</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>Parcours structuré sur 6 à 11 modules</li>
+          <li>Accès à vie au parcours choisi</li>
+          <li>QCM + exercices pratiques</li>
+          <li>1 session coaching incluse</li>
+          <li><strong style="color:rgba(200,255,220,0.9)">Certificat SooPHA Learn nominatif</strong></li>
+          <li>Badge numérique LinkedIn</li>
+        </ul>
+        <a href="pages/register.html" class="btn btn-primary" style="width:100%;text-align:center;display:block">Choisir un parcours →</a>
+        <div style="font-family:var(--mono);font-size:0.58rem;color:rgba(0,255,136,0.25);text-align:center;margin-top:0.8rem;letter-spacing:0.06em">
+          Parcours Complet 27 modules : 890€
         </div>
-        <div class="card africa-stat-card">
-          <div class="stat-val">$8T</div>
-          <div class="stat-label">Coût mondial cybercriminalité</div>
+      </div>
+
+      <!-- ENTREPRISE -->
+      <div class="pricing-card">
+        <div class="pricing-label">// Formation Groupe</div>
+        <div class="pricing-name">Offre Entreprise</div>
+        <div class="pricing-price">290€</div>
+        <div class="pricing-price-unit">/ personne · groupe 15–30</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>Formation présentielle ou distanciel</li>
+          <li>Programme sur mesure</li>
+          <li>Formateur expert en activité</li>
+          <li>Rapport de progression des équipes</li>
+          <li>Certificats SooPHA Learn pour chaque participant</li>
+          <li>Facturation entreprise · Devis sous 48h</li>
+        </ul>
+        <a href="mailto:formation@soopha-learn.com" class="btn btn-secondary" style="width:100%;text-align:center;display:block">Demander un devis →</a>
+        <div style="font-family:var(--mono);font-size:0.58rem;color:rgba(0,255,136,0.25);text-align:center;margin-top:0.8rem;letter-spacing:0.06em">
+          Session Discovery demi-journée : 1 500€ forfait
         </div>
-        <div class="card africa-stat-card">
-          <div class="stat-val" style="color:var(--yellow)">2 200</div>
-          <div class="stat-label">Attaques par jour dans le monde</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CERTIFICATION ══════════════════ -->
+<section class="section section-border">
+  <div class="container">
+    <div class="section-pre">// Reconnaissance professionnelle</div>
+    <h2 class="section-h2">La certification <span>SooPHA Learn</span></h2>
+    <div class="cert-wrap">
+      <div>
+        <p class="section-lead" style="margin-bottom:1.5rem">
+          Chaque parcours complété avec succès donne lieu à une attestation nominative,
+          générée automatiquement et téléchargeable depuis votre espace personnel.
+        </p>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:0.8rem">
+          <li style="font-size:0.82rem;color:rgba(200,255,220,0.6);display:flex;gap:0.7rem;align-items:flex-start">
+            <span style="color:var(--green);font-size:0.55rem;margin-top:0.35rem">▶</span>
+            <span>Attestation nominative avec module, date et score obtenu</span>
+          </li>
+          <li style="font-size:0.82rem;color:rgba(200,255,220,0.6);display:flex;gap:0.7rem;align-items:flex-start">
+            <span style="color:var(--green);font-size:0.55rem;margin-top:0.35rem">▶</span>
+            <span>Badge numérique partageable directement sur LinkedIn</span>
+          </li>
+          <li style="font-size:0.82rem;color:rgba(200,255,220,0.6);display:flex;gap:0.7rem;align-items:flex-start">
+            <span style="color:var(--green);font-size:0.55rem;margin-top:0.35rem">▶</span>
+            <span>Score minimum requis : 70% pour l'obtention</span>
+          </li>
+          <li style="font-size:0.82rem;color:rgba(200,255,220,0.6);display:flex;gap:0.7rem;align-items:flex-start">
+            <span style="color:var(--green);font-size:0.55rem;margin-top:0.35rem">▶</span>
+            <span>Vérification d'authenticité en ligne via QR code</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Aperçu certificat -->
+      <div class="cert-card">
+        <div class="cert-logo">SooPHA Learn</div>
+        <div class="cert-title">ATTESTATION DE FORMATION</div>
+        <div class="cert-subtitle">// CYBERSÉCURITÉ · FORMATION PROFESSIONNELLE</div>
+        <div style="font-family:var(--mono);font-size:0.6rem;color:rgba(0,255,136,0.25);margin-bottom:0.4rem;letter-spacing:0.08em">DÉLIVRÉE À</div>
+        <div class="cert-name-placeholder">Prénom NOM</div>
+        <div class="cert-module">// MODULE : Malware Analysis — Parcours Défense</div>
+        <div class="cert-score">
+          <div class="cert-score-val">96%</div>
+          <div class="cert-score-lbl">SCORE OBTENU<br>QCM VALIDÉS</div>
         </div>
-        <div class="card africa-stat-card">
-          <div class="stat-val" style="color:var(--green)">0€</div>
-          <div class="stat-label">Coût pour apprendre ici</div>
+        <div class="cert-sig">
+          <div>
+            <div class="cert-sig-line">Béni-Jaël MBATA</div>
+            <div style="font-family:var(--mono);font-size:0.55rem;color:rgba(0,255,136,0.2);letter-spacing:0.08em;margin-top:0.2rem">Fondateur · Expert IAM · SooPHA Learn</div>
+          </div>
+          <div style="margin-left:auto;font-family:var(--mono);font-size:0.55rem;color:rgba(0,255,136,0.2);letter-spacing:0.06em;text-align:right">
+            Avril 2026<br>
+            <span style="color:rgba(0,255,136,0.15)">ID: SL-2026-XXXX</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CTA BOTTOM -->
+<!-- ══════════════════ FORMATEUR ══════════════════ -->
+<section class="section section-border">
+  <div class="container">
+    <div class="section-pre">// Votre formateur</div>
+    <h2 class="section-h2" style="margin-bottom:1.5rem">Un expert <span>en activité</span></h2>
+    <div class="formateur-wrap">
+      <div class="formateur-avatar">🧑🏿‍💻</div>
+      <div>
+        <div class="formateur-name">Béni-Jaël MBATA</div>
+        <div class="formateur-role">// CONSULTANT INDÉPENDANT · EXPERT IAM · FONDATEUR SOOPHA LEARN</div>
+        <div class="formateur-bio">
+          Consultant indépendant en cybersécurité spécialisé dans la gestion des identités et des accès (IAM/IGA).
+          Actuellement en mission longue sur des projets grands comptes en France.
+          Fondateur de SooPHA Learn, première plateforme de formation cybersécurité pour l'Afrique francophone.
+          Ses formations combinent expertise technique de terrain et pédagogie adaptée aux réalités africaines et européennes.
+        </div>
+        <div class="formateur-tags">
+          <span class="badge badge-green">IAM / IGA</span>
+          <span class="badge badge-red">Pentest</span>
+          <span class="badge badge-blue">One Identity</span>
+          <span class="badge badge-purple">Malware Analysis</span>
+          <span class="badge badge-yellow">OSCP Prep</span>
+          <span class="badge badge-green">SOC</span>
+          <span class="badge badge-blue">Forensics</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ ENTREPRISES ══════════════════ -->
+<section class="section section-border" id="entreprises">
+  <div class="container">
+    <div class="section-pre">// Solutions B2B</div>
+    <h2 class="section-h2">Formez vos <span>équipes</span></h2>
+    <div class="b2b-wrap">
+      <p style="font-size:0.9rem;color:rgba(200,255,220,0.55);line-height:1.7;max-width:620px">
+        SooPHA Learn propose des formations sur mesure pour les équipes IT, les DSI et les directions métiers.
+        Contenus adaptés à votre secteur, formateur disponible en distanciel ou présentiel, reporting détaillé.
+      </p>
+      <div class="b2b-grid">
+        <div class="b2b-offer">
+          <div class="b2b-offer-label">// Session découverte</div>
+          <div class="b2b-offer-name">Formation Discovery</div>
+          <div class="b2b-offer-price">1 500€ <span style="font-size:0.8rem;color:rgba(0,255,136,0.4)">forfait</span></div>
+          <div class="b2b-offer-desc">Demi-journée · Jusqu'à 15 personnes · Sensibilisation cybersécurité · Idéal pour une première approche</div>
+        </div>
+        <div class="b2b-offer">
+          <div class="b2b-offer-label">// Formation standard</div>
+          <div class="b2b-offer-name">Formation Groupe</div>
+          <div class="b2b-offer-price">290€ <span style="font-size:0.8rem;color:rgba(0,255,136,0.4)">/pers.</span></div>
+          <div class="b2b-offer-desc">Journée complète · 15–30 personnes · 1 module au choix · Certificats inclus</div>
+        </div>
+        <div class="b2b-offer">
+          <div class="b2b-offer-label">// Formation avancée</div>
+          <div class="b2b-offer-name">Parcours 2 Jours</div>
+          <div class="b2b-offer-price">490€ <span style="font-size:0.8rem;color:rgba(0,255,136,0.4)">/pers.</span></div>
+          <div class="b2b-offer-desc">2 journées · 15–30 personnes · Parcours thématique complet · Exercices pratiques inclus</div>
+        </div>
+        <div class="b2b-offer">
+          <div class="b2b-offer-label">// Sur mesure</div>
+          <div class="b2b-offer-name">Programme Personnalisé</div>
+          <div class="b2b-offer-price">Sur devis</div>
+          <div class="b2b-offer-desc">Programme construit autour des besoins spécifiques de votre organisation · Multi-sessions · Suivi post-formation</div>
+        </div>
+      </div>
+      <div class="cta-entreprise">
+        <a href="mailto:formation@soopha-learn.com" class="btn btn-primary">Nous contacter pour un devis →</a>
+        <div class="cta-entreprise-text">// Réponse sous 48h · Facturation entreprise · Sous-traitance organisme de formation acceptée</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CTA FINAL ══════════════════ -->
 <section class="cta-bottom">
   <div class="container">
-    <h2>Prêt à commencer ?</h2>
-    <p>Crée ton compte gratuitement. Commence le premier cours en 2 minutes. Progresse à ton rythme.</p>
-    <a href="pages/register.html" class="btn btn-primary">Créer mon compte →</a>
+    <div class="section-pre" style="text-align:center">// Prêt à démarrer ?</div>
+    <h2 class="section-h2" style="text-align:center">Rejoignez SooPHA Learn<br><span>dès aujourd'hui</span></h2>
+    <p style="color:rgba(200,255,220,0.5);font-size:0.88rem;max-width:500px;margin:1rem auto 2rem;line-height:1.7">
+      Créez votre compte, accédez aux premiers modules et commencez votre parcours vers l'expertise cybersécurité.
+    </p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="pages/register.html" class="btn btn-primary">Créer mon compte →</a>
+      <a href="#entreprises" class="btn btn-secondary">Offre Entreprise</a>
+    </div>
   </div>
 </section>
 
-<!-- FOOTER -->
+<!-- ══════════════════ FOOTER ══════════════════ -->
 <footer class="footer">
-  <div>SooPHA Learn × Cybersécurité × Afrique Francophone</div>
+  <div>SooPHA Learn · Cybersécurité · France & Afrique Francophone</div>
   <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
     <a href="https://soopha-network.com" target="_blank">SooPHA Network</a>
     <a href="https://ctfd.soopha-learn.com" target="_blank">CTF Platform</a>
+    <a href="mailto:formation@soopha-learn.com">Contact Formation</a>
     <a href="/privacy.html">Confidentialité</a>
     <a href="/terms.html">CGU</a>
   </div>
@@ -362,7 +905,7 @@ canvas#matrix-hero {
   var ctx = c.getContext('2d');
   function resize(){ c.width = window.innerWidth; c.height = window.innerHeight; }
   resize(); window.addEventListener('resize', resize);
-  var chars = 'アイウエオ01ABCDEF{}CTFFlag';
+  var chars = 'アイウ01ABCDEF{}CTFIAM';
   var fs = 13, drops;
   function init(){ drops = Array(Math.floor(c.width/fs)).fill(1); }
   init(); window.addEventListener('resize', init);
