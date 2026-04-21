@@ -48,10 +48,15 @@ canvas#matrix-auth { position: fixed; inset: 0; z-index: 0; opacity: 0.04; point
         <img src="../apple-touch-icon.png" alt="SooPHA Learn" style="height:44px;width:auto;display:block;margin:0 auto;">
       </a>
       <div class="gabon-bar"><span></span><span></span><span></span></div>
-      <p>// Rejoins la communauté · 100% gratuit</p>
+      <p>// Formation Cybersécurité · Accès Professionnel</p>
     </div>
 
     <div class="auth-title">Créer mon compte</div>
+
+    <div style="font-family:var(--mono);font-size:0.65rem;color:rgba(0,255,136,0.3);letter-spacing:0.08em;text-align:center;margin-bottom:1.5rem;line-height:1.8;border:1px solid var(--green-border);padding:0.8rem;background:rgba(0,255,136,0.03)">
+      // Accès activé manuellement après validation<br>
+      Vous recevrez une confirmation à votre email
+    </div>
 
     <div class="alert alert-error" id="error-alert"></div>
     <div class="alert alert-success" id="success-alert"></div>
@@ -243,7 +248,7 @@ document.getElementById('register-form').addEventListener('submit', async functi
     }
 
     var successEl = document.getElementById('success-alert');
-    successEl.innerHTML = '✓ Compte créé ! <strong>Vérifie ta boîte mail</strong> pour confirmer ton adresse.';
+    successEl.innerHTML = '✓ Compte créé ! <strong>Vérifiez votre boîte mail</strong> pour confirmer votre adresse. Votre accès sera activé sous 24h.';
     successEl.classList.add('show');
     document.getElementById('error-alert').classList.remove('show');
     document.getElementById('register-form').style.opacity = '0.4';
