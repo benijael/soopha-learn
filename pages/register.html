@@ -89,24 +89,80 @@ canvas#matrix-auth { position: fixed; inset: 0; z-index: 0; opacity: 0.04; point
         <label class="form-label" for="country">Pays</label>
         <select id="country" class="form-input country-select">
           <option value="">Sélectionne ton pays</option>
-          <option value="GA">🇬🇦 Gabon</option>
-          <option value="SN">🇸🇳 Sénégal</option>
-          <option value="CI">🇨🇮 Côte d'Ivoire</option>
-          <option value="CM">🇨🇲 Cameroun</option>
-          <option value="CD">🇨🇩 RD Congo</option>
-          <option value="CG">🇨🇬 Congo-Brazzaville</option>
-          <option value="MG">🇲🇬 Madagascar</option>
-          <option value="ML">🇲🇱 Mali</option>
-          <option value="BF">🇧🇫 Burkina Faso</option>
-          <option value="NE">🇳🇪 Niger</option>
-          <option value="TG">🇹🇬 Togo</option>
-          <option value="BJ">🇧🇯 Bénin</option>
-          <option value="GN">🇬🇳 Guinée</option>
-          <option value="TN">🇹🇳 Tunisie</option>
-          <option value="MA">🇲🇦 Maroc</option>
-          <option value="DZ">🇩🇿 Algérie</option>
-          <option value="FR">🇫🇷 France</option>
-          <option value="other">Autre</option>
+
+          <optgroup label="── Europe ──">
+            <option value="FR">🇫🇷 France</option>
+            <option value="BE">🇧🇪 Belgique</option>
+            <option value="CH">🇨🇭 Suisse</option>
+            <option value="LU">🇱🇺 Luxembourg</option>
+            <option value="MC">🇲🇨 Monaco</option>
+          </optgroup>
+
+          <optgroup label="── Afrique du Nord ──">
+            <option value="MA">🇲🇦 Maroc</option>
+            <option value="DZ">🇩🇿 Algérie</option>
+            <option value="TN">🇹🇳 Tunisie</option>
+            <option value="LY">🇱🇾 Libye</option>
+            <option value="MR">🇲🇷 Mauritanie</option>
+          </optgroup>
+
+          <optgroup label="── Afrique de l'Ouest ──">
+            <option value="SN">🇸🇳 Sénégal</option>
+            <option value="CI">🇨🇮 Côte d'Ivoire</option>
+            <option value="ML">🇲🇱 Mali</option>
+            <option value="BF">🇧🇫 Burkina Faso</option>
+            <option value="GN">🇬🇳 Guinée</option>
+            <option value="GW">🇬🇼 Guinée-Bissau</option>
+            <option value="NE">🇳🇪 Niger</option>
+            <option value="TG">🇹🇬 Togo</option>
+            <option value="BJ">🇧🇯 Bénin</option>
+            <option value="SL">🇸🇱 Sierra Leone</option>
+          </optgroup>
+
+          <optgroup label="── Afrique Centrale ──">
+            <option value="CM">🇨🇲 Cameroun</option>
+            <option value="GA">🇬🇦 Gabon</option>
+            <option value="CG">🇨🇬 Congo-Brazzaville</option>
+            <option value="CD">🇨🇩 RD Congo</option>
+            <option value="CF">🇨🇫 Centrafrique</option>
+            <option value="TD">🇹🇩 Tchad</option>
+            <option value="GQ">🇬🇶 Guinée Équatoriale</option>
+            <option value="BI">🇧🇮 Burundi</option>
+            <option value="RW">🇷🇼 Rwanda</option>
+          </optgroup>
+
+          <optgroup label="── Afrique de l'Est & Océan Indien ──">
+            <option value="DJ">🇩🇯 Djibouti</option>
+            <option value="KM">🇰🇲 Comores</option>
+            <option value="MG">🇲🇬 Madagascar</option>
+            <option value="MU">🇲🇺 Maurice</option>
+            <option value="SC">🇸🇨 Seychelles</option>
+          </optgroup>
+
+          <optgroup label="── Afrique du Nord-Est ──">
+            <option value="ET">🇪🇹 Éthiopie</option>
+          </optgroup>
+
+          <optgroup label="── Amérique ──">
+            <option value="CA">🇨🇦 Canada (Québec)</option>
+            <option value="HT">🇭🇹 Haïti</option>
+            <option value="GP">🇬🇵 Guadeloupe</option>
+            <option value="MQ">🇲🇶 Martinique</option>
+            <option value="GF">🇬🇫 Guyane française</option>
+            <option value="PM">🇵🇲 Saint-Pierre-et-Miquelon</option>
+          </optgroup>
+
+          <optgroup label="── Océanie & Pacifique ──">
+            <option value="NC">🇳🇨 Nouvelle-Calédonie</option>
+            <option value="PF">🇵🇫 Polynésie française</option>
+            <option value="VU">🇻🇺 Vanuatu</option>
+          </optgroup>
+
+          <optgroup label="── Moyen-Orient ──">
+            <option value="LB">🇱🇧 Liban</option>
+          </optgroup>
+
+          <option value="other">🌍 Autre</option>
         </select>
       </div>
 
