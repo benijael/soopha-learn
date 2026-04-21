@@ -10,12 +10,27 @@ async function getCurrentUser() {
 }
 
 // Redirige vers login si non connecté
+// Redirige vers premium.html si connecté mais pas premium
 async function requireAuth() {
   const user = await getCurrentUser();
   if (!user) {
     window.location.href = '/pages/login.html';
     return null;
   }
+
+  // ── Vérification accès premium ───────────────────────
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_premium')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile || !profile.is_premium) {
+    window.location.href = '/pages/premium.html';
+    return null;
+  }
+  // ─────────────────────────────────────────────────────
+
   return user;
 }
 
